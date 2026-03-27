@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -49,9 +50,11 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" className="glow-primary text-base px-8 py-6 animate-gradient-shift bg-gradient-to-r from-primary to-primary/80">
-              Get Started
-              <ArrowRight className="ml-2 w-4 h-4" />
+            <Button size="lg" className="glow-primary text-base px-8 py-6 animate-gradient-shift bg-gradient-to-r from-primary to-primary/80" asChild>
+              <Link to="/sign-up">
+                Get Started
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
             </Button>
             <Button variant="outline" size="lg" className="text-base px-8 py-6 border-border/50 hover:border-primary/50 hover:glow-primary transition-all">
               <Play className="mr-2 w-4 h-4" />
