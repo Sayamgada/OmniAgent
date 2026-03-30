@@ -9,7 +9,7 @@ import AuthPageShell from "../components/auth/AuthPageShell";
 import GoogleIcon from "../components/auth/GoogleIcon";
 import Navbar from "../components/landing/Navbar";
 import { Button } from "../components/ui/button";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from '../context/AuthContext'; 
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,16 +40,25 @@ const SignIn = () => {
     return undefined;
   }, [password, touched.password]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setTouched({ email: true, password: true });
-    if (!canSubmit) return;
-    setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    login();
-    toast.success("Welcome back — your workspace is ready.");
-    navigate("/new-agent");
-  };
+
+  
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  setTouched({ email: true, password: true });
+  
+  if (!canSubmit) return;
+  
+  setSubmitting(true);
+  
+  try {
+    await login(email, password);  // Now calls backend!
+    navigate('/new-agent');  // Your success redirect
+  } catch (error) {
+    // Error already toasted by AuthContext
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleGoogle = () => {
     toast("Google sign-in", { description: "Secure OAuth will be available soon." });
