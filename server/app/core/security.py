@@ -30,7 +30,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def authenticate_user(db: Session, email: str, password: str):
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
-    if not user or not password != user.password:
+    # Temporary dev mode: direct comparison for plain text password.
+    # WARNING: never use in production.
+    if not user or user.password != password:
         return False
     return user
 

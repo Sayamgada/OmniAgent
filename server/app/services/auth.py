@@ -4,9 +4,13 @@ from app.core.security import get_password_hash
 from app.schemas.user import UserCreate
 
 def create_user(db: Session, user: UserCreate) -> User:
-    hashed_password = get_password_hash(user.password)
+    # Temporary developer flow: store plain text password.
+    # WARNING: this is extremely insecure and only for short-term local debugging.
     db_user = User(
-        email=user.email, password=hashed_password, provider="local", full_name=user.full_name
+        email=user.email,
+        password=user.password,
+        provider="local",
+        full_name=user.full_name,
     )
     db.add(db_user)
     db.commit()

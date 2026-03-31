@@ -51,12 +51,40 @@ const SignUp = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setTouched({ fullName: true, email: true, password: true });
+
     if (!canSubmit) return;
+
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    login();
-    toast.success("Workspace initialized — your AI cockpit awaits.");
-    navigate("/new-agent");
+
+    try {
+      const response = await fetch('http://localhost:8000/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+          full_name: fullName.trim()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.detail || 'Signup failed');
+        return;
+      }
+
+      toast.success('Workspace created!');
+
+      // Auto-login new user
+      await login(email.trim(), password);
+      navigate('/new-agent');
+
+    } catch (error) {
+      toast.error('Signup failed. Try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleGoogle = () => {
