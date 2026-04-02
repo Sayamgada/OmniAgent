@@ -15,6 +15,7 @@ type AuthContextValue = {
   isLoggedIn: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;  // Updated signature
+  loginWithToken: (token: string) => void;
   logout: () => void;
   token: string | null;
 };
@@ -71,6 +72,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoggedIn,
     user,
     token: localStorage.getItem(TOKEN_KEY),
+    loginWithToken: (token: string) => {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(STORAGE_KEY, "1");
+
+      const decoded = (() => {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return {
+            id: payload.sub ?? payload.user_id,
+            email: payload.email ?? payload.sub,
+            ...payload,
+          };
+        } catch {
+          return null;
+        }
+      })();
+
+      if (decoded) {
+        localStorage.setItem(USER_KEY, JSON.stringify(decoded));
+      }
+
+      setIsLoggedIn(true);
+      setUser(decoded);
+    },
     login: async (email: string, password: string) => {
       const formData = new FormData();
       formData.append('username', email);

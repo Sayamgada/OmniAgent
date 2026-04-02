@@ -88,7 +88,7 @@ const SignUp = () => {
   };
 
   const handleGoogle = () => {
-    toast("Google sign-in", { description: "Secure OAuth will be available soon." });
+    window.location.href = "http://localhost:8000/auth/google/login";
   };
 
   return (

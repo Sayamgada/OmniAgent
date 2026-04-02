@@ -8,7 +8,9 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str] = None
+    provider: Optional[str] = "local"
+    provider_id: Optional[str] = None
 
 class UserOut(UserBase):
     id: UUID

@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import NewAgentCreation from "./pages/NewAgentCreation.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
+import OAuthCallback from "./pages/OAuthCallback.tsx";
 
 const PrivateRoute = () => {
   const { isLoggedIn } = useAuth();
@@ -30,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/oauth/callback" element={<OAuthCallback />} />
 
             <Route element={<GuestRoute />}>
               <Route path="/sign-in" element={<SignIn />} />
