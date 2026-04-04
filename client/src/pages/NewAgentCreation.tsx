@@ -19,6 +19,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { cn } from "../lib/utils";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "sonner";
 
 type DomainId = "corporate" | "education" | "finance";
 
@@ -29,28 +31,28 @@ const domains: Array<{
   icon: typeof Briefcase;
   hint: string;
 }> = [
-    {
-      id: "corporate",
-      title: "Corporate Operations",
-      description: "Automate workflow, communication, and task coordination.",
-      icon: Briefcase,
-      hint: "Your agent will be configured for Corporate Operations tasks",
-    },
-    {
-      id: "education",
-      title: "Education",
-      description: "Support learning plans, tutoring, and curriculum workflows.",
-      icon: GraduationCap,
-      hint: "Your agent will be configured for Education workflows",
-    },
-    {
-      id: "finance",
-      title: "Finance",
-      description: "Analyze reports, forecast trends, and simplify decisions.",
-      icon: Landmark,
-      hint: "Your agent will be configured for Finance insights",
-    },
-  ];
+  {
+    id: "corporate",
+    title: "Corporate Operations",
+    description: "Automate workflow, communication, and task coordination.",
+    icon: Briefcase,
+    hint: "Your agent will be configured for Corporate Operations tasks",
+  },
+  {
+    id: "education",
+    title: "Education",
+    description: "Support learning plans, tutoring, and curriculum workflows.",
+    icon: GraduationCap,
+    hint: "Your agent will be configured for Education workflows",
+  },
+  {
+    id: "finance",
+    title: "Finance",
+    description: "Analyze reports, forecast trends, and simplify decisions.",
+    icon: Landmark,
+    hint: "Your agent will be configured for Finance insights",
+  },
+];
 
 const promptTemplates = [
   {
@@ -78,12 +80,16 @@ const stepMotion = {
 };
 
 const NewAgentCreation = () => {
+  const { token } = useAuth();
   const [step, setStep] = useState(1);
-  const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");  
+  const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");
   const [agentName, setAgentName] = useState("Omni Ops Assistant");
   const [description, setDescription] = useState(
     "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities."
   );
+
+  const [workflow, setWorkflow] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [created, setCreated] = useState(false);
 
@@ -92,13 +98,73 @@ const NewAgentCreation = () => {
     [selectedDomain]
   );
 
+  const handleStepTwoContinue = async () => {
+    if (!agentName.trim()) {
+      toast.error("Please enter an agent name");
+      return;
+    }
+
+    if (!description.trim()) {
+      toast.error("Please enter an agent description");
+      return;
+    }
+
+    setStep(3);
+    setWorkflow(null);
+    setGenerating(true);
+    setCreated(false);
+
+    try {
+      const enhancedPrompt = `
+        Domain: ${activeDomain.title}
+        Agent Name: ${agentName}
+        User Description: ${description}
+
+        Please extract:
+        1. Core purpose of the agent
+        2. Main workflow steps
+        3. Key features
+        4. Example output / behavior
+
+        Return the answer in a clean presentation-friendly format.
+      `.trim();
+
+      const res = await fetch(
+        `http://localhost:8000/agents/extract-workflow`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ prompt: enhancedPrompt }),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || "Failed to generate AI output");
+      }
+
+      const data: { workflow: string } = await res.json();
+      setWorkflow(data.workflow);
+      toast.success("AI output generated successfully");
+    } catch (err: any) {
+      setWorkflow("Unable to generate workflow at the moment. Please try again.");
+      toast.error(err.message || "Failed to generate AI output");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleCreateAgent = () => {
     setIsCreating(true);
 
     window.setTimeout(() => {
       setIsCreating(false);
       setCreated(true);
-    }, 1700);
+      toast.success("Demo agent created successfully!");
+    }, 1400);
   };
 
   return (
@@ -140,7 +206,9 @@ const NewAgentCreation = () => {
       <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-10 pt-24">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold leading-tight md:text-4xl">Create New AI Agent</h1>
+            <h1 className="text-3xl font-bold leading-tight md:text-4xl">
+              Create New AI Agent
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground md:text-base">
               Design and generate a custom AI assistant in minutes
             </p>
@@ -154,7 +222,7 @@ const NewAgentCreation = () => {
         <Card className="glass-card mb-6 border-border/80">
           <CardContent className="p-5">
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              {["Select Domain", "Describe Agent", "Preview & Test"].map((label, index) => {
+              {["Select Domain", "Describe Agent", "Review & Test"].map((label, index) => {
                 const itemStep = index + 1;
                 const isActive = itemStep === step;
                 const isComplete = itemStep < step;
@@ -171,7 +239,9 @@ const NewAgentCreation = () => {
                     >
                       {isComplete ? <Check className="size-4" /> : itemStep}
                     </div>
-                    <p className={cn("text-sm", isActive ? "text-foreground" : "text-muted-foreground")}>{label}</p>
+                    <p className={cn("text-sm", isActive ? "text-foreground" : "text-muted-foreground")}>
+                      {label}
+                    </p>
                     {index < 2 && <div className="mx-1 h-px w-8 bg-border/80 md:w-14" />}
                   </div>
                 );
@@ -192,7 +262,9 @@ const NewAgentCreation = () => {
                         Choose the core industry context for your AI agent
                       </p>
                     </div>
-                    <Badge className="bg-primary/15 text-primary hover:bg-primary/20">Step 1 of 3</Badge>
+                    <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
+                      Step 1 of 3
+                    </Badge>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
@@ -219,7 +291,9 @@ const NewAgentCreation = () => {
                             {selected && <CheckCircle2 className="size-5 text-primary" />}
                           </div>
                           <h3 className="text-base font-semibold">{domain.title}</h3>
-                          <p className="mt-1 text-sm text-muted-foreground">{domain.description}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {domain.description}
+                          </p>
                         </button>
                       );
                     })}
@@ -228,7 +302,7 @@ const NewAgentCreation = () => {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="flex items-end">
                       <p className="rounded-lg border border-border bg-card/55 px-3 py-2 text-xs text-muted-foreground">
-                        Tip: Be specific to get better results
+                        Tip: Be specific to get better AI results
                       </p>
                     </div>
                   </div>
@@ -244,7 +318,9 @@ const NewAgentCreation = () => {
                   <CardContent className="space-y-5 p-6">
                     <div className="flex items-center justify-between">
                       <h2 className="text-xl font-semibold">Describe Agent</h2>
-                      <Badge className="bg-primary/15 text-primary hover:bg-primary/20">Step 2 of 3</Badge>
+                      <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
+                        Step 2 of 3
+                      </Badge>
                     </div>
 
                     <div className="space-y-2">
@@ -268,7 +344,6 @@ const NewAgentCreation = () => {
                       />
                       <p className="text-xs text-primary/90">{activeDomain.hint}</p>
                     </div>
-
                   </CardContent>
                 </Card>
 
@@ -278,7 +353,9 @@ const NewAgentCreation = () => {
                       <WandSparkles className="size-4 text-primary" />
                       <h3 className="font-semibold">Smart Suggestions</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground">Click a template to autofill your description</p>
+                    <p className="text-sm text-muted-foreground">
+                      Click a template to autofill your description
+                    </p>
                     <div className="space-y-3">
                       {promptTemplates.map((template) => (
                         <button
@@ -288,7 +365,9 @@ const NewAgentCreation = () => {
                           className="w-full rounded-xl border border-border bg-card/60 p-3 text-left transition-all hover:border-primary/60 hover:bg-primary/10"
                         >
                           <p className="font-medium">{template.title}</p>
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{template.prompt}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                            {template.prompt}
+                          </p>
                         </button>
                       ))}
                     </div>
@@ -301,15 +380,39 @@ const NewAgentCreation = () => {
           {step === 3 && (
             <motion.section key="step-3" {...stepMotion}>
               <Card className="glass-card border-border/70">
-                <CardContent className="flex min-h-[360px] flex-col items-center justify-center gap-4 p-6 text-center">
-                  <div className="flex size-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10">
-                    <Loader2 className="size-7 animate-spin text-primary" />
+                <CardContent className="space-y-6 p-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">Review & Test</h2>
+                    <Badge className="bg-secondary/15 text-secondary hover:bg-secondary/20">
+                      Step 3 of 3
+                    </Badge>
                   </div>
-                  <Badge className="bg-primary/15 text-primary hover:bg-primary/15">Step 3 of 3</Badge>
-                  <h2 className="text-xl font-semibold">Preparing Preview & Test</h2>
-                  <p className="max-w-xl text-sm text-muted-foreground">
-                    We are setting up your agent workspace. This step is currently shown as a loading state.
-                  </p>
+
+                  {generating ? (
+                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 text-center">
+                      <div className="flex size-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10">
+                        <Loader2 className="size-7 animate-spin text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-base font-medium">Gemini is analyzing your prompt</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Extracting workflow, core functionality, and expected behavior...
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="mb-2 flex items-center gap-2 text-primary">
+                          <WandSparkles className="size-4" />
+                          <span className="text-sm font-semibold">AI Generated Output</span>
+                        </div>
+                        <div className="whitespace-pre-wrap text-sm leading-7 text-foreground">
+                          {workflow || "No AI output available."}
+                        </div>
+                      </div>  
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.section>
@@ -318,32 +421,52 @@ const NewAgentCreation = () => {
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-5 md:flex-row md:items-center md:justify-between">
           <div className="text-xs text-muted-foreground">
-            {created ? "Agent successfully prepared for deployment." : "Progress is saved automatically"}
+            {created ? "Demo agent successfully prepared." : "Progress is saved automatically"}
           </div>
+
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
               onClick={() => setStep((prev) => Math.max(1, prev - 1))}
-              disabled={step === 1 || isCreating}
+              disabled={step === 1 || isCreating || generating}
               className="border-border bg-card/60 hover:bg-card"
             >
               Back
             </Button>
 
-            {step < 3 ? (
+            {step === 1 && (
               <Button
-                onClick={() => setStep((prev) => Math.min(3, prev + 1))}
+                onClick={() => setStep(2)}
                 className="glow-primary border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Continue
               </Button>
-            ) : (
+            )}
+
+            {step === 2 && (
+              <Button
+                onClick={handleStepTwoContinue}
+                disabled={generating}
+                className="glow-primary border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Continue"
+                )}
+              </Button>
+            )}
+
+            {step === 3 && (
               <Button
                 onClick={handleCreateAgent}
-                disabled={isCreating || created}
+                disabled={isCreating || created || generating || !workflow}
                 className={cn(
                   "min-w-36 border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90",
-                  !created && "glow-primary"
+                  !created && !isCreating && "glow-primary"
                 )}
               >
                 {isCreating ? (

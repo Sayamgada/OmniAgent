@@ -4,6 +4,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.database import engine, Base
 from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
+from app.routers.gemini import router as gemini_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.include_router(auth_router)
+app.include_router(gemini_router)
 
 @app.get("/")
 def root():
