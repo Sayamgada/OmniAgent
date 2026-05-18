@@ -78,7 +78,7 @@ const SignUp = () => {
 
       // Auto-login new user
       await login(email.trim(), password);
-      navigate('/new-agent');
+      navigate('/dashboard');
 
     } catch (error) {
       toast.error('Signup failed. Try again.');

@@ -3,15 +3,8 @@ import re
 import httpx
 from app.core.config import settings  # or from app.core.security import settings
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-
-
-def clean_generated_workflow(text: str) -> str:
-    """Remove markdown decorations and extraneous headings from Gemini output."""
-    text = re.sub(r"(?m)^AI Generated Output\s*$", "", text)
-    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
-    return text.strip()
 
 async def generate_workflow_from_prompt(prompt: str) -> str:
     """
@@ -216,9 +209,8 @@ async def generate_workflow_from_prompt(prompt: str) -> str:
         data = resp.json()
 
     # Very basic extraction of first candidate text
-    raw_text = (
+    return (
         data["candidates"][0]["content"]["parts"][0]["text"]
         if data.get("candidates")
         else ""
     )
-    return clean_generated_workflow(raw_text)

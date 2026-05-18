@@ -1,14 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
+import DashboardLayout from "./layouts/DashboardLayout.tsx";
 import Index from "./pages/Index.tsx";
 import NewAgentCreation from "./pages/NewAgentCreation.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import OAuthCallback from "./pages/OAuthCallback.tsx";
+import DashboardHome from "./pages/dashboard/DashboardHome.tsx";
+import MyAgents from "./pages/dashboard/MyAgents.tsx";
+import Integrations from "./pages/dashboard/Integrations.tsx";
+import Settings from "./pages/dashboard/Settings.tsx";
 
 const PrivateRoute = () => {
   const { isLoggedIn } = useAuth();
@@ -17,36 +23,44 @@ const PrivateRoute = () => {
 
 const GuestRoute = () => {
   const { isLoggedIn } = useAuth();
-  return isLoggedIn ? <Navigate to="/new-agent" replace /> : <Outlet />;
+  return isLoggedIn ? <Navigate to="/dashboard" replace /> : <Outlet />;
 };
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/oauth/callback" element={<OAuthCallback />} />
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-            <Route element={<GuestRoute />}>
-              <Route path="/sign-in" element={<SignIn />} />
-              <Route path="/sign-up" element={<SignUp />} />
-            </Route>
+              <Route element={<GuestRoute />}>
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/sign-up" element={<SignUp />} />
+              </Route>
 
-            <Route element={<PrivateRoute />}>
-              <Route path="/new-agent" element={<NewAgentCreation />} />
-            </Route>
+              <Route element={<PrivateRoute />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/dashboard" element={<DashboardHome />} />
+                  <Route path="/agents" element={<MyAgents />} />
+                  <Route path="/integrations" element={<Integrations />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+                <Route path="/new-agent" element={<NewAgentCreation />} />
+              </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

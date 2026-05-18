@@ -74,12 +74,12 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           )}
           {variant === "landing" && isLoggedIn && (
             <Button size="sm" className="glow-primary" asChild>
-              <Link to="/new-agent">Dashboard</Link>
+              <Link to="/dashboard">Dashboard</Link>
             </Button>
           )}
           {variant === "auth" && (
             <Button size="sm" className="glow-primary" asChild>
-              <Link to="/new-agent">{authCtaLabel}</Link>
+              <Link to="/dashboard">{authCtaLabel}</Link>
             </Button>
           )}
         </div>
@@ -125,7 +125,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           )}
           <Button className="mt-2 w-full glow-primary" asChild>
             <Link
-              to={variant === "landing" && !isLoggedIn ? "/sign-up" : "/new-agent"}
+              to={variant === "landing" && !isLoggedIn ? "/sign-up" : "/dashboard"}
               onClick={() => setMobileOpen(false)}
             >
               {variant === "auth" ? authCtaLabel : isLoggedIn ? "Dashboard" : "Get Started"}

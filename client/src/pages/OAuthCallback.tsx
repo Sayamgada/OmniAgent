@@ -22,7 +22,7 @@ export default function OAuthCallback() {
       
       // Navigate to the protected route
       setTimeout(() => {
-        navigate("/new-agent");
+        navigate("/dashboard");
       }, 100);
 
     } catch (e) {

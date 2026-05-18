@@ -52,7 +52,7 @@ const handleSubmit = async (e: FormEvent) => {
   
   try {
     await login(email, password);  // Now calls backend!
-    navigate('/new-agent');  // Your success redirect
+    navigate('/dashboard');
   } catch (error) {
     // Error already toasted by AuthContext
   } finally {
