@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
@@ -21,6 +21,7 @@ import { Textarea } from "../components/ui/textarea";
 import { cn } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
+import { WorkflowReviewStep } from "../components/workflow/WorkflowReviewStep";
 
 type DomainId = "corporate" | "education" | "finance";
 
@@ -126,7 +127,7 @@ const NewAgentCreation = () => {
         3. Key features
         4. Example output / behavior
 
-        Return the answer in a clean presentation-friendly format.
+        Return ONLY valid JSON matching the OmniAgent workflow schema.
       `.trim();
 
       const res = await fetch(
@@ -222,7 +223,7 @@ const NewAgentCreation = () => {
         <Card className="glass-card mb-6 border-border/80">
           <CardContent className="p-5">
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              {["Select Domain", "Describe Agent", "Review & Test"].map((label, index) => {
+              {["Select Domain", "Describe Agent", "Preview & Test"].map((label, index) => {
                 const itemStep = index + 1;
                 const isActive = itemStep === step;
                 const isComplete = itemStep < step;
@@ -382,37 +383,13 @@ const NewAgentCreation = () => {
               <Card className="glass-card border-border/70">
                 <CardContent className="space-y-6 p-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Review & Test</h2>
+                    <h2 className="text-xl font-semibold">Preview & Test Agent</h2>
                     <Badge className="bg-secondary/15 text-secondary hover:bg-secondary/20">
                       Step 3 of 3
                     </Badge>
                   </div>
 
-                  {generating ? (
-                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 text-center">
-                      <div className="flex size-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10">
-                        <Loader2 className="size-7 animate-spin text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-base font-medium">Gemini is analyzing your prompt</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Extracting workflow, core functionality, and expected behavior...
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                        <div className="mb-2 flex items-center gap-2 text-primary">
-                          <WandSparkles className="size-4" />
-                          <span className="text-sm font-semibold">AI Generated Output</span>
-                        </div>
-                        <div className="whitespace-pre-wrap text-sm leading-7 text-foreground">
-                          {workflow || "No AI output available."}
-                        </div>
-                      </div>  
-                    </div>
-                  )}
+                  <WorkflowReviewStep workflow={workflow} generating={generating} />
                 </CardContent>
               </Card>
             </motion.section>
