@@ -129,7 +129,7 @@ export function DashboardSidebar({
       {!collapsed && (
         <div className="border-t border-border/50 p-4">
           <p className="text-xs text-muted-foreground">
-            Enterprise AI workspace
+            OmniAgent Workspace
           </p>
           <p className="mt-1 text-[10px] text-muted-foreground/70">
             v1.0 · Multi-industry agents

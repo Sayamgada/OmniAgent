@@ -33,7 +33,7 @@ export function DashboardTopNav({ onMenuClick }: DashboardTopNavProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-
+  console.log("User in DashboardTopNav:", user);
   const displayName =
     user?.full_name ||
     user?.name ||

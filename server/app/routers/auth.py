@@ -66,7 +66,7 @@ def signin(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
     if not user:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": user.email, "full_name": user.full_name}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/signup", response_model=UserOut)

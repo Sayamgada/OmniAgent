@@ -16,44 +16,6 @@ import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
 import { dashboardStats } from "../../lib/dashboard-data";
 
-const quickActions = [
-  {
-    label: "Create New Agent",
-    description: "Build a custom AI agent",
-    icon: Bot,
-    to: "/new-agent",
-    accent: "from-primary/20 to-primary/5",
-  },
-  {
-    label: "Upload Files",
-    description: "Index knowledge documents",
-    icon: Upload,
-    to: "/integrations",
-    accent: "from-purple-500/20 to-purple-500/5",
-  },
-  {
-    label: "Start Workflow",
-    description: "Automate multi-step tasks",
-    icon: Workflow,
-    to: "/agents",
-    accent: "from-secondary/20 to-secondary/5",
-  },
-  {
-    label: "Open AI Chat",
-    description: "Talk to your agents",
-    icon: MessageSquare,
-    to: "/new-agent",
-    accent: "from-primary/20 to-purple-500/10",
-  },
-  {
-    label: "View Analytics",
-    description: "Insights & performance",
-    icon: BarChart3,
-    to: "/dashboard",
-    accent: "from-purple-500/20 to-primary/10",
-  },
-] as const;
-
 export default function DashboardHome() {
   const { user } = useAuth();
   const now = new Date();
@@ -120,36 +82,7 @@ export default function DashboardHome() {
       </section>
 
       <IndustryOverview />
-
-      <section>
-        <h2 className="mb-4 text-lg font-semibold">Quick Actions</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {quickActions.map((action, i) => {
-            const Icon = action.icon;
-            return (
-              <motion.div
-                key={action.label}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Link
-                  to={action.to}
-                  className={`glass-card-hover group flex flex-col rounded-2xl border border-border/50 bg-gradient-to-br ${action.accent} p-5 transition-all duration-300 hover:-translate-y-0.5`}
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/50 text-primary transition-shadow group-hover:shadow-[0_0_20px_hsl(211_100%_50%_/_0.2)]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-4 font-semibold">{action.label}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {action.description}
-                  </p>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
+          
     </div>
   );
 }
