@@ -75,10 +75,10 @@ export default function Settings() {
             <Sliders className="h-4 w-4" />
             AI
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+          {/* <TabsTrigger value="security" className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <Shield className="h-4 w-4" />
             Security
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="user">
@@ -126,11 +126,11 @@ export default function Settings() {
                 <SelectTrigger className="max-w-xs bg-muted/30">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                {/* <SelectContent>
                   <SelectItem value="dark">Dark (Premium AI)</SelectItem>
                   <SelectItem value="light">Light</SelectItem>
                   <SelectItem value="system">System</SelectItem>
-                </SelectContent>
+                </SelectContent> */}
               </Select>
             </div>
 
@@ -219,7 +219,7 @@ export default function Settings() {
           </motion.div>
         </TabsContent>
 
-        <TabsContent value="security">
+        {/* <TabsContent value="security">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -288,7 +288,7 @@ export default function Settings() {
               </div>
             </div>
           </motion.div>
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );

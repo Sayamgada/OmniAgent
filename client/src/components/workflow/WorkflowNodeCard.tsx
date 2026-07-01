@@ -64,7 +64,7 @@ export const WorkflowNodeCard = memo(({ data, selected }: NodeProps) => {
         </div>
       </div>
 
-      <h4 className="truncate text-sm font-semibold text-foreground">{detail.label}</h4>
+      <h4 className="truncate text-sm font-semibold color-white">{detail.label}</h4>
       {detail.subtitle && (
         <p className="mt-0.5 truncate text-[11px] text-primary/80">{detail.subtitle}</p>
       )}
