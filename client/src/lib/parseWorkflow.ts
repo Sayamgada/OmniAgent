@@ -52,3 +52,21 @@ export function getWorkflowMetrics(config: AgentWorkflowConfig | null) {
     stepCount: config.workflow?.length ?? 0,
   };
 }
+export function wrapWorkflowConfig(config: AgentWorkflowConfig | null): ParsedWorkflow {
+  if (!config) {
+    return {
+      config: null,
+      formattedJson: "",
+      raw: "",
+      isValidJson: false,
+    };
+  }
+
+  const formatted = JSON.stringify(config, null, 2);
+  return {
+    config,
+    formattedJson: formatted,
+    raw: formatted,
+    isValidJson: true,
+  };
+}

@@ -17,3 +17,4 @@ pypdf
 langchain-huggingface
 sentence-transformers 
 faiss-cpu
+langchain-groq

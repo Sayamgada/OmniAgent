@@ -13,9 +13,12 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
 
-    GEMINI_API_KEY: str
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    FAISS_INDEX_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "faiss_index"))
+    GROQ_API_KEY: str
     
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

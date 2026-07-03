@@ -32,28 +32,28 @@ const domains: Array<{
   icon: typeof Briefcase;
   hint: string;
 }> = [
-  {
-    id: "corporate",
-    title: "Corporate Operations",
-    description: "Automate workflow, communication, and task coordination.",
-    icon: Briefcase,
-    hint: "Your agent will be configured for Corporate Operations tasks",
-  },
-  {
-    id: "education",
-    title: "Education",
-    description: "Support learning plans, tutoring, and curriculum workflows.",
-    icon: GraduationCap,
-    hint: "Your agent will be configured for Education workflows",
-  },
-  {
-    id: "finance",
-    title: "Finance",
-    description: "Analyze reports, forecast trends, and simplify decisions.",
-    icon: Landmark,
-    hint: "Your agent will be configured for Finance insights",
-  },
-];
+    {
+      id: "corporate",
+      title: "Corporate Operations",
+      description: "Automate workflow, communication, and task coordination.",
+      icon: Briefcase,
+      hint: "Your agent will be configured for Corporate Operations tasks",
+    },
+    {
+      id: "education",
+      title: "Education",
+      description: "Support learning plans, tutoring, and curriculum workflows.",
+      icon: GraduationCap,
+      hint: "Your agent will be configured for Education workflows",
+    },
+    {
+      id: "finance",
+      title: "Finance",
+      description: "Analyze reports, forecast trends, and simplify decisions.",
+      icon: Landmark,
+      hint: "Your agent will be configured for Finance insights",
+    },
+  ];
 
 const promptTemplates = [
   {
@@ -89,7 +89,7 @@ const NewAgentCreation = () => {
     "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities."
   );
 
-  const [workflow, setWorkflow] = useState<string | null>(null);
+  const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(null);
   const [generating, setGenerating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [created, setCreated] = useState(false);
@@ -98,6 +98,12 @@ const NewAgentCreation = () => {
     () => domains.find((domain) => domain.id === selectedDomain) ?? domains[0],
     [selectedDomain]
   );
+
+  const domainMap: Record<DomainId, "Corporate" | "Education" | "Finance"> = {
+    corporate: "Corporate",
+    education: "Education",
+    finance: "Finance",
+  };
 
   const handleStepTwoContinue = async () => {
     if (!agentName.trim()) {
@@ -116,42 +122,29 @@ const NewAgentCreation = () => {
     setCreated(false);
 
     try {
-      const enhancedPrompt = `
-        Domain: ${activeDomain.title}
-        Agent Name: ${agentName}
-        User Description: ${description}
-
-        Please extract:
-        1. Core purpose of the agent
-        2. Main workflow steps
-        3. Key features
-        4. Example output / behavior
-
-        Return ONLY valid JSON matching the OmniAgent workflow schema.
-      `.trim();
-
-      const res = await fetch(
-        `http://localhost:8000/agents/extract-workflow`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ prompt: enhancedPrompt }),
-        }
-      );
+      const res = await fetch(`http://localhost:8000/agents/extract-workflow`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          domain: domainMap[selectedDomain],
+          description: `Agent Name: ${agentName}\n${description}`,
+          top_k: 5,
+        }),
+      });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.detail || "Failed to generate AI output");
       }
 
-      const data: { workflow: string } = await res.json();
+      const data: { workflow: Record<string, unknown> } = await res.json();
       setWorkflow(data.workflow);
       toast.success("AI output generated successfully");
     } catch (err: any) {
-      setWorkflow("Unable to generate workflow at the moment. Please try again.");
+      setWorkflow(null);
       toast.error(err.message || "Failed to generate AI output");
     } finally {
       setGenerating(false);

@@ -4,13 +4,14 @@ import { Loader2, WandSparkles, Code2, Workflow } from "lucide-react";
 
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { parseWorkflowResponse, getWorkflowMetrics } from "../../lib/parseWorkflow";
+import { wrapWorkflowConfig, getWorkflowMetrics } from "../../lib/parseWorkflow";
+import type { AgentWorkflowConfig } from "../../types/workflow";
 import { WorkflowJsonPanel } from "./WorkflowJsonPanel";
 import { WorkflowCanvas } from "./WorkflowCanvas";
 import { WorkflowMetricsBar } from "./WorkflowMetricsBar";
 
 interface WorkflowReviewStepProps {
-  workflow: string | null;
+  workflow: AgentWorkflowConfig | null;
   generating: boolean;
 }
 
@@ -19,7 +20,7 @@ export const WorkflowReviewStep = ({ workflow, generating }: WorkflowReviewStepP
   const [isRenderingFlow, setIsRenderingFlow] = useState(false);
 
   const parsed = useMemo(
-    () => (workflow ? parseWorkflowResponse(workflow) : null),
+    () => (workflow ? wrapWorkflowConfig(workflow) : null),
     [workflow]
   );
 
@@ -44,7 +45,7 @@ export const WorkflowReviewStep = ({ workflow, generating }: WorkflowReviewStepP
           <span className="absolute inset-0 animate-ping rounded-full border border-primary/20" />
         </div>
         <div>
-          <p className="text-base font-medium">Gemini is analyzing your prompt</p>
+          <p className="text-base font-medium">AI is analyzing your prompt</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Extracting workflow, agents, tools, and orchestration plan…
           </p>
