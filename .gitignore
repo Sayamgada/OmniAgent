@@ -1,2 +1,50 @@
+# =========================
+# Environment Variables
+# =========================
+.env
 server/.env
-.env    
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+server/.venv/
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Node
+# =========================
+node_modules/
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+
+# =========================
+# FAISS Generated Indexes (if generated locally)
+# =========================
+server/faiss_index/*.index
+server/faiss_index/*.pkl
