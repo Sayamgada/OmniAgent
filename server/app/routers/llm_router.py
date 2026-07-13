@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import Literal
 
-from app.database import get_db
+from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
 from app.services.llm_service import generate_workflow_from_prompt
@@ -27,7 +27,7 @@ class WorkflowResponse(BaseModel):
 @router.post("/extract-workflow", response_model=WorkflowResponse)
 async def extract_workflow(
     body: WorkflowRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
 ):
     try:

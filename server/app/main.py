@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -8,7 +8,9 @@ from app.database import engine, Base
 from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
 from app.routers.llm_router import router as llm_router
-
+from app.services.vectorstore import search_automations
+from app.database import get_mongo_db
+from fastapi import APIRouter, Depends
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="OmniAgent Auth")
@@ -26,5 +28,26 @@ app.include_router(llm_router)
 
 @app.get("/")
 def root():
-    return {"message": "Auth API ready"}
+    return {"message": "OmniAgent Running"}
+
+
+# @app.get("/search")
+# def search_automations_api(query: str, category: str | None = None, top_k: int = 5):
+#     if not query or not query.strip():
+#         raise HTTPException(status_code=400, detail="Query parameter cannot be empty")
+#     try:
+#         results = search_automations(query=query, category=category, top_k=top_k)
+#         return {
+#             "query": query,
+#             "results": [
+#                 {
+#                     "content": doc.page_content,
+#                     "metadata": doc.metadata,
+#                     "similarity_score": round(score, 4),
+#                 }
+#                 for doc, score in results
+#             ],
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 

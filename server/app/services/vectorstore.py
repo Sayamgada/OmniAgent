@@ -14,5 +14,11 @@ vectorstore = FAISS.load_local(
 
 def search_automations(query: str, category: str | None = None, top_k: int = 5):
     if category:
-        return vectorstore.similarity_search(query, k=top_k, filter={"category": category})
-    return vectorstore.similarity_search(query, k=top_k)
+        results = vectorstore.similarity_search_with_score(query, k=top_k, filter={"category": category})
+    else:
+        results = vectorstore.similarity_search_with_score(query, k=top_k)
+    scored = [
+        (doc, float(1 / (1 + distance)))
+        for doc, distance in results
+    ]
+    return scored

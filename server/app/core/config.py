@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     FAISS_INDEX_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "faiss_index"))
     GROQ_API_KEY: str
+
+    MONGO_DB_URL: str
+    MONGO_DB_NAME: str
+
     
     class Config:
         env_file = ".env"
