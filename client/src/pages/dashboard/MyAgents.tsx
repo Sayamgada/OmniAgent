@@ -61,12 +61,6 @@ export default function MyAgents() {
             Manage and interact with your AI agents
           </p>
         </div>
-        <Button asChild className="gap-2 shrink-0">
-          <Link to="/new-agent">
-            <Plus className="h-4 w-4" />
-            Create Agent
-          </Link>
-        </Button>
       </div>
 
       <div className="glass-card flex flex-col gap-4 rounded-2xl p-4 lg:flex-row lg:items-center">

@@ -70,9 +70,11 @@ export function AgentCard({ agent, index = 0 }: AgentCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => handleAction("Edit")}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Agent
+            <DropdownMenuItem asChild>
+              <Link to={`/agents/${agent.id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Agent
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAction("Duplicate")}>
               <Copy className="mr-2 h-4 w-4" />
@@ -126,7 +128,7 @@ export function AgentCard({ agent, index = 0 }: AgentCardProps) {
           </Link>
         </Button>
         <Button size="sm" variant="outline" className="flex-1" asChild>
-          <Link to="/new-agent">Edit</Link>
+          <Link to={`/agents/${agent.id}/edit`}>Edit</Link>
         </Button>
       </div>
     </motion.div>

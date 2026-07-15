@@ -12,6 +12,7 @@ import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import OAuthCallback from "./pages/OAuthCallback.tsx";
 import DashboardHome from "./pages/dashboard/DashboardHome.tsx";
+import EditAgent from "./pages/dashboard/EditAgent.tsx";
 import MyAgents from "./pages/dashboard/MyAgents.tsx";
 import Integrations from "./pages/dashboard/Integrations.tsx";
 import Settings from "./pages/dashboard/Settings.tsx";
@@ -49,6 +50,7 @@ const App = () => (
                 <Route element={<DashboardLayout />}>
                   <Route path="/dashboard" element={<DashboardHome />} />
                   <Route path="/agents" element={<MyAgents />} />
+                  <Route path="/agents/:id/edit" element={<EditAgent />} />
                   <Route path="/integrations" element={<Integrations />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
