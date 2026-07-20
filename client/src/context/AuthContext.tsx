@@ -49,22 +49,49 @@ const getStoredUser = (): User | null => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+  const isTokenValid = () => {
     const token = localStorage.getItem(TOKEN_KEY);
-    const session = localStorage.getItem(STORAGE_KEY);
-    return !!token || session === "1";
+
+    if (!token) return false;
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.exp * 1000 > Date.now();
+
+    } catch {
+      return false;
+    }
+  };
+
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return isTokenValid();
   });
 
   const [user, setUser] = useState<User | null>(() => getStoredUser());
 
   useEffect(() => {
+    const logoutUser = () => {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+
+      setIsLoggedIn(false);
+      setUser(null);
+    };
     const sync = () => {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const session = localStorage.getItem(STORAGE_KEY);
-      setIsLoggedIn(!!token || session === "1");
+      if (!isTokenValid()) {
+        logoutUser();
+        return;
+      }
+
+      setIsLoggedIn(true);
       setUser(getStoredUser());
     };
+
     window.addEventListener("storage", sync);
+
+    sync();
+
     return () => window.removeEventListener("storage", sync);
   }, []);
 
@@ -100,17 +127,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const formData = new FormData();
       formData.append('username', email);
       formData.append('password', password);
-      
+
       try {
         const response = await fetch('http://localhost:8000/auth/signin', {
           method: 'POST',
           body: formData,
         });
-        
+
         if (!response.ok) {
           throw new Error('Login failed');
         }
-        
+
         const data = await response.json();
         localStorage.setItem(TOKEN_KEY, data.access_token);
         localStorage.setItem(STORAGE_KEY, "1");  // Keep your flag

@@ -32,7 +32,9 @@ async def extract_workflow(
 ):
     try:
         docs = search_automations(query=body.description, category=body.domain, top_k=body.top_k)
-        context = "\n\n".join(doc.page_content for doc in docs) if docs else ""
+        context = "\n\n".join(
+            doc.page_content for doc, score in docs
+        ) if docs else ""
 
         workflow = await generate_workflow_from_prompt(
             domain=body.domain,

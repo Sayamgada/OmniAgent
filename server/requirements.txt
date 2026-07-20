@@ -19,3 +19,4 @@ sentence-transformers
 faiss-cpu
 langchain-groq
 pymongo
+jwt-decode
