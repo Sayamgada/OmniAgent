@@ -2,6 +2,7 @@ import pandas as pd
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores.utils import DistanceStrategy
 
 DATA_PATH = r"D:\Projects\OmniAgent\OmniAgent_Dataset.xlsx"
 INDEX_PATH = r"D:\Projects\OmniAgent\server\faiss_index"
@@ -10,11 +11,16 @@ def load_sheet(path, sheet_name):
     df = pd.read_excel(path, sheet_name=sheet_name)
     docs = []
     for i, row in df.iterrows():
-        page_content = f"Automation Name: {row['Automation Name']}\nAutomation Description: {row['Automation Description']}"
         docs.append(
             Document(
-                page_content=page_content,
-                metadata={"row_index": i, "source": "OmniAgent_Dataset.xlsx", "category": sheet_name}
+                page_content=row["Automation Description"],   # Only description is embedded
+                metadata={
+                    "name": row["Automation Name"],
+                    "description": row["Automation Description"],
+                    "row_index": i,
+                    "source": "OmniAgent_Dataset.xlsx",
+                    "category": sheet_name
+                }
             )
         )
     return docs
@@ -27,9 +33,16 @@ def main():
     )
     print(f"Loaded {len(all_docs)} documents")
 
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(
+        model_name="BAAI/bge-base-en-v1.5",
+        encode_kwargs={"normalize_embeddings": True}
+    )
 
-    vectorstore = FAISS.from_documents(all_docs, embeddings)
+    vectorstore = FAISS.from_documents(
+        all_docs,
+        embeddings,
+        distance_strategy=DistanceStrategy.COSINE
+    )
     vectorstore.save_local(INDEX_PATH)
     print(f"FAISS index saved to {INDEX_PATH}")
 
