@@ -256,7 +256,7 @@ async def generate_groq_workflow(
         {context if context else "None"}
     """
 
-
+    print("Groq")
     return await generate_workflow_from_prompt(
         user_content,
         SYSTEM_INSTRUCTION
@@ -266,10 +266,8 @@ async def generate_groq_workflow(
 async def fetch_mongo_workflow(
     automation_name: str,
     automation_description: str,
-    domain: str,
-    user_description: str,
-    context: str,
 ):
+    print("Mongo")
     automation = await automation_preview_collection.find_one(
         {
             "automation_name": automation_name,
@@ -284,9 +282,5 @@ async def fetch_mongo_workflow(
 
     if automation:
         return automation
-
-    return await generate_groq_workflow(
-        domain=domain,
-        description=user_description,
-        context=context,
-    )
+    else:
+        return None

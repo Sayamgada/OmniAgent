@@ -18,6 +18,9 @@ vectorstore = FAISS.load_local(
     allow_dangerous_deserialization=True
 )
 
+def printVectorStore():
+    print("Total vectors:", vectorstore.index.ntotal)
+
 def search_automations(query: str, category: str | None = None, top_k: int = 5):
 
     search_query = (
@@ -50,7 +53,7 @@ def search_automations(query: str, category: str | None = None, top_k: int = 5):
                 "row_index": doc.metadata["row_index"],
                 "source": doc.metadata["source"]
             },
-            "similarity_score": round(similarity, 4)
+            "similarity_score": round(similarity, 2)
         })
 
     return response
@@ -59,6 +62,7 @@ def search_automations(query: str, category: str | None = None, top_k: int = 5):
 def add_automation(
     automation_name: str,
     automation_description: str,
+    domain: str
 ) -> None:
     """
     Adds a newly generated automation to the FAISS index
@@ -72,10 +76,12 @@ def add_automation(
             "description": automation_description,
             "row_index": -1,
             "source": "Generated",
-            "category": "Generated",
+            "category": domain,
         },
     )
 
     vectorstore.add_documents([document])
+
+    print("Vectors after add:", vectorstore.index.ntotal)
 
     vectorstore.save_local(settings.FAISS_INDEX_PATH)

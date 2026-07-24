@@ -8,7 +8,7 @@ from app.database import engine, Base, mongo_db
 from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
 from app.routers.agent_router import router as agent_router
-from app.services.vectorstore import search_automations
+from app.services.vectorstore import search_automations, printVectorStore
 from app.database import get_mongo_db
 from fastapi import APIRouter, Depends
 from contextlib import asynccontextmanager
@@ -44,6 +44,7 @@ app.include_router(agent_router)
 
 @app.get("/")
 def root():
+    printVectorStore()
     return {"message": "OmniAgent Running"}
 
 

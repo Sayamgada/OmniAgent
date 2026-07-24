@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import Literal
-from app.services.workflow_storage import store_generated_workflow
+from app.services.workflow_storage import store_generated_workflow, store_generated_workflow_mongo
 from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
@@ -50,37 +50,35 @@ async def extract_workflow(
             await store_generated_workflow(workflow)
         else:
 
-            best_doc = max(
-                docs,
-                key=lambda x: x["similarity_score"],
-            )
-
-            max_score = best_doc["similarity_score"]
-
-            if max_score >= 0.85:
+            best_doc = max(docs, key=lambda d: d["similarity_score"])
+            context = "\n\n".join(
+                                f"Automation Name: {doc['automation_name']}\n"
+                                f"Automation Description: {doc['description']}"
+                                for doc in docs
+                            )
+            
+            if best_doc["similarity_score"] >= 0.75:
 
                 workflow = await fetch_mongo_workflow(
                     automation_name=best_doc["automation_name"],
-                    automation_description=best_doc["description"],
-                    domain=body.domain,
-                    user_description=body.description,
-                    context=context,
+                    automation_description=best_doc["description"]
                 )
 
+                if workflow is None:
+                    workflow = await generate_groq_workflow(
+                                        domain=body.domain,
+                                        description=body.description,
+                                        context=context,
+                                    )
+                    await store_generated_workflow_mongo(workflow)
             else:
-
-                context = "\n\n".join(
-                    f"Automation Name: {doc['automation_name']}\n"
-                    f"Automation Description: {doc['description']}"
-                    for doc in docs
-                )
 
                 workflow = await generate_groq_workflow(
                     domain=body.domain,
                     description=body.description,
                     context=context,
                 )
-                await store_generated_workflow(workflow)
+                await store_generated_workflow(workflow, body.domain)
 
         if not workflow:
             raise HTTPException(
