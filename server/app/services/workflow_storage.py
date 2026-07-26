@@ -1,7 +1,5 @@
-from app.database import mongo_db
+from app.models.automation_preview_model import automation_preview_collection
 from app.services.vectorstore import add_automation
-
-automation_preview_collection = mongo_db["AutomationPreview"]
 
 
 async def store_generated_workflow(workflow: dict, domain:str) -> None:

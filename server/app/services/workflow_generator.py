@@ -1,7 +1,5 @@
-from app.database import mongo_db
+from app.models.automation_preview_model import automation_preview_collection
 from app.services.llm_service import generate_workflow_from_prompt
-
-automation_preview_collection = mongo_db["AutomationPreview"]
 
 
 async def generate_groq_workflow(

@@ -89,7 +89,13 @@ const NewAgentCreation = () => {
     "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities."
   );
 
+
+
   const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(null);
+  const [integrations, setIntegrations] = useState<
+    { service: string; display_name: string; required: boolean; available: boolean }[]
+  >([]);
+  const [allRequiredAvailable, setAllRequiredAvailable] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [created, setCreated] = useState(false);
@@ -118,6 +124,8 @@ const NewAgentCreation = () => {
 
     setStep(3);
     setWorkflow(null);
+    setIntegrations([]);
+    setAllRequiredAvailable(false);
     setGenerating(true);
     setCreated(false);
 
@@ -140,11 +148,26 @@ const NewAgentCreation = () => {
         throw new Error(data.detail || "Failed to generate AI output");
       }
 
-      const data: { workflow: Record<string, unknown> } = await res.json();
+      const data: {
+        workflow: Record<string, unknown>;
+        integrations: {
+          service: string;
+          display_name: string;
+          required: boolean;
+          available: boolean;
+        }[];
+        all_required_available: boolean;
+      } = await res.json();
+
       setWorkflow(data.workflow);
+      setIntegrations(data.integrations);
+      setAllRequiredAvailable(data.all_required_available);
+
       toast.success("AI output generated successfully");
     } catch (err: any) {
       setWorkflow(null);
+      setIntegrations([]);
+      setAllRequiredAvailable(false);
       toast.error(err.message || "Failed to generate AI output");
     } finally {
       setGenerating(false);
@@ -382,7 +405,11 @@ const NewAgentCreation = () => {
                     </Badge>
                   </div>
 
-                  <WorkflowReviewStep workflow={workflow} generating={generating} />
+                  <WorkflowReviewStep
+                    workflow={workflow}
+                    integrations={integrations}
+                    generating={generating}
+                  />
                 </CardContent>
               </Card>
             </motion.section>

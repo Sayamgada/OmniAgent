@@ -7,6 +7,7 @@ from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
 from app.services.vectorstore import search_automations
+from app.services.credential_checker import check_required_integrations
 from app.services.workflow_generator import (
     generate_groq_workflow,
     fetch_mongo_workflow,
@@ -24,7 +25,8 @@ class WorkflowRequest(BaseModel):
 
 class WorkflowResponse(BaseModel):
     workflow: dict
-
+    integrations: list[dict]
+    all_required_available: bool
 
 @router.post("/extract-workflow", response_model=WorkflowResponse)
 async def extract_workflow(
@@ -47,7 +49,7 @@ async def extract_workflow(
                 description=body.description,
                 context="",
             )
-            await store_generated_workflow(workflow)
+            await store_generated_workflow(workflow, body.domain)
         else:
 
             best_doc = max(docs, key=lambda d: d["similarity_score"])
@@ -81,12 +83,21 @@ async def extract_workflow(
                 await store_generated_workflow(workflow, body.domain)
 
         if not workflow:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Error generating workflow",
-            )
+            raise HTTPException(...)
 
-        return WorkflowResponse(workflow=workflow)
+        integration_status = check_required_integrations(
+            db=db,
+            user_id=current_user.id,
+            required_integrations=workflow["required_integrations"],
+        )
+
+        return WorkflowResponse(
+            workflow=workflow,
+            integrations=integration_status,
+            all_required_available=all(
+                r["available"] for r in integration_status if r["required"]
+            ),
+        )
     except HTTPException:
         raise
 

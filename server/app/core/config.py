@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     MONGO_DB_URL: str
     MONGO_DB_NAME: str
 
+    FERNET_SECRET_KEY: str
+
     
     class Config:
         env_file = ".env"
