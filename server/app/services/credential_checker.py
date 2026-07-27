@@ -8,11 +8,6 @@ def check_required_integrations(
     user_id: uuid.UUID,
     required_integrations: list[dict],
 ) -> list[dict]:
-    """
-    Cross-checks each required integration against what the user has
-    stored and active in Postgres. Only checks presence — never decrypts
-    or returns the actual credential value.
-    """
     services_needed = [item["service"] for item in required_integrations]
     if not services_needed:
         return []

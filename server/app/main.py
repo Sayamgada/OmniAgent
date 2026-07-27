@@ -8,6 +8,7 @@ from app.database import engine, Base, mongo_db
 from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
 from app.routers.agent_router import router as agent_router
+from app.routers.integration_router import router as integration_router
 from app.services.vectorstore import search_automations, printVectorStore
 from app.database import get_mongo_db
 from fastapi import APIRouter, Depends
@@ -35,12 +36,13 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # Vite
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Add all
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # Add all
     allow_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.include_router(auth_router)
 app.include_router(agent_router)
+app.include_router(integration_router)
 
 @app.get("/")
 def root():

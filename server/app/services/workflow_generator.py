@@ -83,30 +83,7 @@ async def generate_groq_workflow(
 
     List ONLY the services that require user credentials or configuration.
 
-    Examples:
-
-    gmail
-    google_calendar
-    google_sheets
-    slack
-    discord
-    postgresql
-    mysql
-    notion
-    airtable
-    drive
-    http
-    webhook
-    llm
-
-    "display_name" should be user-friendly.
-
-    Examples:
-
-    "Gmail"
-    "Google Calendar"
-    "PostgreSQL"
-    "LLM Provider"
+    "display_name" should be user-friendly, e.g. "Gmail", "PostgreSQL", "LLM Provider".
 
     If any workflow step performs reasoning, summarization, classification,
     generation, translation, extraction, intent detection, decision making,
@@ -123,6 +100,8 @@ async def generate_groq_workflow(
     inside required_integrations.
 
     Do NOT include specific providers such as OpenAI, Groq, Gemini, Claude, etc.
+    Use the generic "llm" service — the user selects their actual connected
+    provider separately, outside this workflow.
 
     --------------------------------------------------
     4. preview_json.title
@@ -158,70 +137,54 @@ async def generate_groq_workflow(
     service
     action
 
-    The "service" field MUST use one of the following values whenever applicable:
+    The "service" field MUST use one of the following values whenever applicable.
+    Do NOT invent service names. If nothing fits, use "http" for a generic REST call
+    or "webhook" for a generic incoming trigger, and set the corresponding
+    required_integrations[].display_name to the real external system's name.
 
+    AI
     llm
-    gmail
-    google_calendar
-    google_sheets
-    slack
-    discord
-    postgresql
-    mysql
-    notion
-    airtable
-    drive
-    http
-    webhook
 
-    Do NOT invent service names.
+    Communication
+    gmail, outlook, smtp_email, slack, microsoft_teams, discord, telegram, twilio_sms, whatsapp
 
-    The "action" field should describe WHAT happens,
-    not HOW it is implemented.
+    Productivity
+    google_calendar, outlook_calendar, google_contacts, google_tasks, notion, trello, asana, clickup, monday, todoist
 
-    Example:
+    Cloud Storage
+    drive, dropbox, onedrive, box, amazon_s3, ftp_sftp
 
-    {
-    "step": 2,
-    "service": "llm",
-    "action": "Determine customer intent from the email"
-    }
+    Databases
+    postgresql, mysql, mongodb, redis, sqlite, supabase, airtable, firebase
 
-    --------------------------------------------------
-    LLM RULES
+    Documents
+    google_docs, google_sheets, microsoft_excel_online, microsoft_word_online, confluence, gitbook
 
-    Whenever AI reasoning is required, include one or more workflow steps using
+    Developer Tools
+    github, gitlab, bitbucket, jira, jenkins, azure_devops, docker
 
-    "service": "llm"
+    CRM & Sales
+    salesforce, hubspot, zoho_crm, pipedrive, freshsales
 
-    Examples:
+    Finance & Payments
+    stripe, razorpay, paypal, quickbooks, xero
 
-    {
-    "step": 2,
-    "service": "llm",
-    "action": "Summarize meeting transcript"
-    }
+    Social Media
+    x_twitter, linkedin, facebook, instagram_business, youtube, reddit, pinterest
 
-    {
-    "step": 3,
-    "service": "llm",
-    "action": "Generate a professional email response"
-    }
+    Forms
+    google_forms, typeform, jotform, tally, formstack
 
-    Every workflow step using
+    Search & Web
+    http, graphql, webhook, rss_feed, serpapi, tavily, brave_search, google_custom_search
 
-    "service": "llm"
+    Maps & Utilities
+    google_maps, mapbox, openweather, weatherapi
 
-    MUST have a corresponding
+    Authentication
+    auth0, clerk, firebase_authentication, keycloak, okta
 
-    {
-    "service": "llm",
-    "display_name": "LLM Provider",
-    "required": true
-    }
-
-    inside required_integrations.
-
+    The "action" field should describe WHAT happens, not HOW it is implemented.
     --------------------------------------------------
     8. output
 
@@ -243,6 +206,8 @@ async def generate_groq_workflow(
     • Never output implementation code.
     • Always return valid JSON only.
     """
+
+
     user_content = f""" 
         Domain:
         {domain}

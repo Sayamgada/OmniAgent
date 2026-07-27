@@ -11,10 +11,10 @@ class Integration(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    service = Column(String, nullable=False)          # e.g. "gmail", "llm", "postgresql" — matches required_integrations[].service
-    display_name = Column(String, nullable=True)       # e.g. "Gmail"
+    service = Column(String, nullable=False)
+    display_name = Column(String, nullable=True)
 
-    encrypted_credentials = Column(String, nullable=False)  # Fernet-encrypted JSON blob, e.g. {"api_key": "..."}
+    encrypted_credentials = Column(String, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
