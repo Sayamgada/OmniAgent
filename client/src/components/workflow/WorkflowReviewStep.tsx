@@ -5,7 +5,7 @@ import { Loader2, WandSparkles, Code2, Workflow, CheckCircle2, AlertTriangle } f
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { wrapWorkflowConfig, getWorkflowMetrics } from "../../lib/parseWorkflow";
+import { wrapWorkflowConfig, getWorkflowMetrics, normalizeWorkflowPayload } from "../../lib/parseWorkflow";
 import type { AgentWorkflowConfig } from "../../types/workflow";
 import { WorkflowJsonPanel } from "./WorkflowJsonPanel";
 import { WorkflowCanvas } from "./WorkflowCanvas";
@@ -19,7 +19,7 @@ interface IntegrationStatus {
 }
 
 interface WorkflowReviewStepProps {
-  workflow: AgentWorkflowConfig | null;
+  workflow: AgentWorkflowConfig | Record<string, unknown> | null;
   integrations: IntegrationStatus[];
   generating: boolean;
   onConnectIntegration?: (service: string) => void;
@@ -34,10 +34,11 @@ export const WorkflowReviewStep = ({
   const [activeTab, setActiveTab] = useState<"json" | "visual">("json");
   const [isRenderingFlow, setIsRenderingFlow] = useState(false);
 
-  const parsed = useMemo(
-    () => (workflow ? wrapWorkflowConfig(workflow) : null),
-    [workflow]
-  );
+  const parsed = useMemo(() => {
+    if (!workflow) return null;
+    const normalized = normalizeWorkflowPayload(workflow) ?? (workflow as AgentWorkflowConfig);
+    return wrapWorkflowConfig(normalized);
+  }, [workflow]);
 
   const metrics = useMemo(
     () => getWorkflowMetrics(parsed?.config ?? null),
@@ -104,6 +105,32 @@ export const WorkflowReviewStep = ({
         {parsed.config?.task_summary && (
           <p className="max-w-xl text-xs text-muted-foreground">{parsed.config.task_summary}</p>
         )}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-xl border border-border/70 bg-card/60 p-4"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {parsed.config?.automation_name ?? parsed.config?.task_summary ?? "Generated automation"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {parsed.config?.automation_description ?? parsed.config?.task_summary ?? "Preview generated from the latest model response."}
+            </p>
+          </div>
+          {parsed.config?.required_integrations?.length ? (
+            <div className="flex flex-wrap gap-2">
+              {parsed.config.required_integrations.slice(0, 3).map((integration) => (
+                <Badge key={integration.service} variant="outline" className="border-primary/30 text-primary/90">
+                  {integration.display_name || integration.service}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </motion.div>
 
       {integrations.length > 0 && (

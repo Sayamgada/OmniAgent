@@ -17,10 +17,19 @@ export interface RequiredAgent {
 
 export interface WorkflowStep {
   step: number;
-  description: string;
-  agent: string;
-  input: string;
-  output: string;
+  description?: string;
+  agent?: string;
+  service?: string;
+  action?: string;
+  input?: string;
+  output?: string;
+}
+
+export interface IntegrationStatusLike {
+  service: string;
+  display_name?: string;
+  required?: boolean;
+  available?: boolean;
 }
 
 export interface AgentWorkflowConfig {
@@ -39,6 +48,10 @@ export interface AgentWorkflowConfig {
   trigger_type?: string;
   edge_cases?: string[];
   success_criteria?: string[];
+  automation_name?: string;
+  automation_description?: string;
+  required_integrations?: IntegrationStatusLike[];
+  preview_json?: Record<string, unknown>;
 }
 
 export interface WorkflowNodeDetail {

@@ -7,6 +7,7 @@ async def generate_groq_workflow(
     description: str,
     context: str,
 ):
+
     SYSTEM_INSTRUCTION = """
     You are OmniAgent's AI Workflow Designer.
 
@@ -99,9 +100,10 @@ async def generate_groq_workflow(
 
     inside required_integrations.
 
-    Do NOT include specific providers such as OpenAI, Groq, Gemini, Claude, etc.
-    Use the generic "llm" service — the user selects their actual connected
-    provider separately, outside this workflow.
+    For any AI reasoning capability, use the specific provider "gemini" (not the
+    generic "llm") as the service value, since Gemini is currently the only
+    supported LLM provider for generated automations. This will later support
+    multiple providers, chosen by the user, but for now always use "gemini".
 
     --------------------------------------------------
     4. preview_json.title

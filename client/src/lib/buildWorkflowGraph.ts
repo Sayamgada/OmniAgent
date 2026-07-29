@@ -13,63 +13,34 @@ export type WorkflowFlowNode = Node<{ detail: WorkflowNodeDetail }>;
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 120;
 
-function inferNodeType(
-  label: string,
-  context: "step" | "tool" | "trigger" | "success" | "edge" | "orchestrator"
-): WorkflowNodeType {
+function inferNodeType(label: string, context: "step" | "tool" | "trigger" | "success" | "edge" | "orchestrator"): WorkflowNodeType {
   const lower = label.toLowerCase();
   if (context === "trigger") return "trigger";
   if (context === "orchestrator") return "orchestrator";
   if (context === "success") return "success";
   if (context === "edge") return "edge_case";
   if (context === "tool") return "tool";
-  if (
-    lower.includes("approval") ||
-    lower.includes("confirm") ||
-    lower.includes("user review")
-  ) {
+  if (lower.includes("approval") || lower.includes("confirm") || lower.includes("user review")) {
     return "approval";
   }
-  if (
-    lower.includes("if ") ||
-    lower.includes("decide") ||
-    lower.includes("branch") ||
-    lower.includes("condition")
-  ) {
+  if (lower.includes("if ") || lower.includes("decide") || lower.includes("branch") || lower.includes("condition")) {
     return "decision";
   }
   return "agent";
 }
 
-function findAgent(
-  agents: RequiredAgent[] | undefined,
-  agentName: string
-): RequiredAgent | undefined {
-  if (!agents?.length) return undefined;
-  const normalized = agentName.toLowerCase();
-  return agents.find(
-    (a) =>
-      a.agent_name.toLowerCase() === normalized ||
-      normalized.includes(a.agent_name.toLowerCase()) ||
-      a.agent_name.toLowerCase().includes(normalized)
-  );
-}
-
-function stepNodeDetail(
-  step: WorkflowStep,
-  agent: RequiredAgent | undefined,
-  config: AgentWorkflowConfig
-): WorkflowNodeDetail {
-  const type = inferNodeType(step.description || step.agent, "step");
+function stepNodeDetail(step: WorkflowStep, config: AgentWorkflowConfig): WorkflowNodeDetail {
+  const type = inferNodeType(step.description || step.agent || step.service || `Step ${step.step}`, "step");
+  const label = step.agent || step.service || `Step ${step.step}`;
   return {
     id: `step-${step.step}`,
     type,
-    label: step.agent || `Step ${step.step}`,
-    subtitle: agent?.role,
-    preview: step.description,
-    responsibilities: agent?.responsibilities,
+    label,
+    subtitle: step.service ? `Service: ${step.service}` : undefined,
+    preview: step.description || step.action,
+    responsibilities: config.required_agents?.map((agent) => agent.agent_name),
     inputs: step.input ? [step.input] : config.inputs_required,
-    outputs: step.output ? [step.output] : undefined,
+    outputs: step.output ? [step.output] : config.expected_outputs,
     tools: config.tools_required,
     constraints: config.constraints,
     executionOrder: step.step,
@@ -83,9 +54,7 @@ export function buildWorkflowGraph(config: AgentWorkflowConfig): {
 } {
   const nodes: WorkflowFlowNode[] = [];
   const edges: Edge[] = [];
-  const agents = config.required_agents ?? [];
   const steps = [...(config.workflow ?? [])].sort((a, b) => a.step - b.step);
-  const tools = config.tools_required ?? [];
   const edgeCases = config.edge_cases ?? [];
   const successCriteria = config.success_criteria ?? [];
 
@@ -110,8 +79,8 @@ export function buildWorkflowGraph(config: AgentWorkflowConfig): {
         id: triggerId,
         type: "trigger",
         label: "Start",
-        subtitle: config.trigger_type ?? "manual",
-        preview: config.task_summary,
+        subtitle: config.trigger_type ?? "Manual trigger",
+        preview: config.task_summary ?? config.automation_description ?? "Workflow trigger",
         inputs: config.inputs_required,
         status: "ready",
         executionOrder: ++order,
@@ -121,97 +90,16 @@ export function buildWorkflowGraph(config: AgentWorkflowConfig): {
 
   let prevId = triggerId;
 
-  if (agents.length > 1) {
-    const orchId = "orchestrator";
-    nodes.push({
-      id: orchId,
-      type: "workflowNode",
-      position: { x: 0, y: 0 },
-      data: {
-        detail: {
-          id: orchId,
-          type: "orchestrator",
-          label: "Orchestrator Agent",
-          subtitle: "Multi-agent coordination",
-          preview: `Routes tasks across ${agents.length} specialized agents`,
-          responsibilities: agents.map((a) => `${a.agent_name}: ${a.role}`),
-          status: "ready",
-          executionOrder: ++order,
-        },
-      },
-    });
-    link(prevId, orchId);
-    prevId = orchId;
-  }
-
-  const usedToolIds = new Set<string>();
-
   steps.forEach((step) => {
     const stepId = `step-${step.step}`;
-    const agent = findAgent(agents, step.agent);
     nodes.push({
       id: stepId,
       type: "workflowNode",
       position: { x: 0, y: 0 },
-      data: { detail: stepNodeDetail(step, agent, config) },
+      data: { detail: stepNodeDetail(step, config) },
     });
     link(prevId, stepId);
     prevId = stepId;
-
-    const stepTools = tools.filter((tool) => {
-      const t = tool.toLowerCase();
-      const desc = (step.description + step.agent + step.input + step.output).toLowerCase();
-      return desc.includes(t.split(" ")[0]) || desc.includes(t.replace(/\s+/g, ""));
-    });
-
-    stepTools.forEach((tool, idx) => {
-      const toolId = `tool-${tool.replace(/\W+/g, "-").toLowerCase()}-${idx}`;
-      if (usedToolIds.has(toolId)) return;
-      usedToolIds.add(toolId);
-      nodes.push({
-        id: toolId,
-        type: "workflowNode",
-        position: { x: 0, y: 0 },
-        data: {
-          detail: {
-            id: toolId,
-            type: "tool",
-            label: tool,
-            subtitle: "API / Integration",
-            preview: `Executes via ${tool}`,
-            status: "ready",
-            executionOrder: ++order,
-          },
-        },
-      });
-      link(prevId, toolId);
-      prevId = toolId;
-    });
-  });
-
-  tools.forEach((tool, idx) => {
-    const toolId = `tool-global-${idx}`;
-    if ([...usedToolIds].some((id) => id.includes(tool.replace(/\W+/g, "-").toLowerCase()))) {
-      return;
-    }
-    nodes.push({
-      id: toolId,
-      type: "workflowNode",
-      position: { x: 0, y: 0 },
-      data: {
-        detail: {
-          id: toolId,
-          type: "tool",
-          label: tool,
-          subtitle: "API / Integration",
-          preview: `Required tool: ${tool}`,
-          status: "ready",
-          executionOrder: ++order,
-        },
-      },
-    });
-    link(prevId, toolId);
-    prevId = toolId;
   });
 
   if (edgeCases.length > 0) {
@@ -225,7 +113,7 @@ export function buildWorkflowGraph(config: AgentWorkflowConfig): {
           id: edgeId,
           type: "edge_case",
           label: "Edge Case Handler",
-          subtitle: "Error & fallback paths",
+          subtitle: "Fallback path",
           preview: edgeCases[0],
           edgeCases,
           status: "warning",
@@ -247,7 +135,7 @@ export function buildWorkflowGraph(config: AgentWorkflowConfig): {
         id: successId,
         type: "success",
         label: "Final Output",
-        subtitle: "Success criteria met",
+        subtitle: config.automation_name ?? "Workflow complete",
         preview: successCriteria[0] ?? config.expected_outputs?.[0] ?? "Workflow complete",
         outputs: config.expected_outputs ?? successCriteria,
         status: "ready",
