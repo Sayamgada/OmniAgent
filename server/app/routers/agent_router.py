@@ -17,6 +17,11 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 Domain = Literal["Corporate", "Education", "Finance"]
 
+# Must match the "schema_version" value embedded in workflow_generator.py's
+# SYSTEM_INSTRUCTION output schema. Bump both together on any future breaking
+# IR schema change.
+CURRENT_SCHEMA_VERSION = 2
+
 
 class WorkflowRequest(BaseModel):
     domain: Domain
@@ -60,13 +65,29 @@ async def extract_workflow(
                             )
             
             if best_doc["similarity_score"] >= 0.75:
-
+                print("similarity")
                 workflow = await fetch_mongo_workflow(
                     automation_name=best_doc["automation_name"],
                     automation_description=best_doc["description"]
                 )
+                print(workflow)
 
-                if workflow is None:
+                # NOTE: fetch_mongo_workflow's Mongo projection must also include
+        # "schema_version": 1, or this check will always see it as missing
+        # (see accompanying workflow_generator.py patch).
+        # Cache staleness check (Problem 8): a cache hit under the old
+                # pre-migration schema (missing schema_version, or schema_version
+                # older than CURRENT_SCHEMA_VERSION) must not be served to the
+                # compiler as-is. Silently regenerate from Groq using the same
+                # prompt, and overwrite the stale Mongo entry with the fresh one.
+                # No FAISS re-indexing needed here — the embedding/match is still
+                # valid; only the cached JSON payload is out of date.
+                is_stale = (
+                    workflow is None
+                    or workflow.get("schema_version", 1) < CURRENT_SCHEMA_VERSION
+                )
+
+                if is_stale:
                     workflow = await generate_groq_workflow(
                                         domain=body.domain,
                                         description=body.description,
