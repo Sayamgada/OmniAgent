@@ -11,7 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { fetchIntegrations } from "../../lib/api/integrations.ts";
 import type { IntegrationCatalogItem } from "../../lib/api/integrations.ts";
 
-export default function Integrations() {
+export default function Integrations() {  
   const { token } = useAuth();
   const [integrations, setIntegrations] = useState<IntegrationCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);

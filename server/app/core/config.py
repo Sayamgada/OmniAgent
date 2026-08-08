@@ -22,6 +22,13 @@ class Settings(BaseSettings):
 
     FERNET_SECRET_KEY: str
 
+    N8N_GOOGLE_CLIENT_ID: str
+    N8N_GOOGLE_CLIENT_SECRET: str
+    N8N_BASE_URL: str
+    N8N_API_KEY: str
+    N8N_GOOGLE_OAUTH_REDIRECT_URI: str
+    FRONTEND_BASE_URL: str
+
     
     class Config:
         env_file = ".env"

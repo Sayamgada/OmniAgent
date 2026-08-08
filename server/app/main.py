@@ -9,6 +9,7 @@ from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
 from app.routers.agent_router import router as agent_router
 from app.routers.integration_router import router as integration_router
+from app.routers import google_oauth_router
 from app.services.vectorstore import search_automations, printVectorStore
 from app.database import get_mongo_db
 from fastapi import APIRouter, Depends
@@ -34,7 +35,7 @@ app = FastAPI(title="OmniAgent Auth")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # Add all
     allow_headers=["*"],
@@ -43,6 +44,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.include_router(auth_router)
 app.include_router(agent_router)
 app.include_router(integration_router)
+app.include_router(google_oauth_router.router)
 
 @app.get("/")
 def root():
