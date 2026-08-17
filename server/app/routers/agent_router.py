@@ -63,44 +63,35 @@ async def extract_workflow(
                                 f"Automation Description: {doc['description']}"
                                 for doc in docs
                             )
-            
+            print(best_doc)
             if best_doc["similarity_score"] >= 0.75:
                 print("similarity")
+
                 workflow = await fetch_mongo_workflow(
                     automation_name=best_doc["automation_name"],
                     automation_description=best_doc["description"]
                 )
+
                 print(workflow)
 
-                # NOTE: fetch_mongo_workflow's Mongo projection must also include
-        # "schema_version": 1, or this check will always see it as missing
-        # (see accompanying workflow_generator.py patch).
-        # Cache staleness check (Problem 8): a cache hit under the old
-                # pre-migration schema (missing schema_version, or schema_version
-                # older than CURRENT_SCHEMA_VERSION) must not be served to the
-                # compiler as-is. Silently regenerate from Groq using the same
-                # prompt, and overwrite the stale Mongo entry with the fresh one.
-                # No FAISS re-indexing needed here — the embedding/match is still
-                # valid; only the cached JSON payload is out of date.
-                is_stale = (
-                    workflow is None
-                    or workflow.get("schema_version", 1) < CURRENT_SCHEMA_VERSION
-                )
-
-                if is_stale:
+                if workflow is None:
+                    print("not workflow")
                     workflow = await generate_groq_workflow(
-                                        domain=body.domain,
-                                        description=body.description,
-                                        context=context,
-                                    )
-                    await store_generated_workflow_mongo(workflow)
-            else:
+                        domain=body.domain,
+                        description=body.description,
+                        context=context,
+                    )
 
+                    await store_generated_workflow_mongo(workflow)
+
+            else:
+                print("no similarity")
                 workflow = await generate_groq_workflow(
                     domain=body.domain,
                     description=body.description,
                     context=context,
                 )
+
                 await store_generated_workflow(workflow, body.domain)
 
         if not workflow:

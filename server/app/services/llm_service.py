@@ -7,7 +7,7 @@ from app.core.config import settings
 
 # Instantiated once at import time — reused across requests, not recreated per call
 _llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     api_key=settings.GROQ_API_KEY,
     temperature=0.2,
     model_kwargs={"response_format": {"type": "json_object"}},  # forces valid JSON output
