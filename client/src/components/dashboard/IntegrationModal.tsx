@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "../ui/button";
@@ -7,11 +7,11 @@ import { Label } from "../ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { useAuth } from "../../context/AuthContext";
 import {
-  upsertIntegration,
-  getGoogleOAuthAuthorizeUrl,
-  startGoogleOAuthConnect,
+  connectTextFields,
+  connectOAuthInit,
+  runOAuthPopupFlow,
 } from "../../lib/api/integrations.ts";
-import type { IntegrationCatalogItem } from "../../lib/api/integrations.ts";
+import type { IntegrationCatalogItem, AuthOption } from "../../lib/api/integrations.ts";
 
 type IntegrationModalProps = {
   integration: IntegrationCatalogItem | null;
@@ -20,57 +20,68 @@ type IntegrationModalProps = {
   onSaved: (service: string) => void;
 };
 
-const fieldLabels: Record<string, string> = {
-  api_key: "API Key", provider: "Provider", client_id: "Client ID", client_secret: "Client Secret",
-  refresh_token: "Refresh Token", bot_token: "Bot Token", connection_string: "Connection String",
-  base_id: "Base ID", base_url: "Base URL", webhook_secret: "Webhook Secret",
-  account_sid: "Account SID", auth_token: "Auth Token", from_number: "From Number",
-  access_token: "Access Token", phone_number_id: "Phone Number ID", host: "Host", port: "Port",
-  username: "Username", password: "Password", secret_key: "Secret Key", key_id: "Key ID",
-  key_secret: "Key Secret", realm_id: "Realm ID", instance_url: "Instance URL",
-  domain: "Domain", email: "Email", api_token: "API Token", token: "Token",
-  access_key: "Access Key", bucket_name: "Bucket Name", region: "Region",
-  file_path: "File Path", project_url: "Project URL", project_id: "Project ID",
-  service_account_json: "Service Account JSON", endpoint_url: "Endpoint URL",
-  feed_url: "Feed URL", cx_id: "Search Engine ID (cx)", ig_user_id: "Instagram User ID",
-  page_id: "Page ID", api_secret: "API Secret", access_token_secret: "Access Token Secret",
-  organization: "Organization", personal_access_token: "Personal Access Token",
-  registry_url: "Registry URL", app_password: "App Password", realm: "Realm",
-  server_prefix: "Server Prefix",
-};
-
-// The only OAuth provider actually wired up today — see google_oauth_router.py.
-// Every other oauth/oauth_extra service falls back to the "not yet supported"
-// message below until it gets its own registered app + connect route.
-const GOOGLE_SERVICES = new Set([
-  "gmail", "google_calendar", "drive", "google_docs",
-  "google_sheets", "google_sheets_trigger", "google_slides",
-  "google_contacts", "google_tasks",
-]);
+// Fields n8n marks "hidden" carry a baked-in default (e.g. base URLs) and aren't meant to be
+// user-editable -- skip those. Also skip "boolean" fields for now (things like Gmail's
+// "Custom Scopes" toggle): they're an advanced opt-in path (custom OAuth scopes) that isn't
+// needed for a normal connect, and sending them as plain strings risks n8n's own expression
+// evaluator treating the literal text "false" as truthy. Simplest safe choice is to omit them
+// entirely and let n8n apply its own default (proven to work correctly for Gmail already).
+function visibleFields(option: AuthOption) {
+  return option.fields.filter((f) => f.type !== "hidden" && f.type !== "boolean");
+}
 
 export function IntegrationModal({ integration, open, onOpenChange, onSaved }: IntegrationModalProps) {
   const { token } = useAuth();
+  const [selectedOptionId, setSelectedOptionId] = useState<string>("");
   const [values, setValues] = useState<Record<string, string>>({});
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [saving, setSaving] = useState(false);
-  const [connectingGoogle, setConnectingGoogle] = useState(false);
+
+  // Reset local form state whenever a different integration is opened, and default to the
+  // catalog's recommended option (simplest non-OAuth method where one exists).
+  useEffect(() => {
+    if (integration) {
+      const opt =
+        integration.auth_options.find((o) => o.option_id === integration.default_option) ??
+        integration.auth_options[0];
+      setSelectedOptionId(opt.option_id);
+      // Pre-fill any field that has a known default (e.g. GitHub's "server" ->
+      // https://api.github.com, Salesforce's "environment" -> production) so the user can
+      // just hit Connect for the common case instead of retyping n8n's own defaults.
+      const prefill: Record<string, string> = {};
+      for (const f of visibleFields(opt)) {
+        if (f.default) prefill[f.name] = f.default;
+      }
+      setValues(prefill);
+      setClientId("");
+      setClientSecret("");
+    }
+  }, [integration]);
 
   if (!integration) return null;
 
-  // Unchanged from original — only reached when we actually render the field form.
-  const handleSave = async () => {
-    const missing = integration.fields.filter((f) => !values[f]?.trim());
+  const selectedOption =
+    integration.auth_options.find((o) => o.option_id === selectedOptionId) ??
+    integration.auth_options[0];
+
+  const isTextFields = selectedOption.connection_pattern === 1;
+  const isOAuth = selectedOption.connection_pattern === 2 || selectedOption.connection_pattern === 4;
+  const oauthExtraFields = isOAuth ? visibleFields(selectedOption) : [];
+
+  const handleSaveTextFields = async () => {
+    const fields = visibleFields(selectedOption);
+    const missing = fields.filter((f) => !values[f.name]?.trim());
     if (missing.length > 0) {
       toast.error("Please fill in all fields");
       return;
     }
-
     setSaving(true);
     try {
-      await upsertIntegration(token, integration.service, values);
+      await connectTextFields(token, integration.service, selectedOption.option_id, values);
       toast.success(`Connected to ${integration.display_name}`);
       onSaved(integration.service);
       onOpenChange(false);
-      setValues({});
     } catch (err: any) {
       toast.error(err.message || "Failed to save integration");
     } finally {
@@ -78,35 +89,44 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
     }
   };
 
-  const handleGoogleConnect = async () => {
-    setConnectingGoogle(true);
+  const handleOAuthConnect = async () => {
+    if (!clientId.trim() || !clientSecret.trim()) {
+      toast.error("Client ID and Client Secret are required");
+      return;
+    }
+    // Extra fields (server URL, environment, custom scopes, ...) are always optional here --
+    // omitting them lets n8n apply its own built-in defaults, which we've confirmed works
+    // correctly. Only send whatever the user actually filled in (including pre-filled defaults
+    // left as-is).
+    setSaving(true);
     try {
-      const url = await getGoogleOAuthAuthorizeUrl(token);
-      startGoogleOAuthConnect(url); // full-page redirect — component unmounts here
+      const extraFields: Record<string, string> = {};
+      for (const f of oauthExtraFields) {
+        if (values[f.name]?.trim()) extraFields[f.name] = values[f.name];
+      }
+      const { authorization_url } = await connectOAuthInit(
+        token,
+        integration.service,
+        selectedOption.option_id,
+        clientId,
+        clientSecret,
+        extraFields
+      );
+      toast.info(`Complete the ${integration.display_name} sign-in in the popup window`);
+      const connected = await runOAuthPopupFlow(token, integration.service, authorization_url);
+      if (connected) {
+        toast.success(`Connected to ${integration.display_name}`);
+        onSaved(integration.service);
+        onOpenChange(false);
+      } else {
+        toast.error("Connection window closed before finishing");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to start Google connect");
-      setConnectingGoogle(false);
+      toast.error(err.message || "Failed to connect");
+    } finally {
+      setSaving(false);
     }
   };
-
-  // --- Branch on connection_type ---
-  // api_key: always the field form (unchanged behavior).
-  // oauth_extra: field form for the extra fields, same as api_key today — the
-  //   OAuth-token part of oauth_extra services isn't wired up for any provider
-  //   yet, so for now this just collects whatever's in `fields` like api_key does.
-  // oauth: no fields to collect — either a real "Connect with Google" button,
-  //   or (for every other oauth service right now) an honest "not supported yet".
-  // mcp_oauth: no client_id/secret concept at all; not wired into our flow yet.
-  const isGoogle = GOOGLE_SERVICES.has(integration.service);
-  const showFieldForm =
-    integration.connection_type === "api_key" ||
-    (integration.connection_type === "oauth_extra" && integration.fields.length > 0);
-  const showGoogleConnect =
-    integration.connection_type === "oauth" && isGoogle && integration.oauth_connect_available;
-  const showUnsupportedOAuth =
-    (integration.connection_type === "oauth" || integration.connection_type === "oauth_extra") &&
-    !showGoogleConnect;
-  const showMcpNotice = integration.connection_type === "mcp_oauth";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,60 +135,103 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
           <DialogTitle>Connect {integration.display_name}</DialogTitle>
         </DialogHeader>
 
-        {showFieldForm && (
-          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
-            {integration.fields.map((field) => (
-              <div key={field} className="space-y-1.5">
-                <Label htmlFor={field}>{fieldLabels[field] ?? field}</Label>
+        <div className="space-y-4 py-2 max-h-[65vh] overflow-y-auto">
+          {integration.auth_options.length > 1 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="auth-option">Connection method</Label>
+              <select
+                id="auth-option"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                value={selectedOption.option_id}
+                onChange={(e) => {
+                  const opt = integration.auth_options.find((o) => o.option_id === e.target.value)!;
+                  setSelectedOptionId(opt.option_id);
+                  const prefill: Record<string, string> = {};
+                  for (const f of visibleFields(opt)) {
+                    if (f.default) prefill[f.name] = f.default;
+                  }
+                  setValues(prefill);
+                }}
+              >
+                {integration.auth_options.map((opt) => (
+                  <option key={opt.option_id} value={opt.option_id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isTextFields &&
+            visibleFields(selectedOption).map((field) => (
+              <div key={field.name} className="space-y-1.5">
+                <Label htmlFor={field.name}>{field.display_name ?? field.name}</Label>
                 <Input
-                  id={field}
-                  type={/secret|key|token|password/i.test(field) ? "password" : "text"}
-                  value={values[field] ?? ""}
-                  onChange={(e) => setValues((prev) => ({ ...prev, [field]: e.target.value }))}
-                  placeholder={fieldLabels[field] ?? field}
+                  id={field.name}
+                  type={field.secret ? "password" : "text"}
+                  value={values[field.name] ?? ""}
+                  onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
+                  placeholder={field.default ?? field.display_name ?? field.name}
                 />
               </div>
             ))}
-          </div>
-        )}
 
-        {showGoogleConnect && (
-          <p className="text-sm text-muted-foreground py-2">
-            Connecting any Google service links your whole Google account —
-            Gmail, Calendar, Drive, Docs, Sheets, Slides, Contacts, and Tasks
-            all become available after one sign-in.
-          </p>
-        )}
-
-        {showUnsupportedOAuth && (
-          <p className="text-sm text-muted-foreground py-2">
-            In-app connect for {integration.display_name} isn't available yet —
-            OmniAgent hasn't registered an OAuth app for this service. Support is
-            being added service by service; check back soon.
-          </p>
-        )}
-
-        {showMcpNotice && (
-          <p className="text-sm text-muted-foreground py-2">
-            {integration.display_name} uses MCP's own OAuth flow, which isn't
-            wired into OmniAgent's connect UI yet. This is on the roadmap.
-          </p>
-        )}
+          {isOAuth && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Register your own {integration.display_name} OAuth app and enter its credentials
+                below. Use this redirect URI when registering it:
+                <code className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs">
+                  http://localhost:5678/rest/oauth2-credential/callback
+                </code>
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="client-id">Client ID</Label>
+                <Input id="client-id" value={clientId} onChange={(e) => setClientId(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="client-secret">Client Secret</Label>
+                <Input
+                  id="client-secret"
+                  type="password"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                />
+              </div>
+              {oauthExtraFields.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Optional advanced settings -- leave blank to use {integration.display_name}'s
+                  defaults.
+                </p>
+              )}
+              {oauthExtraFields.map((field) => (
+                <div key={field.name} className="space-y-1.5">
+                  <Label htmlFor={field.name}>{field.display_name ?? field.name}</Label>
+                  <Input
+                    id={field.name}
+                    type={field.secret ? "password" : "text"}
+                    value={values[field.name] ?? ""}
+                    onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
+                    placeholder={field.default ?? field.display_name ?? field.name}
+                  />
+                </div>
+              ))}
+            </>
+          )}
+        </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving || connectingGoogle}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
-
-          {showFieldForm && (
-            <Button onClick={handleSave} disabled={saving}>
+          {isTextFields && (
+            <Button onClick={handleSaveTextFields} disabled={saving}>
               {saving ? "Saving..." : "Save & Connect"}
             </Button>
           )}
-
-          {showGoogleConnect && (
-            <Button onClick={handleGoogleConnect} disabled={connectingGoogle}>
-              {connectingGoogle ? "Redirecting..." : "Connect with Google"}
+          {isOAuth && (
+            <Button onClick={handleOAuthConnect} disabled={saving}>
+              {saving ? "Connecting..." : "Connect"}
             </Button>
           )}
         </DialogFooter>

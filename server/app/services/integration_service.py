@@ -1,37 +1,69 @@
 import uuid
+
 from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
 
 from app.models.integration import Integration
-from app.utils.integration_catalog import CATALOG_BY_SERVICE, INTEGRATION_CATALOG, is_oauth_connect_available
-from app.utils.n8n_credential_types import get_n8n_credential_type
-from app.utils.n8n_field_maps import translate_fields_for_n8n
-from app.utils.n8n_client import create_n8n_credential, delete_n8n_credential, N8nClientError
+from app.core.integration_catalog import INTEGRATION_CATALOG, get_auth_option
+from app.services import n8n_client
+
+PATTERN_LABELS = {1: "text_fields", 2: "oauth2", 3: "mcp_oauth", 4: "oauth2_extra"}
 
 
-def _credential_name(user_id: uuid.UUID, service: str) -> str:
-    """Deterministic, human-inspectable credential name in the n8n UI.
-    Not used for lookups — n8n_credential_id is the actual reference — but makes
-    debugging in the n8n dashboard sane once there are many users' credentials in there."""
-    return f"omniagent-{user_id}-{service}"
+def _get_catalog_entry(service: str) -> dict:
+    entry = INTEGRATION_CATALOG.get(service)
+    if not entry:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Unknown service '{service}' — not in integration catalog")
+    return entry
 
 
-def upsert_integration(db: Session, user_id: uuid.UUID, service: str, credentials: dict) -> Integration:
+def _get_option(service: str, option_id: str | None) -> dict:
     """
-    Case 1 path (api_key / static-field services) and the storage half of Case 2
-    (OAuth) once a token has already been acquired — both end up here with a flat
-    `credentials` dict of whatever fields that service's n8n credential type expects.
-
-    Flow: push to n8n first, only write to Postgres if that succeeds. This avoids
-    the partial-failure state flagged earlier — a Postgres row pointing at a
-    credential that was never actually created in n8n.
+    Resolves which auth_option the request refers to. Some services (Notion, Slack, GitHub,
+    HubSpot, ...) expose more than one -- e.g. api_key vs oauth2 -- so option_id disambiguates.
+    Falls back to the catalog's default_option (the simplest non-OAuth method) if omitted.
     """
-    catalog_entry = CATALOG_BY_SERVICE.get(service)
-    if not catalog_entry:
-        raise ValueError(f"Unknown service '{service}' — not in INTEGRATION_CATALOG")
+    opt = get_auth_option(service, option_id)
+    if not opt:
+        entry = _get_catalog_entry(service)
+        valid_ids = [o["option_id"] for o in entry["auth_options"]]
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Unknown auth option '{option_id}' for '{service}'. Valid options: {valid_ids}",
+        )
+    return opt
 
-    display_name = catalog_entry["display_name"]
-    connection_type = catalog_entry["connection_type"]
-    n8n_type = get_n8n_credential_type(service)  # raises KeyError if unmapped — see n8n_credential_types.py
+
+def _validate_text_fields(service: str, option: dict, values: dict) -> dict:
+    """
+    Checks the submitted values cover every required field the chosen auth_option defines,
+    and drops anything not in that option's field list (never forward arbitrary extra keys
+    to n8n). Returns the n8n-ready data payload (field name -> value, already camelCase).
+    """
+    if option["connection_pattern"] != 1:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"'{service}' auth option '{option['option_id']}' is not a text-fields method "
+            f"(pattern {option['connection_pattern']}); use the OAuth connect flow instead.",
+        )
+
+    option_field_names = {f["name"] for f in option["fields"]}
+    missing = option_field_names - values.keys()
+    if missing:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Missing required field(s) for '{service}' ({option['option_id']}): {sorted(missing)}",
+        )
+
+    return {k: v for k, v in values.items() if k in option_field_names}
+
+
+async def connect_text_fields(
+    db: Session, user_id: uuid.UUID, service: str, values: dict, option_id: str | None = None
+) -> Integration:
+    entry = _get_catalog_entry(service)
+    option = _get_option(service, option_id)
+    n8n_data = _validate_text_fields(service, option, values)
 
     existing = (
         db.query(Integration)
@@ -39,112 +71,225 @@ def upsert_integration(db: Session, user_id: uuid.UUID, service: str, credential
         .first()
     )
 
-    # If reconnecting (existing row with a live n8n credential), delete the old
-    # n8n credential before creating a new one — avoids orphaned credentials
-    # accumulating in n8n every time a user updates their key.
-    if existing and existing.n8n_credential_id:
-        try:
-            delete_n8n_credential(existing.n8n_credential_id)
-        except N8nClientError:
-            # Old credential may already be gone or n8n may be briefly unreachable —
-            # don't block the new connection attempt on cleanup of the old one.
-            pass
-
-    try:
-        credential_id = create_n8n_credential(
-            name=_credential_name(user_id, service),
-            credential_type=n8n_type,
-            data=translate_fields_for_n8n(service, credentials),
-        )
-    except N8nClientError as e:
-        # Nothing written to Postgres — the failure is surfaced as-is to the router,
-        # which turns it into a clean HTTP error for the frontend.
-        raise
+    credential_name = f"omniagent-{service}-{option['option_id']}-{str(user_id)[:8]}"
+    n8n_cred = await n8n_client.create_credential(
+        name=credential_name,
+        credential_type=option["n8n_credential_type"],
+        data=n8n_data,
+    )
+    new_n8n_credential_id = n8n_cred["id"]
 
     if existing:
-        existing.display_name = display_name
-        existing.connection_type = connection_type
-        existing.n8n_credential_id = credential_id
+        # replace: delete the old n8n credential first (best-effort), then point at the new one.
+        # Switching auth_option (e.g. api_key -> oauth2) on reconnect is allowed -- the row just
+        # repoints to the new credential type.
+        try:
+            await n8n_client.delete_credential(existing.n8n_credential_id)
+        except n8n_client.N8nClientError:
+            pass  # old credential may already be gone/invalid -- don't block the new save
+        existing.n8n_credential_id = new_n8n_credential_id
+        existing.n8n_credential_type = option["n8n_credential_type"]
+        existing.auth_option_id = option["option_id"]
+        existing.display_name = entry["display_name"]
+        existing.connection_pattern = PATTERN_LABELS[option["connection_pattern"]]
         existing.is_active = True
         db.commit()
         db.refresh(existing)
         return existing
 
-    new_row = Integration(
+    row = Integration(
         user_id=user_id,
         service=service,
-        display_name=display_name,
-        connection_type=connection_type,
-        n8n_credential_id=credential_id,
+        display_name=entry["display_name"],
+        n8n_credential_id=new_n8n_credential_id,
+        n8n_credential_type=option["n8n_credential_type"],
+        auth_option_id=option["option_id"],
+        connection_pattern=PATTERN_LABELS[option["connection_pattern"]],
         is_active=True,
     )
-    db.add(new_row)
-    db.commit()
-    db.refresh(new_row)
-    return new_row
-
-
-def toggle_integration(db: Session, user_id: uuid.UUID, service: str) -> Integration | None:
-    """Soft on/off — flips is_active only. Deliberately does NOT touch the n8n
-    credential (it stays live in n8n either way). Use delete_integration for a
-    hard disconnect that actually revokes the n8n credential."""
-    row = (
-        db.query(Integration)
-        .filter(Integration.user_id == user_id, Integration.service == service)
-        .first()
-    )
-    if not row:
-        return None
-    row.is_active = not row.is_active
+    db.add(row)
     db.commit()
     db.refresh(row)
     return row
 
 
-def delete_integration(db: Session, user_id: uuid.UUID, service: str) -> bool:
-    """Hard disconnect: deletes the n8n credential AND the Postgres row.
-    This is the fix for the 'credential revocation drift' problem — without this,
-    a user disconnecting a service in the UI would leave a live, usable credential
-    sitting in n8n indefinitely."""
+async def disconnect_integration(db: Session, user_id: uuid.UUID, service: str) -> None:
     row = (
         db.query(Integration)
         .filter(Integration.user_id == user_id, Integration.service == service)
         .first()
     )
     if not row:
-        return False
-
-    if row.n8n_credential_id:
-        try:
-            delete_n8n_credential(row.n8n_credential_id)
-        except N8nClientError:
-            # Surface this rather than silently swallowing — a failed n8n deletion
-            # while we're about to delete the Postgres pointer to it is exactly
-            # the drift scenario we're trying to avoid. Let the router decide
-            # whether to block the delete or proceed with a warning.
-            raise
-
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"'{service}' is not connected")
+    try:
+        await n8n_client.delete_credential(row.n8n_credential_id)
+    except n8n_client.N8nClientError:
+        pass  # already deleted on n8n's side -- don't block removing our own record
     db.delete(row)
     db.commit()
-    return True
 
 
 def list_integrations_with_status(db: Session, user_id: uuid.UUID) -> list[dict]:
-    rows = (
-        db.query(Integration.service, Integration.is_active, Integration.n8n_credential_id)
-        .filter(Integration.user_id == user_id)  # no is_active filter — we need both states
-        .all()
-    )
-    status_by_service = {r.service: {"is_active": r.is_active, "has_credential": bool(r.n8n_credential_id)} for r in rows}
-
-    result = []
-    for entry in INTEGRATION_CATALOG:
-        service = entry["service"]
-        row_status = status_by_service.get(service)
-        result.append({
-            **entry,
-            "connected": row_status["is_active"] if row_status else False,
-            "configured": row_status is not None and row_status["has_credential"],
-            "oauth_connect_available": is_oauth_connect_available(service),
+    connected_rows = {
+        r.service: r for r in db.query(Integration).filter(Integration.user_id == user_id).all()
+    }
+    out = []
+    for service, entry in INTEGRATION_CATALOG.items():
+        row = connected_rows.get(service)
+        out.append({
+            "service": entry["service"],
+            "display_name": entry["display_name"],
+            "category": entry["category"],
+            "default_option": entry["default_option"],
+            "auth_options": entry["auth_options"],
+            "connected": bool(row and row.is_active),
+            "configured": row is not None,
+            "connected_option": row.auth_option_id if row else None,
         })
-    return result
+    return out
+
+
+def check_required_integrations(db: Session, user_id: uuid.UUID, required: list[dict]) -> dict:
+    connected_services = {
+        r.service
+        for r in db.query(Integration).filter(Integration.user_id == user_id, Integration.is_active == True).all()
+    }
+    statuses = []
+    all_available = True
+    for req in required:
+        is_connected = req["service"] in connected_services
+        if req.get("required", True) and not is_connected:
+            all_available = False
+        statuses.append({
+            "service": req["service"],
+            "display_name": req.get("display_name"),
+            "required": req.get("required", True),
+            "connected": is_connected,
+        })
+    return {"integrations": statuses, "all_required_available": all_available}
+
+
+# ---------------- OAuth2 (pattern 2 / pattern 4) ----------------
+
+async def connect_oauth_init(
+    db: Session,
+    user_id: uuid.UUID,
+    service: str,
+    client_id: str,
+    client_secret: str,
+    extra_fields: dict,
+    option_id: str | None = None,
+) -> dict:
+    """
+    Creates the n8n credential shell (clientId/clientSecret + any pattern-4 extras, no tokens),
+    asks n8n for the authorization URL, and records a pending Integration row. The actual token
+    exchange happens entirely inside n8n once the user completes the provider's consent screen --
+    OmniAgent is not involved in and never sees that step.
+    """
+    entry = _get_catalog_entry(service)
+    option = _get_option(service, option_id)
+
+    if option["connection_pattern"] not in (2, 4):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"'{service}' auth option '{option['option_id']}' is not an OAuth2 method "
+            f"(pattern {option['connection_pattern']}); use /integrations/connect/text-fields instead.",
+        )
+
+    # only forward extra fields the catalog actually defines for this option (excluding
+    # clientId/clientSecret, which are handled explicitly, not user-suppliable arbitrary keys)
+    known_extra_names = {f["name"] for f in option["fields"]}
+    unknown = set(extra_fields.keys()) - known_extra_names
+    if unknown:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Unknown extra field(s) for '{service}' ({option['option_id']}): {sorted(unknown)}. "
+            f"Expected a subset of: {sorted(known_extra_names)}",
+        )
+
+    n8n_data = {"clientId": client_id, "clientSecret": client_secret, **extra_fields}
+
+    existing = (
+        db.query(Integration)
+        .filter(Integration.user_id == user_id, Integration.service == service)
+        .first()
+    )
+
+    credential_name = f"omniagent-{service}-{option['option_id']}-{str(user_id)[:8]}"
+    n8n_cred = await n8n_client.create_credential(
+        name=credential_name,
+        credential_type=option["n8n_credential_type"],
+        data=n8n_data,
+    )
+    new_n8n_credential_id = n8n_cred["id"]
+
+    if existing:
+        try:
+            await n8n_client.delete_credential(existing.n8n_credential_id)
+        except n8n_client.N8nClientError:
+            pass
+        existing.n8n_credential_id = new_n8n_credential_id
+        existing.n8n_credential_type = option["n8n_credential_type"]
+        existing.auth_option_id = option["option_id"]
+        existing.display_name = entry["display_name"]
+        existing.connection_pattern = PATTERN_LABELS[option["connection_pattern"]]
+        existing.oauth_pending = True
+        existing.is_active = False  # not truly connected until the status poll confirms it
+        db.commit()
+        db.refresh(existing)
+    else:
+        existing = Integration(
+            user_id=user_id,
+            service=service,
+            display_name=entry["display_name"],
+            n8n_credential_id=new_n8n_credential_id,
+            n8n_credential_type=option["n8n_credential_type"],
+            auth_option_id=option["option_id"],
+            connection_pattern=PATTERN_LABELS[option["connection_pattern"]],
+            oauth_pending=True,
+            is_active=False,
+        )
+        db.add(existing)
+        db.commit()
+        db.refresh(existing)
+
+    try:
+        auth_url = await n8n_client.get_oauth2_authorization_url(new_n8n_credential_id)
+    except n8n_client.N8nClientError:
+        # credential shell exists but we couldn't get the auth URL -- leave the pending row in
+        # place (user can retry) rather than silently losing track of the half-created credential
+        raise
+
+    return {
+        "service": service,
+        "auth_option": option["option_id"],
+        "n8n_credential_id": new_n8n_credential_id,
+        "authorization_url": auth_url,
+    }
+
+
+async def check_oauth_status(db: Session, user_id: uuid.UUID, service: str) -> dict:
+    """
+    Polls n8n for whether the pending OAuth connection has completed. Call this from the
+    frontend while the consent popup is open (or once it closes) -- there is no push-based
+    callback into OmniAgent, since the provider redirects straight to n8n's own callback URL.
+    """
+    row = (
+        db.query(Integration)
+        .filter(Integration.user_id == user_id, Integration.service == service)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"'{service}' has no connection in progress")
+
+    if not row.oauth_pending:
+        return {"service": service, "connected": row.is_active, "pending": False}
+
+    connected = await n8n_client.is_oauth_credential_connected(row.n8n_credential_id)
+    if connected:
+        row.oauth_pending = False
+        row.is_active = True
+        db.commit()
+        db.refresh(row)
+
+    return {"service": service, "connected": row.is_active, "pending": row.oauth_pending}

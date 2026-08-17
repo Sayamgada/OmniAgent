@@ -93,9 +93,13 @@ export default function Integrations() {
               key={integration.service}
               integration={integration}
               index={i}
-              onToggled={(service, connected) =>
+              onDeleted={(service) =>
                 setIntegrations((prev) =>
-                  prev.map((it) => (it.service === service ? { ...it, connected } : it))
+                  prev.map((it) =>
+                    it.service === service
+                      ? { ...it, connected: false, configured: false, connected_option: null }
+                      : it
+                  )
                 )
               }
               onConfigure={openConfigure}

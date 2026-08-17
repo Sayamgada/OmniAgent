@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Key, Settings2 } from "lucide-react";
+import { Key, Settings2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { IntegrationCatalogItem } from "../../lib/api/integrations.ts";
-import { toggleIntegration } from "../../lib/api/integrations.ts";
+import { deleteIntegration } from "../../lib/api/integrations.ts";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Switch } from "../ui/switch";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
 
@@ -79,25 +80,36 @@ export const DefaultIntegrationIcon = Link2;
 type IntegrationCardProps = {
   integration: IntegrationCatalogItem;
   index?: number;
-  onToggled: (service: string, connected: boolean) => void;
+  onDeleted: (service: string) => void;
   onConfigure: (integration: IntegrationCatalogItem) => void;
 };
 
-export function IntegrationCard({ integration, index = 0, onToggled, onConfigure }: IntegrationCardProps) {
+export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure }: IntegrationCardProps) {
   const { token } = useAuth();
   const Icon = integrationIcons[integration.service] ?? DefaultIntegrationIcon;
+  const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleToggle = async () => {
+  const handleDelete = async () => {
+    setDeleting(true);
     try {
-      const result = await toggleIntegration(token, integration.service);
-      onToggled(integration.service, result.connected);
-      toast.success(
-        result.connected ? `Connected to ${integration.display_name}` : `Disconnected from ${integration.display_name}`
-      );
+      await deleteIntegration(token, integration.service);
+      onDeleted(integration.service);
+      toast.success(`Disconnected from ${integration.display_name}`);
+      setConfirmOpen(false);
     } catch (err: any) {
-      toast.error(err.message || "Failed to update integration");
+      toast.error(err.message || "Failed to disconnect integration");
+    } finally {
+      setDeleting(false);
     }
   };
+
+  // Catalog has no free-text "description" field -- use the connected auth method (or the
+  // default one, if not yet connected) as the subtitle instead.
+  const activeOption =
+    integration.auth_options.find((o) => o.option_id === integration.connected_option) ??
+    integration.auth_options.find((o) => o.option_id === integration.default_option) ??
+    integration.auth_options[0];
 
   return (
     <motion.div
@@ -132,7 +144,9 @@ export function IntegrationCard({ integration, index = 0, onToggled, onConfigure
         </Badge>
       </div>
 
-      <p className="mt-3 text-sm text-muted-foreground">{integration.description}</p>
+      <p className="mt-3 text-sm text-muted-foreground">
+        {integration.connected ? `Connected via ${activeOption.label}` : activeOption.label}
+      </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => onConfigure(integration)}>
@@ -143,11 +157,28 @@ export function IntegrationCard({ integration, index = 0, onToggled, onConfigure
           <Settings2 className="h-3.5 w-3.5" />
           Permissions
         </Button>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{integration.connected ? "On" : "Off"}</span>
-          <Switch checked={integration.connected} onCheckedChange={handleToggle} />
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => setConfirmOpen(true)}
+          disabled={deleting}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {deleting ? "Removing..." : "Delete"}
+        </Button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Disconnect ${integration.display_name}?`}
+        description="This removes the credential from n8n too, not just from OmniAgent."
+        confirmLabel="Disconnect"
+        destructive
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
     </motion.div>
   );
 }

@@ -77,7 +77,9 @@ export function IntegrationPickerModal({
                         <Icon className="h-4 w-4 text-primary" />
                         <span className="text-sm font-medium">{item.display_name}</span>
                       </div>
-                      <span className="line-clamp-2 text-xs text-muted-foreground">{item.description}</span>
+                      <span className="line-clamp-2 text-xs text-muted-foreground">
+                        {item.auth_options.map((o) => o.label).join(" / ")}
+                      </span>
                     </button>
                   );
                 })}
