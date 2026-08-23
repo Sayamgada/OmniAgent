@@ -23,20 +23,15 @@ def printVectorStore():
 
 def search_automations(query: str, category: str | None = None, top_k: int = 5):
 
-    search_query = (
-        "Represent this sentence for searching relevant passages: "
-        + query
-    )
-
     if category:
         results = vectorstore.similarity_search_with_score(
-            query=search_query,
+            query=query,
             k=top_k,
             filter={"category": category}
         )
     else:
         results = vectorstore.similarity_search_with_relevance_scores(
-            query=search_query,
+            query=query,
             k=top_k
         )
 

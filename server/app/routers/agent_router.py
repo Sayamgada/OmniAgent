@@ -56,7 +56,7 @@ async def extract_workflow(
             )
             await store_generated_workflow(workflow, body.domain)
         else:
-
+            print("docs: \n",docs)
             best_doc = max(docs, key=lambda d: d["similarity_score"])
             context = "\n\n".join(
                                 f"Automation Name: {doc['automation_name']}\n"
@@ -82,7 +82,7 @@ async def extract_workflow(
                         context=context,
                     )
 
-                    await store_generated_workflow_mongo(workflow)
+                    # await store_generated_workflow_mongo(workflow)
 
             else:
                 print("no similarity")
@@ -92,7 +92,7 @@ async def extract_workflow(
                     context=context,
                 )
 
-                await store_generated_workflow(workflow, body.domain)
+                # await store_generated_workflow(workflow, body.domain)
 
         if not workflow:
             raise HTTPException(...)
