@@ -22,6 +22,15 @@ def printVectorStore():
     print("Total vectors:", vectorstore.index.ntotal)
 
 def search_automations(query: str, category: str | None = None, top_k: int = 5):
+    # NOTE: no BGE "Represent this sentence for searching relevant passages: "
+    # instruction prefix here. That prefix is meant for asymmetric retrieval
+    # (short query -> long passage/document) and measurably compresses cosine
+    # similarity for this use case, where a short automation description is
+    # matched against other short automation descriptions of similar length
+    # and style (symmetric short-text / paraphrase matching, not query->doc
+    # retrieval). Confirmed empirically: identical text scored ~0.68 with the
+    # prefix vs. ~0.91+ without it. Passages were already stored without any
+    # prefix (see add_automation below), so this keeps both sides symmetric.
 
     if category:
         results = vectorstore.similarity_search_with_score(

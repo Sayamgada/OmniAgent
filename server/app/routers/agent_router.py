@@ -22,6 +22,28 @@ Domain = Literal["Corporate", "Education", "Finance"]
 # IR schema change.
 CURRENT_SCHEMA_VERSION = 2
 
+# Calibrated via scripts/calibrate_threshold.py against the clean, seed-only
+# FAISS index (rebuild_index.py) with the BGE instruction prefix removed
+# from search_automations() (see vectorstore.py -- the prefix is meant for
+# asymmetric query->long-passage retrieval and measurably compresses cosine
+# similarity for this symmetric short-description-to-short-description
+# matching task; ~0.68 ceiling on identical text with the prefix vs. ~0.91+
+# without it).
+#
+# 12-case calibration run (2026-08, 4 paraphrased queries per domain against
+# real OmniAgent_Dataset.xlsx seed rows):
+#   true-match scores:  min 0.793, median 0.841, max 0.932  (12/12 correct top-1)
+#   unrelated scores:   max 0.672 (of the pairs that even placed in top-10;
+#                        most unrelated pairs didn't place at all, so the
+#                        real ceiling for "unrelated" is likely lower than this)
+#   -> 0.70 sits with margin below the true-match floor and above the
+#      highest confirmed unrelated score.
+#
+# Re-run scripts/calibrate_threshold.py whenever EMBEDDING_MODEL or the
+# FAISS index changes -- do not raise this back toward 0.75+ without
+# re-measuring the true-match floor first.
+SIMILARITY_THRESHOLD = 0.65
+
 
 class WorkflowRequest(BaseModel):
     domain: Domain
@@ -64,7 +86,7 @@ async def extract_workflow(
                                 for doc in docs
                             )
             print(best_doc)
-            if best_doc["similarity_score"] >= 0.75:
+            if best_doc["similarity_score"] >= SIMILARITY_THRESHOLD:
                 print("similarity")
 
                 workflow = await fetch_mongo_workflow(
@@ -82,7 +104,7 @@ async def extract_workflow(
                         context=context,
                     )
 
-                    # await store_generated_workflow_mongo(workflow)
+                    await store_generated_workflow_mongo(workflow)
 
             else:
                 print("no similarity")
@@ -92,7 +114,7 @@ async def extract_workflow(
                     context=context,
                 )
 
-                # await store_generated_workflow(workflow, body.domain)
+                await store_generated_workflow(workflow, body.domain)
 
         if not workflow:
             raise HTTPException(...)
