@@ -42,7 +42,7 @@ CURRENT_SCHEMA_VERSION = 2
 # Re-run scripts/calibrate_threshold.py whenever EMBEDDING_MODEL or the
 # FAISS index changes -- do not raise this back toward 0.75+ without
 # re-measuring the true-match floor first.
-SIMILARITY_THRESHOLD = 0.65
+SIMILARITY_THRESHOLD = 0.75
 
 
 class WorkflowRequest(BaseModel):
@@ -78,7 +78,6 @@ async def extract_workflow(
             )
             await store_generated_workflow(workflow, body.domain)
         else:
-            print("docs: \n",docs)
             best_doc = max(docs, key=lambda d: d["similarity_score"])
             context = "\n\n".join(
                                 f"Automation Name: {doc['automation_name']}\n"
@@ -94,7 +93,7 @@ async def extract_workflow(
                     automation_description=best_doc["description"]
                 )
 
-                print(workflow)
+                # print(workflow)
 
                 if workflow is None:
                     print("not workflow")
@@ -124,7 +123,7 @@ async def extract_workflow(
             user_id=current_user.id,
             required_integrations=workflow["required_integrations"],
         )
-
+        print(workflow)
         return WorkflowResponse(
             workflow=workflow,
             integrations=integration_status,

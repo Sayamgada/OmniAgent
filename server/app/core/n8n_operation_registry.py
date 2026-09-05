@@ -73,7 +73,7 @@ print(_REGISTRY_PATH)
 # resource's operation list to plausible candidates - not a guarantee.
 VERB_KEYWORDS = {
     "create":   ["create", "add", "new", "post", "schedule", "upload", "insert"],
-    "read":     ["get", "read", "fetch", "retrieve", "info", "profile"],
+    "read":     ["get", "read", "fetch", "retrieve", "info", "profile", "download"],
     "list":     ["getall", "getmany", "list", "search"],
     "update":   ["update", "edit", "modify", "set"],
     "delete":   ["delete", "remove", "archive", "trash"],

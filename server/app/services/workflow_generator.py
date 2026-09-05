@@ -1,5 +1,5 @@
+print(__file__)
 from functools import lru_cache
-
 from app.models.automation_preview_model import automation_preview_collection
 from app.services.llm_service import generate_workflow_from_prompt
 from app.core.n8n_operation_registry import get_service_entry, resolve_operation
@@ -84,7 +84,7 @@ def _valid_service_keys() -> frozenset:
     keys = {s for services in by_category.values() for s in services}
     return frozenset(keys | _FALLBACK_SERVICE_KEYS)
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 # v2 -> v3: two additions to each workflow step. The five-key top-level
 # contract and _ALLOWED_OPERATIONS (the ten universal verbs) are UNCHANGED -
 # this only touches the shape inside preview_json.workflow[].
@@ -102,8 +102,29 @@ CURRENT_SCHEMA_VERSION = 3
 #      for Slack, not the bare universal verb "send"), pulled from real
 #      n8n source, not invented.
 #
-# A v2-cached Mongo document has none of these keys, so the version bump is
-# required for the existing stale-cache regeneration check in
+# v3 -> v4: two further additions to each workflow step, both Groq-written
+# (unlike n8n_operation/n8n_resolved, which stay enrichment-only):
+#
+#   3. "depends_on" - a list of earlier step numbers whose OUTPUT this
+#      step's action needs at runtime (e.g. a "update sheet" step that
+#      writes the outcome of an earlier "read response" step). This is NOT
+#      sequencing - a step that merely runs after another but doesn't need
+#      its output uses []. This exists so the future compile-time
+#      parameter-fill UI can tell "this field should be wired to a
+#      previous step's output" apart from "this field needs a plain text
+#      value from the user" - see DEPENDS_ON section in SYSTEM_INSTRUCTION.
+#
+#   4. "condition" (optional, step-level, only present when a step's
+#      outcome forks the workflow) and "branch" (optional, only present on
+#      steps that only run under one outcome of an earlier step's
+#      condition) - together these let an approval/decision-style
+#      automation be represented as an actual fork instead of a flattened
+#      straight line. Absent on every step for non-branching automations -
+#      this is additive and does not disturb existing single-path
+#      workflows. See CONDITION / BRANCH section in SYSTEM_INSTRUCTION.
+#
+# A v3-cached Mongo document has neither of these keys, so the version bump
+# is required for the existing stale-cache regeneration check in
 # agent_router.py to actually fire on old cache entries.
 
 # The only keys the compiler/frontend/storage layer are allowed to see. Anything
@@ -131,6 +152,49 @@ _ALLOWED_OPERATIONS = {
 }
 
 
+_APPROVAL_LANGUAGE_KEYWORDS = (
+    "approve", "approval", "reject", "decision", "accept", "decline",
+    "based on the outcome", "if approved", "if rejected",
+)
+
+
+def _check_approval_branching(automation_description: str, preview_json: dict) -> None:
+    """
+    Non-fatal compliance signal for the CRITICAL "approval/decision
+    automations must branch" rule in SYSTEM_INSTRUCTION. This does NOT fix
+    a miss - it only makes misses visible in logs instead of requiring a
+    human to manually re-read every generated JSON, same rationale as every
+    other _check_* function here.
+
+    Fires a warning when automation_description contains approval/decision
+    language (see _APPROVAL_LANGUAGE_KEYWORDS) but not a single step in the
+    generated workflow carries a "condition" key. Deliberately a crude
+    keyword match, not NLP - false positives (an automation that mentions
+    "accept" in an unrelated sense) are acceptable noise; the goal is a
+    hit-rate signal over many generations, not per-instance precision.
+    """
+    if not isinstance(automation_description, str):
+        return
+    description_lower = automation_description.lower()
+    matched_keywords = [kw for kw in _APPROVAL_LANGUAGE_KEYWORDS if kw in description_lower]
+    if not matched_keywords:
+        return
+
+    steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
+    has_condition = any(
+        isinstance(step, dict) and isinstance(step.get("condition"), dict)
+        for step in steps
+    )
+    if not has_condition:
+        print(
+            f"[workflow_generator] COMPLIANCE MISS: automation_description "
+            f"contains approval/decision language {matched_keywords} but no "
+            f"workflow step has a 'condition' key - expected a branch per the "
+            f"CRITICAL rule in SYSTEM_INSTRUCTION. automation_description: "
+            f"{automation_description!r}"
+        )
+
+
 def _check_operations(preview_json: dict) -> None:
     """
     Logs (does not block on) any workflow step whose "operation" isn't one of
@@ -149,6 +213,9 @@ def _check_operations(preview_json: dict) -> None:
             )
         _check_target(step)
         _check_service(step)
+        _check_depends_on(step, steps)
+        _check_condition_branch(step, steps)
+        _check_ai_instructions(step)
 
 
 def _check_service(step: dict) -> None:
@@ -202,6 +269,126 @@ def _check_target(step: dict) -> None:
         )
 
 
+def _check_ai_instructions(step: dict) -> None:
+    """
+    Same non-fatal logging pattern as _check_target/_check_operations, for
+    the new "instructions" field required on every "groq" step (see the
+    GROQ / AI STEPS - INSTRUCTIONS section of SYSTEM_INSTRUCTION). Doesn't
+    touch preview_json - just visibility into prompt quality.
+
+    The length threshold is a crude heuristic (same rationale as the
+    condition-key compliance check above: a cheap hit-rate signal, not
+    precision) - "generate" or "summarize the data" would both slip past
+    a bare non-empty check but are exactly the vague, un-groundable text
+    the SYSTEM_INSTRUCTION rule exists to prevent.
+    """
+    if not isinstance(step, dict):
+        return
+    if step.get("service") != "groq":
+        return
+    instructions = step.get("instructions")
+    if not instructions or not isinstance(instructions, str) or not instructions.strip():
+        print(
+            f"[workflow_generator] Step {step.get('step')} is a groq step "
+            f"with no 'instructions' field - required by SYSTEM_INSTRUCTION, "
+            f"compiler cannot build the AI Agent node's prompt without it."
+        )
+    elif len(instructions.strip()) < 25:
+        print(
+            f"[workflow_generator] Step {step.get('step')} 'instructions' "
+            f"looks too short/vague to be useful to the compiler: {instructions!r}"
+        )
+
+
+def _check_depends_on(step: dict, all_steps: list) -> None:
+    """
+    Same non-fatal logging pattern as _check_target/_check_service, for the
+    new v4 "depends_on" field. Two things worth catching early, since a bad
+    depends_on value silently breaks the future compile-time "wire this
+    field to a previous step's output" UI rather than failing loudly:
+
+      1. A referenced step number that doesn't exist in this workflow at
+         all (Groq hallucinated a step number).
+      2. A referenced step number >= this step's own number (a forward or
+         self reference - "depends on" must point strictly backwards;
+         nothing can depend on a step that hasn't run yet).
+
+    Doesn't touch preview_json - visibility only, matching every other
+    _check_* function in this file.
+    """
+    if not isinstance(step, dict):
+        return
+    this_step = step.get("step")
+    depends_on = step.get("depends_on", [])
+    if not isinstance(depends_on, list):
+        print(
+            f"[workflow_generator] Step {this_step} has non-list 'depends_on': "
+            f"{depends_on!r} - expected a list of step numbers."
+        )
+        return
+
+    known_steps = {s.get("step") for s in all_steps if isinstance(s, dict)}
+    for ref in depends_on:
+        if ref not in known_steps:
+            print(
+                f"[workflow_generator] Step {this_step} has 'depends_on' "
+                f"referencing step {ref}, which does not exist in this workflow."
+            )
+        elif isinstance(this_step, int) and isinstance(ref, int) and ref >= this_step:
+            print(
+                f"[workflow_generator] Step {this_step} has 'depends_on' "
+                f"referencing step {ref}, which is not strictly earlier - "
+                f"a step cannot depend on itself or a later step."
+            )
+
+
+def _check_condition_branch(step: dict, all_steps: list) -> None:
+    """
+    Same non-fatal logging pattern, for the new v4 "condition"/"branch"
+    keys. Checks:
+
+      1. "condition.branches", if present, is a non-empty list of strings.
+      2. "branch", if present on a step, matches one of the branch values
+         declared by SOME earlier step's "condition" - a step claiming to
+         run under a branch ("approved") that no earlier step's condition
+         ever declared is a dangling reference the compiler can't resolve
+         to an actual n8n IF/Switch output.
+
+    Doesn't touch preview_json - visibility only.
+    """
+    if not isinstance(step, dict):
+        return
+    this_step = step.get("step")
+
+    condition = step.get("condition")
+    if condition is not None:
+        branches = condition.get("branches") if isinstance(condition, dict) else None
+        if not isinstance(branches, list) or not branches:
+            print(
+                f"[workflow_generator] Step {this_step} has a 'condition' with "
+                f"no non-empty 'branches' list: {condition!r}"
+            )
+
+    branch = step.get("branch")
+    if branch is not None:
+        declared_branches = set()
+        for s in all_steps:
+            if not isinstance(s, dict):
+                continue
+            s_num = s.get("step")
+            if not isinstance(this_step, int) or not isinstance(s_num, int) or s_num >= this_step:
+                continue
+            s_condition = s.get("condition")
+            if isinstance(s_condition, dict) and isinstance(s_condition.get("branches"), list):
+                declared_branches.update(s_condition["branches"])
+        if branch not in declared_branches:
+            print(
+                f"[workflow_generator] Step {this_step} has 'branch': {branch!r} "
+                f"which doesn't match any 'branches' value declared by an "
+                f"earlier step's 'condition' - dangling branch reference."
+            )
+
+
 def _enrich_with_real_operations(preview_json: dict) -> dict:
     """
     THE fix for hardcoded operations. Runs once per generation, right after
@@ -227,6 +414,18 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
     is worse than an honest gap, since it looks correct in the preview and
     only breaks later, at deploy time.
     """
+    # Known root/sub-node pairing for ai_subnode services, confirmed against
+    # n8n's own credentials docs (see conversation history for groq). Only
+    # groq is populated for now - the registry doesn't currently store a
+    # concrete n8n node type for its other 35 ai_subnode entries, so this
+    # deliberately does NOT guess a node type for those; they fall back to
+    # a "kind known, node type not yet mapped" shape instead of a wrong one.
+    _AI_SUBNODE_CHAT_MODEL_TYPES = {
+        "groq": "n8n-nodes-langchain.lmChatGroq",
+    }
+    _AI_AGENT_ROOT_NODE_TYPE = "n8n-nodes-langchain.agent"
+    _AI_LANGUAGE_MODEL_CONNECTION_TYPE = "ai_languageModel"
+
     steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
     for step in steps:
         if not isinstance(step, dict):
@@ -236,14 +435,40 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
         target = step.get("target") or None
 
         entry = get_service_entry(service) if service else None
+
+        if entry and entry.get("kind") == "ai_subnode":
+            # NOT a failure - n8n_resolved stays False deliberately, since
+            # existing consumers (e.g. agent_router.py's "unresolved" list)
+            # already key off this boolean for review-flagging, and this
+            # patch is additive-only until that's confirmed safe to change.
+            # n8n_resolution_kind is the new, unambiguous signal: the
+            # compiler should check THIS field, not n8n_resolved, to tell
+            # "genuinely broken" apart from "correctly an AI sub-node."
+            step["n8n_resolved"] = False
+            step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "ai_subnode"
+            step["n8n_subnode"] = {
+                "root_node_type": _AI_AGENT_ROOT_NODE_TYPE,
+                "connection_type": _AI_LANGUAGE_MODEL_CONNECTION_TYPE,
+                "chat_model_node_type": _AI_SUBNODE_CHAT_MODEL_TYPES.get(service),  # None = not yet mapped for this provider
+                # Resolved: SYSTEM_INSTRUCTION now requires Groq to populate
+                # step["instructions"] directly on every groq step. The
+                # compiler reads that field verbatim as the AI Agent node's
+                # prompt/instructions text - no separate lookup needed.
+                "agent_instructions_source": "step.instructions",
+            }
+            continue
+
         if not entry or entry.get("kind") != "action_node":
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "unmapped" if not entry else "unsupported_kind"
             continue
 
         op = resolve_operation(service, verb, resource=target)
         step["n8n_resolved"] = op is not None
         step["n8n_operation"] = op  # full dict or None - never a guessed partial value
+        step["n8n_resolution_kind"] = "action_node" if op is not None else "no_operation_match"
 
     return preview_json
 
@@ -301,6 +526,7 @@ def _sanitize_workflow_output(raw: dict) -> dict:
     sanitized = {key: raw[key] for key in _ALLOWED_TOP_LEVEL_KEYS}
     sanitized["schema_version"] = CURRENT_SCHEMA_VERSION
     _check_operations(sanitized.get("preview_json", {}))
+    _check_approval_branching(sanitized.get("automation_description", ""), sanitized.get("preview_json", {}))
     _enrich_with_real_operations(sanitized.get("preview_json", {}))
     return sanitized
 
@@ -358,7 +584,7 @@ async def generate_groq_workflow(
         Use EXACTLY this schema:
 
         {
-        "schema_version": 3,
+        "schema_version": 4,
         "automation_name": "",
         "automation_description": "",
 
@@ -386,13 +612,38 @@ async def generate_groq_workflow(
                 "service": "",
                 "operation": "",
                 "target": "",
-                "parameters": {}
+                "parameters": {},
+                "depends_on": []
             }
             ],
+
+            (A step where "service" is "groq" MUST also include an
+            "instructions" string field - see the GROQ / AI STEPS -
+            INSTRUCTIONS section below. Every other step omits "instructions"
+            entirely.)
 
             "output": ""
         }
         }
+
+        A step MAY also carry "condition" and/or "branch" - see the CONDITION /
+        BRANCH section below. Both are OPTIONAL and omitted entirely on steps
+        that don't need them - do not add empty/null placeholders for them.
+
+        --------------------------------------------------
+        CRITICAL - APPROVAL / DECISION AUTOMATIONS MUST BRANCH
+
+        Before generating "workflow", check automation_description and the
+        user's request for approval/decision language: "approve"/"reject",
+        "approval", "decision", "accept"/"decline", "based on the outcome of",
+        "if approved"/"if rejected", or similar. If any such language is
+        present, the workflow you generate MUST include a "condition" object
+        on the step that produces the outcome, and a "branch" tag on every
+        downstream step that only makes sense for one outcome. A flat,
+        unconditional chain of steps is WRONG for this class of automation,
+        even if every individual step's operation/target/service is correct.
+        This is a hard requirement, not a stylistic preference - see the full
+        CONDITION / BRANCH section under RULES 7 for the exact shape.
 
         --------------------------------------------------
         RULES
@@ -430,6 +681,36 @@ async def generate_groq_workflow(
         jina_ai) remain valid ONLY when the step performs that service's own
         specific, non-reasoning action (e.g. deep_l for translation, open_ai
         for image generation) - not as a substitute for groq on a reasoning step.
+
+        --------------------------------------------------
+        GROQ / AI STEPS - INSTRUCTIONS
+
+        Every workflow step with "service": "groq" MUST include an
+        "instructions" field: a self-contained string telling the AI exactly
+        what to do with the data available to it at that point in the
+        workflow. This is NOT the same as "automation_description" (which
+        describes the whole automation) - it is the specific task for this
+        one AI step.
+
+        Requirements for "instructions":
+        - Reference upstream steps by their step number when the AI step
+          depends on their output, e.g. "Analyze the task data retrieved in
+          step 1 ..." - do not use vague phrases like "the input" or "the
+          data" with no antecedent.
+        - State what the AI should produce, in enough detail that a person
+          reading only this string (without seeing the rest of the workflow)
+          understands the task, e.g. "... identify recurring delays or
+          approval bottlenecks, and write a concise summary suitable for a
+          management email" rather than just "summarize the data".
+        - Do NOT include literal runtime values (specific names, dates,
+          addresses) - describe the task, not filled-in content. Same
+          structural-only rule that applies to "parameters" elsewhere in
+          this schema.
+
+        A groq step with a missing or vague "instructions" field is an
+        incomplete generation, equivalent to a step missing "operation" or
+        "target" - it will be flagged and is not acceptable as a final
+        answer.
 
         --------------------------------------------------
         4. preview_json.title
@@ -472,6 +753,11 @@ async def generate_groq_workflow(
         operation
         target
         parameters
+        depends_on
+
+        A step MAY additionally contain "condition" and/or "branch" - only when
+        the automation actually forks on an outcome. See CONDITION / BRANCH
+        below. Do not add either key to a step that doesn't need it.
 
         SERVICE
 
@@ -539,6 +825,13 @@ async def generate_groq_workflow(
         than inventing one. An empty target is the expected, correct output for
         many steps - do not force a value.
 
+        Do not assume a service has only one kind of object just because the
+        automation only uses it one way - some services (e.g. Google Sheets,
+        which can act on a "sheet" or a "spreadsheet") are ambiguous by nature
+        regardless of how the automation happens to use them. When in doubt
+        between leaving "target" empty and picking one, prefer picking the
+        most specific, plainest noun over leaving it empty.
+
         Never use "target" to describe runtime content (do not write the actual
         message text, a person's name, or a specific ID here) - same rule as
         "parameters". "target" is a category of thing, not an instance of one.
@@ -579,15 +872,112 @@ async def generate_groq_workflow(
         "step": 2,
         "service": "google_sheets",
         "operation": "update",
-        "target": "",
+        "target": "sheet",
         "parameters": { "sheet_id": "" }
         }
 
         In the second example, "sheet_id" is structural (which sheet to write to) -
-        not runtime content, and "target" is left empty since Google Sheets' update
-        step has no ambiguity about what kind of object is being updated.
+        not runtime content. "target" is set to "sheet" because Google Sheets can
+        act on more than one kind of object ("sheet" vs "spreadsheet") - do not
+        leave "target" empty for google_sheets steps; pick whichever of its
+        resources the action actually applies to.
         If the automation does not name a specific sheet, document, folder, or
         table, leave "parameters" as {}.
+
+        --------------------------------------------------
+        DEPENDS_ON
+
+        "depends_on" is a list of earlier step numbers whose OUTPUT this step's
+        action genuinely needs at runtime - not just steps that happen to run
+        earlier in the sequence.
+
+        Ask: "does this step need a specific piece of data that only exists
+        because an earlier step produced it?" If yes, list that step's number.
+        If this step would make sense on its own with only the trigger data,
+        use an empty list [].
+
+        Examples (illustrating the PATTERN only):
+        - A step that sends the initial request notification -> depends_on: []
+          (it only needs the trigger data, nothing another step produced)
+        - A step that updates a tracking sheet with a manager's decision,
+          where an earlier step read that decision -> depends_on: [that step]
+        - A step that posts a Slack message summarizing what an earlier
+          "generate" (AI) step produced -> depends_on: [that step]
+
+        Most steps depend on nothing but the trigger - [] is the expected,
+        correct value for most steps, same as an empty "parameters". Do not
+        list a step number just because it comes earlier in the workflow.
+
+        --------------------------------------------------
+        CONDITION / BRANCH
+
+        Most automations are a single straight-line sequence and need neither
+        of these keys anywhere. Only use them when the automation's own
+        description implies the outcome of one step determines what happens
+        next (approval/rejection, success/failure, yes/no decisions, routing
+        based on a classification, etc).
+
+        If automation_description or the user's request contains language like
+        "approve"/"reject", "approval", "decision", "accept"/"decline",
+        "based on the outcome of", "if approved"/"if rejected", or similar
+        outcome-dependent phrasing, you MUST add a "condition" to the step that
+        produces that outcome, and a "branch" tag on every downstream step
+        whose execution depends on which outcome occurred. Do NOT represent an
+        approval/decision automation as an unconditional straight line - a
+        downstream step that only makes sense for one outcome (e.g. updating a
+        tracker to "approved") must carry "branch": "approved", not run
+        unconditionally after every outcome.
+
+        "condition" goes on the step whose outcome causes the fork. It is an
+        object with one field:
+
+            "condition": { "branches": ["<outcome_a>", "<outcome_b>", ...] }
+
+        List the possible outcomes in plain lowercase words (e.g. "approved" /
+        "rejected", "success" / "failure"). Two branches is typical; only add
+        more if the automation description genuinely implies more than two
+        outcomes.
+
+        "branch" goes on any LATER step that should only execute under one of
+        those outcomes:
+
+            "branch": "<one of the outcome strings from the condition step>"
+
+        A later step with no "branch" key runs regardless of outcome (e.g. a
+        final logging step that always fires). A later step that depends on
+        the fork should also set "depends_on" to include the step carrying
+        the "condition".
+
+        Worked example (illustration only) - note this is exactly the pattern
+        the CRITICAL rule above requires whenever automation_description
+        contains approval/decision language such as "approval requests" or
+        "based on the manager's decision":
+
+        {
+        "step": 3,
+        "service": "gmail",
+        "operation": "read",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [],
+        "condition": { "branches": ["approved", "rejected"] }
+        }
+
+        {
+        "step": 4,
+        "service": "google_sheets",
+        "operation": "update",
+        "target": "sheet",
+        "parameters": {},
+        "depends_on": [3],
+        "branch": "approved"
+        }
+
+        If the automation description does not imply a fork, do not invent one -
+        omit "condition" and "branch" entirely rather than adding them with
+        placeholder values. But if it DOES imply a fork (see the CRITICAL rule
+        above), omitting "condition"/"branch" is a compliance failure, not a
+        safe default.
 
         --------------------------------------------------
         8. output
@@ -610,6 +1000,10 @@ async def generate_groq_workflow(
         - Only set "target" when the service genuinely has more than one kind of
           object it can act on; otherwise leave it "".
         - Never place runtime content inside "parameters".
+        - Use "depends_on" only for real data dependencies, never for plain
+          sequencing; [] is correct for most steps.
+        - Only add "condition"/"branch" when the automation's description
+          genuinely implies a fork; omit both entirely otherwise.
         - Never add top-level keys beyond the five specified.
         - Never output n8n nodes.
         - Never output implementation code.
@@ -640,6 +1034,9 @@ async def generate_groq_workflow(
         user_content,
         system_instruction
     )
+    result = _sanitize_workflow_output(raw_workflow)
+    print("SANITIZED KEYS:", sorted(result.keys()))   # <-- add this
+    return result
     return _sanitize_workflow_output(raw_workflow)
 
 
