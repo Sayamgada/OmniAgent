@@ -41,9 +41,7 @@
   },
   "deep_l": {
     "kind": "action_node",
-    "node_paths": [
-      "DeepL"
-    ],
+    "node_paths": ["DeepL"],
     "resources": {
       "language": "Language"
     },
@@ -81,9 +79,7 @@
   },
   "humantic_ai": {
     "kind": "action_node",
-    "node_paths": [
-      "HumanticAI"
-    ],
+    "node_paths": ["HumanticAI"],
     "resources": {
       "profile": "Profile"
     },
@@ -113,9 +109,7 @@
   },
   "jina_ai": {
     "kind": "action_node",
-    "node_paths": [
-      "JinaAI"
-    ],
+    "node_paths": ["JinaAI"],
     "resources": {
       "reader": "Reader",
       "research": "Research"
@@ -148,9 +142,7 @@
   },
   "lingva_nex": {
     "kind": "action_node",
-    "node_paths": [
-      "LingvaNex"
-    ],
+    "node_paths": ["LingvaNex"],
     "resources": {},
     "operationsByResource": {
       "activity": [
@@ -174,6 +166,18 @@
         "value": "translate",
         "action": "Translate data",
         "description": "Translate data"
+      },
+      {
+        "label": "Create",
+        "value": "create",
+        "action": "Create an activity",
+        "description": "Create an activity for a member"
+      },
+      {
+        "label": "Get Many",
+        "value": "getAll",
+        "action": "Get many activities",
+        "description": "Get many activities"
       }
     ]
   },
@@ -184,9 +188,7 @@
   },
   "mistral": {
     "kind": "action_node",
-    "node_paths": [
-      "MistralAI"
-    ],
+    "node_paths": ["MistralAI"],
     "resources": {
       "document": "Document"
     },
@@ -209,9 +211,7 @@
   },
   "open_ai": {
     "kind": "action_node",
-    "node_paths": [
-      "OpenAi"
-    ],
+    "node_paths": ["OpenAi"],
     "resources": {
       "chat": "Chat",
       "image": "Image",
@@ -264,9 +264,7 @@
   },
   "perplexity": {
     "kind": "action_node",
-    "node_paths": [
-      "Perplexity"
-    ],
+    "node_paths": ["Perplexity"],
     "resources": {
       "agent": "Agent",
       "chat": "Chat",
@@ -347,9 +345,7 @@
   },
   "google_analytics": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Analytics"
-    ],
+    "node_paths": ["Google/Analytics"],
     "resources": {
       "report": "Report",
       "userActivity": "User Activity"
@@ -407,9 +403,7 @@
   },
   "google_books": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Books"
-    ],
+    "node_paths": ["Google/Books"],
     "resources": {
       "bookshelf": "Bookshelf",
       "bookshelfVolume": "Bookshelf Volume",
@@ -481,9 +475,7 @@
   },
   "google_business_profile": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/BusinessProfile"
-    ],
+    "node_paths": ["Google/BusinessProfile"],
     "resources": {
       "post": "Post",
       "review": "Review"
@@ -552,9 +544,7 @@
   },
   "google_cloud_natural_language": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/CloudNaturalLanguage"
-    ],
+    "node_paths": ["Google/CloudNaturalLanguage"],
     "resources": {
       "document": "Document"
     },
@@ -572,9 +562,7 @@
   },
   "google_perspective": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Perspective"
-    ],
+    "node_paths": ["Google/Perspective"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -588,9 +576,7 @@
   },
   "google_translate": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Translate"
-    ],
+    "node_paths": ["Google/Translate"],
     "resources": {
       "language": "Language"
     },
@@ -608,9 +594,7 @@
   },
   "metabase": {
     "kind": "action_node",
-    "node_paths": [
-      "Metabase"
-    ],
+    "node_paths": ["Metabase"],
     "resources": {
       "alerts": "Alert",
       "databases": "Database",
@@ -691,9 +675,7 @@
   },
   "post_hog": {
     "kind": "action_node",
-    "node_paths": [
-      "PostHog"
-    ],
+    "node_paths": ["PostHog"],
     "resources": {
       "alias": "Alias",
       "event": "Event",
@@ -1577,9 +1559,7 @@
   },
   "microsoft_entra": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Entra"
-    ],
+    "node_paths": ["Microsoft/Entra"],
     "resources": {
       "group": "Group",
       "user": "User"
@@ -2260,9 +2240,7 @@
   },
   "okta": {
     "kind": "action_node",
-    "node_paths": [
-      "Okta"
-    ],
+    "node_paths": ["Okta"],
     "resources": {
       "user": "User"
     },
@@ -2304,9 +2282,7 @@
   },
   "affinity": {
     "kind": "action_node",
-    "node_paths": [
-      "Affinity"
-    ],
+    "node_paths": ["Affinity"],
     "resources": {
       "list": "List",
       "listEntry": "List Entry",
@@ -2423,9 +2399,7 @@
   },
   "agile_crm": {
     "kind": "action_node",
-    "node_paths": [
-      "AgileCrm"
-    ],
+    "node_paths": ["AgileCrm"],
     "resources": {
       "company": "Company",
       "contact": "Contact",
@@ -2533,9 +2507,7 @@
   },
   "autopilot": {
     "kind": "action_node",
-    "node_paths": [
-      "Autopilot"
-    ],
+    "node_paths": ["Autopilot"],
     "resources": {
       "contact": "Contact",
       "contactJourney": "Contact Journey",
@@ -2622,9 +2594,7 @@
   },
   "chargebee": {
     "kind": "action_node",
-    "node_paths": [
-      "Chargebee"
-    ],
+    "node_paths": ["Chargebee"],
     "resources": {
       "customer": "Customer",
       "invoice": "Invoice",
@@ -2721,9 +2691,7 @@
   },
   "clearbit": {
     "kind": "action_node",
-    "node_paths": [
-      "Clearbit"
-    ],
+    "node_paths": ["Clearbit"],
     "resources": {
       "company": "Company",
       "person": "Person"
@@ -2756,9 +2724,7 @@
   },
   "copper": {
     "kind": "action_node",
-    "node_paths": [
-      "Copper"
-    ],
+    "node_paths": ["Copper"],
     "resources": {
       "company": "Company",
       "customerSource": "Customer Source",
@@ -2983,9 +2949,7 @@
   },
   "drift": {
     "kind": "action_node",
-    "node_paths": [
-      "Drift"
-    ],
+    "node_paths": ["Drift"],
     "resources": {
       "contact": "Contact"
     },
@@ -3027,9 +2991,7 @@
   },
   "dropcontact": {
     "kind": "action_node",
-    "node_paths": [
-      "Dropcontact"
-    ],
+    "node_paths": ["Dropcontact"],
     "resources": {
       "contact": "Contact"
     },
@@ -3051,9 +3013,7 @@
   },
   "freshworks_crm": {
     "kind": "action_node",
-    "node_paths": [
-      "FreshworksCrm"
-    ],
+    "node_paths": ["FreshworksCrm"],
     "resources": {
       "account": "Account",
       "appointment": "Appointment",
@@ -3278,9 +3238,7 @@
   },
   "gong": {
     "kind": "action_node",
-    "node_paths": [
-      "Gong"
-    ],
+    "node_paths": ["Gong"],
     "resources": {
       "call": "Call",
       "user": "User"
@@ -3319,9 +3277,7 @@
   },
   "high_level": {
     "kind": "action_node",
-    "node_paths": [
-      "HighLevel"
-    ],
+    "node_paths": ["HighLevel"],
     "resources": {
       "contact": "Contact",
       "opportunity": "Opportunity",
@@ -3450,9 +3406,7 @@
   },
   "hubspot": {
     "kind": "action_node",
-    "node_paths": [
-      "Hubspot"
-    ],
+    "node_paths": ["Hubspot"],
     "resources": {
       "company": "Company",
       "contact": "Contact",
@@ -3704,9 +3658,7 @@
   },
   "hubspot_app_token": {
     "kind": "action_node",
-    "node_paths": [
-      "Hubspot"
-    ],
+    "node_paths": ["Hubspot"],
     "resources": {
       "company": "Company",
       "contact": "Contact",
@@ -3958,9 +3910,7 @@
   },
   "hubspot_developer": {
     "kind": "action_node",
-    "node_paths": [
-      "Hubspot"
-    ],
+    "node_paths": ["Hubspot"],
     "resources": {
       "company": "Company",
       "contact": "Contact",
@@ -4212,9 +4162,7 @@
   },
   "keap": {
     "kind": "action_node",
-    "node_paths": [
-      "Keap"
-    ],
+    "node_paths": ["Keap"],
     "resources": {
       "company": "Company",
       "contact": "Contact",
@@ -4415,9 +4363,7 @@
   },
   "lemlist": {
     "kind": "action_node",
-    "node_paths": [
-      "Lemlist"
-    ],
+    "node_paths": ["Lemlist"],
     "resources": {
       "activity": "Activity",
       "campaign": "Campaign",
@@ -4534,9 +4480,7 @@
   },
   "lone_scale": {
     "kind": "action_node",
-    "node_paths": [
-      "LoneScale"
-    ],
+    "node_paths": ["LoneScale"],
     "resources": {
       "company": "Company",
       "contact": "Contact",
@@ -4587,9 +4531,7 @@
   },
   "salesforce": {
     "kind": "action_node",
-    "node_paths": [
-      "Salesforce"
-    ],
+    "node_paths": ["Salesforce"],
     "resources": {
       "account": "Account",
       "attachment": "Attachment",
@@ -5055,9 +4997,7 @@
   },
   "salesforce_jwt": {
     "kind": "action_node",
-    "node_paths": [
-      "Salesforce"
-    ],
+    "node_paths": ["Salesforce"],
     "resources": {
       "account": "Account",
       "attachment": "Attachment",
@@ -5523,9 +5463,7 @@
   },
   "zoho": {
     "kind": "action_node",
-    "node_paths": [
-      "Zoho"
-    ],
+    "node_paths": ["Zoho"],
     "resources": {
       "account": "Account",
       "contact": "Contact",
@@ -5930,9 +5868,7 @@
   },
   "aws": {
     "kind": "action_node",
-    "node_paths": [
-      "Aws"
-    ],
+    "node_paths": ["Aws"],
     "resources": {
       "certificate": "Certificate",
       "group": "Group",
@@ -6380,9 +6316,7 @@
   },
   "aws_assume_role": {
     "kind": "action_node",
-    "node_paths": [
-      "Aws"
-    ],
+    "node_paths": ["Aws"],
     "resources": {
       "certificate": "Certificate",
       "group": "Group",
@@ -6830,9 +6764,7 @@
   },
   "azure_storage": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Storage"
-    ],
+    "node_paths": ["Microsoft/Storage"],
     "resources": {
       "blob": "Blob",
       "container": "Container"
@@ -6895,9 +6827,7 @@
   },
   "azure_storage_shared_key": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Storage"
-    ],
+    "node_paths": ["Microsoft/Storage"],
     "resources": {
       "blob": "Blob",
       "container": "Container"
@@ -6960,9 +6890,7 @@
   },
   "box": {
     "kind": "action_node",
-    "node_paths": [
-      "Box"
-    ],
+    "node_paths": ["Box"],
     "resources": {
       "file": "File",
       "folder": "Folder"
@@ -7055,9 +6983,7 @@
   },
   "dropbox": {
     "kind": "action_node",
-    "node_paths": [
-      "Dropbox"
-    ],
+    "node_paths": ["Dropbox"],
     "resources": {
       "file": "File",
       "folder": "Folder",
@@ -7141,18 +7067,14 @@
   },
   "file_maker": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "FileMaker"
-    ],
+    "node_paths": ["FileMaker"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "ftp": {
     "kind": "action_node",
-    "node_paths": [
-      "Ftp"
-    ],
+    "node_paths": ["Ftp"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -7190,9 +7112,7 @@
   },
   "google_cloud_storage": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/CloudStorage"
-    ],
+    "node_paths": ["Google/CloudStorage"],
     "resources": {
       "bucket": "Bucket",
       "object": "Object"
@@ -7267,9 +7187,7 @@
   },
   "google_drive": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Drive"
-    ],
+    "node_paths": ["Google/Drive"],
     "resources": {
       "drive": "Shared Drive",
       "file": "File",
@@ -7435,9 +7353,7 @@
   },
   "ko_bo_toolbox": {
     "kind": "action_node",
-    "node_paths": [
-      "KoBoToolbox"
-    ],
+    "node_paths": ["KoBoToolbox"],
     "resources": {
       "file": "File",
       "form": "Form",
@@ -7560,9 +7476,7 @@
   },
   "microsoft_one_drive": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/OneDrive"
-    ],
+    "node_paths": ["Microsoft/OneDrive"],
     "resources": {
       "file": "File",
       "folder": "Folder"
@@ -7673,9 +7587,7 @@
   },
   "next": {
     "kind": "action_node",
-    "node_paths": [
-      "NextCloud"
-    ],
+    "node_paths": ["NextCloud"],
     "resources": {
       "file": "File",
       "folder": "Folder",
@@ -7795,9 +7707,7 @@
   },
   "next_cloud": {
     "kind": "action_node",
-    "node_paths": [
-      "NextCloud"
-    ],
+    "node_paths": ["NextCloud"],
     "resources": {
       "file": "File",
       "folder": "Folder",
@@ -7917,9 +7827,7 @@
   },
   "pipedrive": {
     "kind": "action_node",
-    "node_paths": [
-      "Pipedrive"
-    ],
+    "node_paths": ["Pipedrive"],
     "resources": {
       "activity": "Activity",
       "deal": "Deal",
@@ -8258,9 +8166,7 @@
   },
   "sftp": {
     "kind": "action_node",
-    "node_paths": [
-      "Ftp"
-    ],
+    "node_paths": ["Ftp"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -8298,9 +8204,7 @@
   },
   "cisco_webex": {
     "kind": "action_node",
-    "node_paths": [
-      "Cisco"
-    ],
+    "node_paths": ["Cisco"],
     "resources": {
       "meeting": "Meeting",
       "message": "Message"
@@ -8389,9 +8293,7 @@
   },
   "discord": {
     "kind": "action_node",
-    "node_paths": [
-      "Discord"
-    ],
+    "node_paths": ["Discord"],
     "resources": {
       "channel": "Channel",
       "message": "Message",
@@ -8524,9 +8426,7 @@
   },
   "discord_bot": {
     "kind": "action_node",
-    "node_paths": [
-      "Discord"
-    ],
+    "node_paths": ["Discord"],
     "resources": {
       "channel": "Channel",
       "message": "Message",
@@ -8659,9 +8559,7 @@
   },
   "discord_webhook": {
     "kind": "action_node",
-    "node_paths": [
-      "Discord"
-    ],
+    "node_paths": ["Discord"],
     "resources": {
       "channel": "Channel",
       "message": "Message",
@@ -8794,9 +8692,7 @@
   },
   "discourse": {
     "kind": "action_node",
-    "node_paths": [
-      "Discourse"
-    ],
+    "node_paths": ["Discourse"],
     "resources": {
       "category": "Category",
       "group": "Group",
@@ -8924,9 +8820,7 @@
   },
   "disqus": {
     "kind": "action_node",
-    "node_paths": [
-      "Disqus"
-    ],
+    "node_paths": ["Disqus"],
     "resources": {
       "forum": "Forum"
     },
@@ -8962,9 +8856,7 @@
   },
   "ghost_admin": {
     "kind": "action_node",
-    "node_paths": [
-      "Ghost"
-    ],
+    "node_paths": ["Ghost"],
     "resources": {
       "post": "Post"
     },
@@ -9006,9 +8898,7 @@
   },
   "ghost_content": {
     "kind": "action_node",
-    "node_paths": [
-      "Ghost"
-    ],
+    "node_paths": ["Ghost"],
     "resources": {
       "post": "Post"
     },
@@ -9050,9 +8940,7 @@
   },
   "gmail": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Gmail"
-    ],
+    "node_paths": ["Google/Gmail"],
     "resources": {
       "draft": "Draft",
       "label": "Label",
@@ -9244,9 +9132,7 @@
   },
   "gotify": {
     "kind": "action_node",
-    "node_paths": [
-      "Gotify"
-    ],
+    "node_paths": ["Gotify"],
     "resources": {
       "message": "Message"
     },
@@ -9276,18 +9162,14 @@
   },
   "imap": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "EmailReadImap"
-    ],
+    "node_paths": ["EmailReadImap"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "line_notify": {
     "kind": "action_node",
-    "node_paths": [
-      "Line"
-    ],
+    "node_paths": ["Line"],
     "resources": {
       "notification": "Notification"
     },
@@ -9305,9 +9187,7 @@
   },
   "linear": {
     "kind": "action_node",
-    "node_paths": [
-      "Linear"
-    ],
+    "node_paths": ["Linear"],
     "resources": {
       "comment": "Comment",
       "issue": "Issue"
@@ -9364,9 +9244,7 @@
   },
   "mailcheck": {
     "kind": "action_node",
-    "node_paths": [
-      "Mailcheck"
-    ],
+    "node_paths": ["Mailcheck"],
     "resources": {
       "email": "Email"
     },
@@ -9384,18 +9262,14 @@
   },
   "mailgun": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Mailgun"
-    ],
+    "node_paths": ["Mailgun"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "mailjet_email": {
     "kind": "action_node",
-    "node_paths": [
-      "Mailjet"
-    ],
+    "node_paths": ["Mailjet"],
     "resources": {
       "email": "Email",
       "sms": "SMS"
@@ -9428,9 +9302,7 @@
   },
   "mailjet_sms": {
     "kind": "action_node",
-    "node_paths": [
-      "Mailjet"
-    ],
+    "node_paths": ["Mailjet"],
     "resources": {
       "email": "Email",
       "sms": "SMS"
@@ -9463,9 +9335,7 @@
   },
   "mandrill": {
     "kind": "action_node",
-    "node_paths": [
-      "Mandrill"
-    ],
+    "node_paths": ["Mandrill"],
     "resources": {
       "message": "Message"
     },
@@ -9489,9 +9359,7 @@
   },
   "matrix": {
     "kind": "action_node",
-    "node_paths": [
-      "Matrix"
-    ],
+    "node_paths": ["Matrix"],
     "resources": {
       "account": "Account",
       "event": "Event",
@@ -9584,9 +9452,7 @@
   },
   "mattermost": {
     "kind": "action_node",
-    "node_paths": [
-      "Mattermost"
-    ],
+    "node_paths": ["Mattermost"],
     "resources": {
       "channel": "Channel",
       "message": "Message",
@@ -9721,9 +9587,7 @@
   },
   "message_bird": {
     "kind": "action_node",
-    "node_paths": [
-      "MessageBird"
-    ],
+    "node_paths": ["MessageBird"],
     "resources": {
       "sms": "SMS",
       "balance": "Balance"
@@ -9750,9 +9614,7 @@
   },
   "microsoft_outlook": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Outlook"
-    ],
+    "node_paths": ["Microsoft/Outlook"],
     "resources": {
       "draft": "Draft",
       "folder": "Folder",
@@ -10025,9 +9887,7 @@
   },
   "microsoft_teams": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Teams"
-    ],
+    "node_paths": ["Microsoft/Teams"],
     "resources": {
       "channel": "Channel",
       "channelMessage": "Channel Message",
@@ -10156,9 +10016,7 @@
   },
   "plivo": {
     "kind": "action_node",
-    "node_paths": [
-      "Plivo"
-    ],
+    "node_paths": ["Plivo"],
     "resources": {
       "call": "Call",
       "mms": "MMS",
@@ -10194,18 +10052,14 @@
   },
   "postmark": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Postmark"
-    ],
+    "node_paths": ["Postmark"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "quick_books": {
     "kind": "action_node",
-    "node_paths": [
-      "QuickBooks"
-    ],
+    "node_paths": ["QuickBooks"],
     "resources": {
       "bill": "Bill",
       "customer": "Customer",
@@ -10496,9 +10350,7 @@
   },
   "rocketchat": {
     "kind": "action_node",
-    "node_paths": [
-      "Rocketchat"
-    ],
+    "node_paths": ["Rocketchat"],
     "resources": {
       "chat": "Chat",
       "subscriptions": "Subscription",
@@ -10540,9 +10392,7 @@
   },
   "send_grid": {
     "kind": "action_node",
-    "node_paths": [
-      "SendGrid"
-    ],
+    "node_paths": ["SendGrid"],
     "resources": {
       "contact": "Contact",
       "list": "List",
@@ -10620,9 +10470,7 @@
   },
   "slack": {
     "kind": "action_node",
-    "node_paths": [
-      "Slack"
-    ],
+    "node_paths": ["Slack"],
     "resources": {
       "channel": "Channel",
       "file": "File",
@@ -10961,9 +10809,7 @@
   },
   "smtp": {
     "kind": "action_node",
-    "node_paths": [
-      "EmailSend"
-    ],
+    "node_paths": ["EmailSend"],
     "resources": {},
     "operationsByResource": {
       "email": [
@@ -10981,13 +10827,24 @@
         }
       ]
     },
-    "operationsNoResource": []
+    "operationsNoResource": [
+      {
+        "label": "Send",
+        "value": "send",
+        "action": "Send an Email",
+        "description": null
+      },
+      {
+        "label": "Send and Wait for Response",
+        "value": "__IDENT__SEND_AND_WAIT_OPERATION",
+        "action": "Send message and wait for response",
+        "description": null
+      }
+    ]
   },
   "telegram": {
     "kind": "action_node",
-    "node_paths": [
-      "Telegram"
-    ],
+    "node_paths": ["Telegram"],
     "resources": {
       "chat": "Chat",
       "callback": "Callback",
@@ -11170,9 +11027,7 @@
   },
   "twilio": {
     "kind": "action_node",
-    "node_paths": [
-      "Twilio"
-    ],
+    "node_paths": ["Twilio"],
     "resources": {
       "call": "Call",
       "sms": "SMS"
@@ -11199,9 +11054,7 @@
   },
   "vonage": {
     "kind": "action_node",
-    "node_paths": [
-      "Vonage"
-    ],
+    "node_paths": ["Vonage"],
     "resources": {
       "sms": "SMS"
     },
@@ -11224,9 +11077,7 @@
   },
   "whats_app_trigger": {
     "kind": "action_node",
-    "node_paths": [
-      "WhatsApp"
-    ],
+    "node_paths": ["WhatsApp"],
     "resources": {
       "message": "Message",
       "media": "Media"
@@ -11277,9 +11128,7 @@
   },
   "zoom": {
     "kind": "action_node",
-    "node_paths": [
-      "Zoom"
-    ],
+    "node_paths": ["Zoom"],
     "resources": {
       "meeting": "Meeting"
     },
@@ -11373,9 +11222,7 @@
   },
   "freshdesk": {
     "kind": "action_node",
-    "node_paths": [
-      "Freshdesk"
-    ],
+    "node_paths": ["Freshdesk"],
     "resources": {
       "contact": "Contact",
       "ticket": "Ticket"
@@ -11450,9 +11297,7 @@
   },
   "freshservice": {
     "kind": "action_node",
-    "node_paths": [
-      "Freshservice"
-    ],
+    "node_paths": ["Freshservice"],
     "resources": {
       "agent": "Agent",
       "agentGroup": "Agent Group",
@@ -11970,9 +11815,7 @@
   },
   "halo_p_s_a": {
     "kind": "action_node",
-    "node_paths": [
-      "HaloPSA"
-    ],
+    "node_paths": ["HaloPSA"],
     "resources": {
       "client": "Client",
       "site": "Site",
@@ -12113,9 +11956,7 @@
   },
   "help_scout": {
     "kind": "action_node",
-    "node_paths": [
-      "HelpScout"
-    ],
+    "node_paths": ["HelpScout"],
     "resources": {
       "conversation": "Conversation",
       "customer": "Customer",
@@ -12214,9 +12055,7 @@
   },
   "intercom": {
     "kind": "action_node",
-    "node_paths": [
-      "Intercom"
-    ],
+    "node_paths": ["Intercom"],
     "resources": {
       "company": "Company",
       "lead": "Lead",
@@ -12324,9 +12163,7 @@
   },
   "zendesk": {
     "kind": "action_node",
-    "node_paths": [
-      "Zendesk"
-    ],
+    "node_paths": ["Zendesk"],
     "resources": {
       "ticket": "Ticket",
       "ticketField": "Ticket Field",
@@ -12546,9 +12383,7 @@
   },
   "baserow": {
     "kind": "action_node",
-    "node_paths": [
-      "Baserow"
-    ],
+    "node_paths": ["Baserow"],
     "resources": {
       "row": "Row"
     },
@@ -12608,9 +12443,7 @@
   },
   "crate_db": {
     "kind": "action_node",
-    "node_paths": [
-      "CrateDb"
-    ],
+    "node_paths": ["CrateDb"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -12636,9 +12469,7 @@
   },
   "databricks": {
     "kind": "action_node",
-    "node_paths": [
-      "Databricks"
-    ],
+    "node_paths": ["Databricks"],
     "resources": {
       "databricksSql": "Databricks SQL",
       "files": "File",
@@ -12881,9 +12712,7 @@
   },
   "elasticsearch": {
     "kind": "action_node",
-    "node_paths": [
-      "Elastic"
-    ],
+    "node_paths": ["Elastic"],
     "resources": {
       "case": "Case",
       "caseComment": "Case Comment",
@@ -13048,9 +12877,7 @@
   },
   "google_big_query": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/BigQuery"
-    ],
+    "node_paths": ["Google/BigQuery"],
     "resources": {
       "record": "Record"
     },
@@ -13088,9 +12915,7 @@
   },
   "google_firebase_cloud_firestore": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Firebase"
-    ],
+    "node_paths": ["Google/Firebase"],
     "resources": {
       "document": "Document",
       "collection": "Collection"
@@ -13178,9 +13003,7 @@
   },
   "google_firebase_realtime_database": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Firebase"
-    ],
+    "node_paths": ["Google/Firebase"],
     "resources": {
       "document": "Document",
       "collection": "Collection"
@@ -13268,9 +13091,7 @@
   },
   "grist": {
     "kind": "action_node",
-    "node_paths": [
-      "Grist"
-    ],
+    "node_paths": ["Grist"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -13308,9 +13129,7 @@
   },
   "microsoft_azure_cosmos_db_shared_key": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/AzureCosmosDb"
-    ],
+    "node_paths": ["Microsoft/AzureCosmosDb"],
     "resources": {
       "container": "Container",
       "item": "Item"
@@ -13385,9 +13204,7 @@
   },
   "microsoft_sql": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Sql"
-    ],
+    "node_paths": ["Microsoft/Sql"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -13419,9 +13236,7 @@
   },
   "mongo_db": {
     "kind": "action_node",
-    "node_paths": [
-      "MongoDb"
-    ],
+    "node_paths": ["MongoDb"],
     "resources": {
       "searchIndexes": "Search Index",
       "document": "Document"
@@ -13502,9 +13317,7 @@
   },
   "my_sql": {
     "kind": "action_node",
-    "node_paths": [
-      "MySql"
-    ],
+    "node_paths": ["MySql"],
     "resources": {},
     "operationsByResource": {
       "database": [
@@ -13564,14 +13377,30 @@
         "value": "update",
         "action": "Update rows in database",
         "description": "Update rows in database"
+      },
+      {
+        "label": "Delete",
+        "value": "deleteTable",
+        "action": "Delete table or rows",
+        "description": "Delete an entire table or rows in a table"
+      },
+      {
+        "label": "Insert or Update",
+        "value": "upsert",
+        "action": "Insert or update rows in a table",
+        "description": "Insert or update rows in a table"
+      },
+      {
+        "label": "Select",
+        "value": "select",
+        "action": "Select rows from a table",
+        "description": "Select rows from a table"
       }
     ]
   },
   "postgres": {
     "kind": "action_node",
-    "node_paths": [
-      "Postgres"
-    ],
+    "node_paths": ["Postgres"],
     "resources": {},
     "operationsByResource": {
       "database": [
@@ -13631,14 +13460,30 @@
         "value": "update",
         "action": "Update rows in database",
         "description": "Update rows in database"
+      },
+      {
+        "label": "Delete",
+        "value": "deleteTable",
+        "action": "Delete table or rows",
+        "description": "Delete an entire table or rows in a table"
+      },
+      {
+        "label": "Insert or Update",
+        "value": "upsert",
+        "action": "Insert or update rows in a table",
+        "description": "Insert or update rows in a table"
+      },
+      {
+        "label": "Select",
+        "value": "select",
+        "action": "Select rows from a table",
+        "description": "Select rows from a table"
       }
     ]
   },
   "quest_db": {
     "kind": "action_node",
-    "node_paths": [
-      "QuestDb"
-    ],
+    "node_paths": ["QuestDb"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -13658,9 +13503,7 @@
   },
   "redis": {
     "kind": "action_node",
-    "node_paths": [
-      "Redis"
-    ],
+    "node_paths": ["Redis"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -13728,9 +13571,7 @@
   },
   "snowflake": {
     "kind": "action_node",
-    "node_paths": [
-      "Snowflake"
-    ],
+    "node_paths": ["Snowflake"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -13756,9 +13597,7 @@
   },
   "supabase": {
     "kind": "action_node",
-    "node_paths": [
-      "Supabase"
-    ],
+    "node_paths": ["Supabase"],
     "resources": {
       "row": "Row"
     },
@@ -13800,9 +13639,7 @@
   },
   "timescale_db": {
     "kind": "action_node",
-    "node_paths": [
-      "TimescaleDb"
-    ],
+    "node_paths": ["TimescaleDb"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -13828,9 +13665,7 @@
   },
   "spotify": {
     "kind": "action_node",
-    "node_paths": [
-      "Spotify"
-    ],
+    "node_paths": ["Spotify"],
     "resources": {
       "album": "Album",
       "artist": "Artist",
@@ -14040,9 +13875,7 @@
   },
   "api_template_io": {
     "kind": "action_node",
-    "node_paths": [
-      "ApiTemplateIo"
-    ],
+    "node_paths": ["ApiTemplateIo"],
     "resources": {
       "account": "Account",
       "image": "Image",
@@ -14078,9 +13911,7 @@
   },
   "asana": {
     "kind": "action_node",
-    "node_paths": [
-      "Asana"
-    ],
+    "node_paths": ["Asana"],
     "resources": {
       "project": "Project",
       "subtask": "Subtask",
@@ -14242,27 +14073,21 @@
   },
   "bitbucket": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Bitbucket"
-    ],
+    "node_paths": ["Bitbucket"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "bitbucket_access": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Bitbucket"
-    ],
+    "node_paths": ["Bitbucket"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "circle_ci": {
     "kind": "action_node",
-    "node_paths": [
-      "CircleCi"
-    ],
+    "node_paths": ["CircleCi"],
     "resources": {
       "pipeline": "Pipeline"
     },
@@ -14292,9 +14117,7 @@
   },
   "click_up": {
     "kind": "action_node",
-    "node_paths": [
-      "ClickUp"
-    ],
+    "node_paths": ["ClickUp"],
     "resources": {
       "checklist": "Checklist",
       "checklistItem": "Checklist Item",
@@ -14713,9 +14536,7 @@
   },
   "contentful": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Contentful"
-    ],
+    "node_paths": ["Contentful"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
@@ -14732,9 +14553,7 @@
   },
   "erp_next": {
     "kind": "action_node",
-    "node_paths": [
-      "ERPNext"
-    ],
+    "node_paths": ["ERPNext"],
     "resources": {
       "document": "Document"
     },
@@ -14776,9 +14595,7 @@
   },
   "git_password": {
     "kind": "action_node",
-    "node_paths": [
-      "Git"
-    ],
+    "node_paths": ["Git"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -14876,9 +14693,7 @@
   },
   "github": {
     "kind": "action_node",
-    "node_paths": [
-      "Github"
-    ],
+    "node_paths": ["Github"],
     "resources": {
       "file": "File",
       "issue": "Issue",
@@ -15202,9 +15017,7 @@
   },
   "github_app": {
     "kind": "action_node",
-    "node_paths": [
-      "Github"
-    ],
+    "node_paths": ["Github"],
     "resources": {
       "file": "File",
       "issue": "Issue",
@@ -15528,9 +15341,7 @@
   },
   "gitlab": {
     "kind": "action_node",
-    "node_paths": [
-      "Gitlab"
-    ],
+    "node_paths": ["Gitlab"],
     "resources": {
       "file": "File",
       "issue": "Issue",
@@ -15662,9 +15473,7 @@
   },
   "grafana": {
     "kind": "action_node",
-    "node_paths": [
-      "Grafana"
-    ],
+    "node_paths": ["Grafana"],
     "resources": {
       "dashboard": "Dashboard",
       "team": "Team",
@@ -15781,9 +15590,7 @@
   },
   "jenkins": {
     "kind": "action_node",
-    "node_paths": [
-      "Jenkins"
-    ],
+    "node_paths": ["Jenkins"],
     "resources": {
       "build": "Build",
       "instance": "Instance",
@@ -15867,9 +15674,7 @@
   },
   "jira_software": {
     "kind": "action_node",
-    "node_paths": [
-      "Jira"
-    ],
+    "node_paths": ["Jira"],
     "resources": {
       "issue": "Issue",
       "issueAttachment": "Issue Attachment",
@@ -16010,9 +15815,7 @@
   },
   "jira_software_cloud": {
     "kind": "action_node",
-    "node_paths": [
-      "Jira"
-    ],
+    "node_paths": ["Jira"],
     "resources": {
       "issue": "Issue",
       "issueAttachment": "Issue Attachment",
@@ -16153,9 +15956,7 @@
   },
   "jira_software_server": {
     "kind": "action_node",
-    "node_paths": [
-      "Jira"
-    ],
+    "node_paths": ["Jira"],
     "resources": {
       "issue": "Issue",
       "issueAttachment": "Issue Attachment",
@@ -16296,9 +16097,7 @@
   },
   "jira_software_server_pat": {
     "kind": "action_node",
-    "node_paths": [
-      "Jira"
-    ],
+    "node_paths": ["Jira"],
     "resources": {
       "issue": "Issue",
       "issueAttachment": "Issue Attachment",
@@ -16439,11 +16238,7 @@
   },
   "jwt_auth": {
     "kind": "action_node",
-    "node_paths": [
-      "Jwt",
-      "RespondToWebhook",
-      "Webhook"
-    ],
+    "node_paths": ["Jwt", "RespondToWebhook", "Webhook"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -16469,9 +16264,7 @@
   },
   "monday_com": {
     "kind": "action_node",
-    "node_paths": [
-      "MondayCom"
-    ],
+    "node_paths": ["MondayCom"],
     "resources": {
       "board": "Board",
       "boardColumn": "Board Column",
@@ -16600,9 +16393,7 @@
   },
   "n8n": {
     "kind": "action_node",
-    "node_paths": [
-      "N8n"
-    ],
+    "node_paths": ["N8n"],
     "resources": {
       "audit": "Audit",
       "credential": "Credential",
@@ -16713,9 +16504,7 @@
   },
   "nasa": {
     "kind": "action_node",
-    "node_paths": [
-      "Nasa"
-    ],
+    "node_paths": ["Nasa"],
     "resources": {
       "asteroidNeoBrowse": "Asteroid Neo-Browse",
       "asteroidNeoFeed": "Asteroid Neo-Feed",
@@ -16899,9 +16688,7 @@
   },
   "netlify": {
     "kind": "action_node",
-    "node_paths": [
-      "Netlify"
-    ],
+    "node_paths": ["Netlify"],
     "resources": {
       "deploy": "Deploy",
       "site": "Site"
@@ -16958,9 +16745,7 @@
   },
   "npm": {
     "kind": "action_node",
-    "node_paths": [
-      "Npm"
-    ],
+    "node_paths": ["Npm"],
     "resources": {
       "package": "Package",
       "distTag": "Distribution Tag"
@@ -17005,9 +16790,7 @@
   },
   "pager_duty": {
     "kind": "action_node",
-    "node_paths": [
-      "PagerDuty"
-    ],
+    "node_paths": ["PagerDuty"],
     "resources": {
       "incident": "Incident",
       "incidentNote": "Incident Note",
@@ -17082,9 +16865,7 @@
   },
   "sentry_io": {
     "kind": "action_node",
-    "node_paths": [
-      "SentryIo"
-    ],
+    "node_paths": ["SentryIo"],
     "resources": {
       "event": "Event",
       "issue": "Issue",
@@ -17261,9 +17042,7 @@
   },
   "sentry_io_server": {
     "kind": "action_node",
-    "node_paths": [
-      "SentryIo"
-    ],
+    "node_paths": ["SentryIo"],
     "resources": {
       "event": "Event",
       "issue": "Issue",
@@ -17440,9 +17219,7 @@
   },
   "strapi": {
     "kind": "action_node",
-    "node_paths": [
-      "Strapi"
-    ],
+    "node_paths": ["Strapi"],
     "resources": {
       "entry": "Entry"
     },
@@ -17484,9 +17261,7 @@
   },
   "travis_ci": {
     "kind": "action_node",
-    "node_paths": [
-      "TravisCi"
-    ],
+    "node_paths": ["TravisCi"],
     "resources": {
       "build": "Build"
     },
@@ -17528,9 +17303,7 @@
   },
   "trello": {
     "kind": "action_node",
-    "node_paths": [
-      "Trello"
-    ],
+    "node_paths": ["Trello"],
     "resources": {
       "attachment": "Attachment",
       "board": "Board",
@@ -17814,9 +17587,7 @@
   },
   "webflow": {
     "kind": "action_node",
-    "node_paths": [
-      "Webflow"
-    ],
+    "node_paths": ["Webflow"],
     "resources": {
       "item": "Item"
     },
@@ -17869,9 +17640,7 @@
   },
   "g_suite_admin": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/GSuiteAdmin"
-    ],
+    "node_paths": ["Google/GSuiteAdmin"],
     "resources": {
       "device": "ChromeOS Device",
       "group": "Group",
@@ -17985,9 +17754,7 @@
   },
   "google_docs": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Docs"
-    ],
+    "node_paths": ["Google/Docs"],
     "resources": {
       "document": "Document"
     },
@@ -18017,10 +17784,7 @@
   },
   "google_sheets": {
     "kind": "action_node",
-    "node_paths": [
-      "Evaluation",
-      "Google/Sheet"
-    ],
+    "node_paths": ["Evaluation", "Google/Sheet"],
     "resources": {
       "spreadsheet": "Document",
       "sheet": "Sheet Within Document"
@@ -18132,9 +17896,7 @@
   },
   "google_sheets_trigger": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Sheet"
-    ],
+    "node_paths": ["Google/Sheet"],
     "resources": {
       "spreadsheet": "Document",
       "sheet": "Sheet Within Document"
@@ -18221,9 +17983,7 @@
   },
   "google_slides": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Slides"
-    ],
+    "node_paths": ["Google/Slides"],
     "resources": {
       "page": "Page",
       "presentation": "Presentation"
@@ -18274,9 +18034,7 @@
   },
   "microsoft_excel": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Excel"
-    ],
+    "node_paths": ["Microsoft/Excel"],
     "resources": {
       "table": "Table",
       "workbook": "Workbook",
@@ -18408,9 +18166,7 @@
   },
   "microsoft_share_point": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/SharePoint"
-    ],
+    "node_paths": ["Microsoft/SharePoint"],
     "resources": {
       "file": "File",
       "item": "Item",
@@ -18494,9 +18250,7 @@
   },
   "bannerbear": {
     "kind": "action_node",
-    "node_paths": [
-      "Bannerbear"
-    ],
+    "node_paths": ["Bannerbear"],
     "resources": {
       "image": "Image",
       "template": "Template"
@@ -18535,18 +18289,14 @@
   },
   "gumroad": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Gumroad"
-    ],
+    "node_paths": ["Gumroad"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "magento2": {
     "kind": "action_node",
-    "node_paths": [
-      "Magento"
-    ],
+    "node_paths": ["Magento"],
     "resources": {
       "customer": "Customer",
       "invoice": "Invoice",
@@ -18657,9 +18407,7 @@
   },
   "shopify": {
     "kind": "action_node",
-    "node_paths": [
-      "Shopify"
-    ],
+    "node_paths": ["Shopify"],
     "resources": {
       "order": "Order",
       "product": "Product"
@@ -18734,9 +18482,7 @@
   },
   "shopify_access": {
     "kind": "action_node",
-    "node_paths": [
-      "Shopify"
-    ],
+    "node_paths": ["Shopify"],
     "resources": {
       "order": "Order",
       "product": "Product"
@@ -18811,9 +18557,7 @@
   },
   "woo_commerce": {
     "kind": "action_node",
-    "node_paths": [
-      "WooCommerce"
-    ],
+    "node_paths": ["WooCommerce"],
     "resources": {
       "customer": "Customer",
       "order": "Order",
@@ -18921,18 +18665,14 @@
   },
   "crypto": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Crypto"
-    ],
+    "node_paths": ["Crypto"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "harvest": {
     "kind": "action_node",
-    "node_paths": [
-      "Harvest"
-    ],
+    "node_paths": ["Harvest"],
     "resources": {
       "client": "Client",
       "company": "Company",
@@ -19017,9 +18757,7 @@
   },
   "invoice_ninja": {
     "kind": "action_node",
-    "node_paths": [
-      "InvoiceNinja"
-    ],
+    "node_paths": ["InvoiceNinja"],
     "resources": {
       "bank_transaction": "Bank Transaction",
       "client": "Client",
@@ -19240,9 +18978,7 @@
   },
   "marketstack": {
     "kind": "action_node",
-    "node_paths": [
-      "Marketstack"
-    ],
+    "node_paths": ["Marketstack"],
     "resources": {
       "endOfDayData": "End-of-Day Data",
       "exchange": "Exchange",
@@ -19278,9 +19014,7 @@
   },
   "pay_pal": {
     "kind": "action_node",
-    "node_paths": [
-      "PayPal"
-    ],
+    "node_paths": ["PayPal"],
     "resources": {
       "payout": "Payout",
       "payoutItem": "Payout Item"
@@ -19319,9 +19053,7 @@
   },
   "stripe": {
     "kind": "action_node",
-    "node_paths": [
-      "Stripe"
-    ],
+    "node_paths": ["Stripe"],
     "resources": {
       "balance": "Balance",
       "charge": "Charge",
@@ -19474,9 +19206,7 @@
   },
   "wise": {
     "kind": "action_node",
-    "node_paths": [
-      "Wise"
-    ],
+    "node_paths": ["Wise"],
     "resources": {
       "account": "Account",
       "exchangeRate": "Exchange Rate",
@@ -19587,9 +19317,7 @@
   },
   "xero": {
     "kind": "action_node",
-    "node_paths": [
-      "Xero"
-    ],
+    "node_paths": ["Xero"],
     "resources": {
       "contact": "Contact",
       "invoice": "Invoice"
@@ -19652,63 +19380,49 @@
   },
   "form_io": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "FormIo"
-    ],
+    "node_paths": ["FormIo"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "formstack": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Formstack"
-    ],
+    "node_paths": ["Formstack"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "jot_form": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "JotForm"
-    ],
+    "node_paths": ["JotForm"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "survey_monkey": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "SurveyMonkey"
-    ],
+    "node_paths": ["SurveyMonkey"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "typeform": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Typeform"
-    ],
+    "node_paths": ["Typeform"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "wufoo": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Wufoo"
-    ],
+    "node_paths": ["Wufoo"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "bamboo_hr": {
     "kind": "action_node",
-    "node_paths": [
-      "BambooHr"
-    ],
+    "node_paths": ["BambooHr"],
     "resources": {
       "companyReport": "Company Report",
       "employee": "Employee",
@@ -19819,18 +19533,14 @@
   },
   "amqp": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Amqp"
-    ],
+    "node_paths": ["Amqp"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "cloudflare": {
     "kind": "action_node",
-    "node_paths": [
-      "Cloudflare"
-    ],
+    "node_paths": ["Cloudflare"],
     "resources": {
       "zoneCertificate": "Zone Certificate"
     },
@@ -19866,9 +19576,7 @@
   },
   "cockpit": {
     "kind": "action_node",
-    "node_paths": [
-      "Cockpit"
-    ],
+    "node_paths": ["Cockpit"],
     "resources": {
       "collection": "Collection",
       "form": "Form",
@@ -19931,9 +19639,7 @@
   },
   "home_assistant": {
     "kind": "action_node",
-    "node_paths": [
-      "HomeAssistant"
-    ],
+    "node_paths": ["HomeAssistant"],
     "resources": {
       "cameraProxy": "Camera Proxy",
       "config": "Config",
@@ -20049,18 +19755,14 @@
   },
   "kafka": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Kafka"
-    ],
+    "node_paths": ["Kafka"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "ldap": {
     "kind": "action_node",
-    "node_paths": [
-      "Ldap"
-    ],
+    "node_paths": ["Ldap"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -20104,18 +19806,14 @@
   },
   "mqtt": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "MQTT"
-    ],
+    "node_paths": ["MQTT"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "dhl": {
     "kind": "action_node",
-    "node_paths": [
-      "Dhl"
-    ],
+    "node_paths": ["Dhl"],
     "resources": {},
     "operationsByResource": {
       "shipment": [
@@ -20127,13 +19825,18 @@
         }
       ]
     },
-    "operationsNoResource": []
+    "operationsNoResource": [
+      {
+        "label": "Get Tracking Details",
+        "value": "get",
+        "action": "Get tracking details for a shipment",
+        "description": null
+      }
+    ]
   },
   "open_weather_map": {
     "kind": "action_node",
-    "node_paths": [
-      "OpenWeatherMap"
-    ],
+    "node_paths": ["OpenWeatherMap"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -20153,9 +19856,7 @@
   },
   "action_network": {
     "kind": "action_node",
-    "node_paths": [
-      "ActionNetwork"
-    ],
+    "node_paths": ["ActionNetwork"],
     "resources": {
       "attendance": "Attendance",
       "event": "Event",
@@ -20323,9 +20024,7 @@
   },
   "active_campaign": {
     "kind": "action_node",
-    "node_paths": [
-      "ActiveCampaign"
-    ],
+    "node_paths": ["ActiveCampaign"],
     "resources": {
       "account": "Account",
       "accountContact": "Account Contact",
@@ -20658,9 +20357,7 @@
   },
   "convert_kit": {
     "kind": "action_node",
-    "node_paths": [
-      "ConvertKit"
-    ],
+    "node_paths": ["ConvertKit"],
     "resources": {
       "customField": "Custom Field",
       "form": "Form",
@@ -20774,9 +20471,7 @@
   },
   "customer_io": {
     "kind": "action_node",
-    "node_paths": [
-      "CustomerIo"
-    ],
+    "node_paths": ["CustomerIo"],
     "resources": {
       "customer": "Customer",
       "event": "Event",
@@ -20851,9 +20546,7 @@
   },
   "demio": {
     "kind": "action_node",
-    "node_paths": [
-      "Demio"
-    ],
+    "node_paths": ["Demio"],
     "resources": {
       "event": "Event",
       "report": "Report"
@@ -20892,9 +20585,7 @@
   },
   "egoi": {
     "kind": "action_node",
-    "node_paths": [
-      "Egoi"
-    ],
+    "node_paths": ["Egoi"],
     "resources": {
       "contact": "Contact"
     },
@@ -20928,9 +20619,7 @@
   },
   "emelia": {
     "kind": "action_node",
-    "node_paths": [
-      "Emelia"
-    ],
+    "node_paths": ["Emelia"],
     "resources": {
       "campaign": "Campaign",
       "contactList": "Contact List"
@@ -20999,9 +20688,7 @@
   },
   "get_response": {
     "kind": "action_node",
-    "node_paths": [
-      "GetResponse"
-    ],
+    "node_paths": ["GetResponse"],
     "resources": {
       "contact": "Contact"
     },
@@ -21043,9 +20730,7 @@
   },
   "go_to_webinar": {
     "kind": "action_node",
-    "node_paths": [
-      "GoToWebinar"
-    ],
+    "node_paths": ["GoToWebinar"],
     "resources": {
       "attendee": "Attendee",
       "coorganizer": "Co-Organizer",
@@ -21204,9 +20889,7 @@
   },
   "google_ads": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Ads"
-    ],
+    "node_paths": ["Google/Ads"],
     "resources": {
       "campaign": "Campaign"
     },
@@ -21230,9 +20913,7 @@
   },
   "iterable": {
     "kind": "action_node",
-    "node_paths": [
-      "Iterable"
-    ],
+    "node_paths": ["Iterable"],
     "resources": {
       "event": "Event",
       "user": "User",
@@ -21286,9 +20967,7 @@
   },
   "mailchimp": {
     "kind": "action_node",
-    "node_paths": [
-      "Mailchimp"
-    ],
+    "node_paths": ["Mailchimp"],
     "resources": {
       "campaign": "Campaign",
       "listGroup": "List Group",
@@ -21393,9 +21072,7 @@
   },
   "mautic": {
     "kind": "action_node",
-    "node_paths": [
-      "Mautic"
-    ],
+    "node_paths": ["Mautic"],
     "resources": {
       "campaignContact": "Campaign Contact",
       "company": "Company",
@@ -21542,9 +21219,7 @@
   },
   "segment": {
     "kind": "action_node",
-    "node_paths": [
-      "Segment"
-    ],
+    "node_paths": ["Segment"],
     "resources": {
       "group": "Group",
       "identify": "Identify",
@@ -21586,9 +21261,7 @@
   },
   "send_in_blue": {
     "kind": "action_node",
-    "node_paths": [
-      "Brevo"
-    ],
+    "node_paths": ["Brevo"],
     "resources": {
       "contact": "Contact",
       "attribute": "Contact Attribute",
@@ -21704,9 +21377,7 @@
   },
   "bitly": {
     "kind": "action_node",
-    "node_paths": [
-      "Bitly"
-    ],
+    "node_paths": ["Bitly"],
     "resources": {
       "link": "Link"
     },
@@ -21736,9 +21407,7 @@
   },
   "cal": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Cal"
-    ],
+    "node_paths": ["Cal"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
@@ -21750,9 +21419,7 @@
   },
   "citrix_adc": {
     "kind": "action_node",
-    "node_paths": [
-      "Netscaler"
-    ],
+    "node_paths": ["Netscaler"],
     "resources": {
       "certificate": "Certificate",
       "file": "File"
@@ -21797,9 +21464,7 @@
   },
   "google_chat": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Chat"
-    ],
+    "node_paths": ["Google/Chat"],
     "resources": {
       "member": "Member",
       "message": "Message",
@@ -21900,9 +21565,7 @@
   },
   "mailer_lite": {
     "kind": "action_node",
-    "node_paths": [
-      "MailerLite"
-    ],
+    "node_paths": ["MailerLite"],
     "resources": {
       "subscriber": "Subscriber"
     },
@@ -21953,9 +21616,7 @@
   },
   "microsoft_dynamics": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/Dynamics"
-    ],
+    "node_paths": ["Microsoft/Dynamics"],
     "resources": {
       "account": "Account"
     },
@@ -21997,9 +21658,7 @@
   },
   "microsoft_graph_security": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/GraphSecurity"
-    ],
+    "node_paths": ["Microsoft/GraphSecurity"],
     "resources": {
       "secureScore": "Secure Score",
       "secureScoreControlProfile": "Secure Score Control Profile"
@@ -22044,9 +21703,7 @@
   },
   "mindee_invoice": {
     "kind": "action_node",
-    "node_paths": [
-      "Mindee"
-    ],
+    "node_paths": ["Mindee"],
     "resources": {
       "invoice": "Invoice",
       "receipt": "Receipt"
@@ -22063,9 +21720,7 @@
   },
   "mindee_receipt": {
     "kind": "action_node",
-    "node_paths": [
-      "Mindee"
-    ],
+    "node_paths": ["Mindee"],
     "resources": {
       "invoice": "Invoice",
       "receipt": "Receipt"
@@ -22092,9 +21747,7 @@
   },
   "mocean": {
     "kind": "action_node",
-    "node_paths": [
-      "Mocean"
-    ],
+    "node_paths": ["Mocean"],
     "resources": {
       "sms": "SMS",
       "voice": "Voice"
@@ -22121,9 +21774,7 @@
   },
   "monica_crm": {
     "kind": "action_node",
-    "node_paths": [
-      "MonicaCrm"
-    ],
+    "node_paths": ["MonicaCrm"],
     "resources": {
       "activity": "Activity",
       "call": "Call",
@@ -22490,9 +22141,7 @@
   },
   "msg91": {
     "kind": "action_node",
-    "node_paths": [
-      "Msg91"
-    ],
+    "node_paths": ["Msg91"],
     "resources": {
       "sms": "SMS"
     },
@@ -22510,9 +22159,7 @@
   },
   "noco_db": {
     "kind": "action_node",
-    "node_paths": [
-      "NocoDB"
-    ],
+    "node_paths": ["NocoDB"],
     "resources": {
       "row": "Row",
       "linkrow": "Linked Row",
@@ -22629,9 +22276,7 @@
   },
   "noco_db_api_token": {
     "kind": "action_node",
-    "node_paths": [
-      "NocoDB"
-    ],
+    "node_paths": ["NocoDB"],
     "resources": {
       "row": "Row",
       "linkrow": "Linked Row",
@@ -22753,9 +22398,7 @@
   },
   "odoo": {
     "kind": "action_node",
-    "node_paths": [
-      "Odoo"
-    ],
+    "node_paths": ["Odoo"],
     "resources": {
       "contact": "Contact",
       "custom": "Custom Resource",
@@ -22929,9 +22572,7 @@
   },
   "odoo_api_key": {
     "kind": "action_node",
-    "node_paths": [
-      "Odoo"
-    ],
+    "node_paths": ["Odoo"],
     "resources": {
       "contact": "Contact",
       "custom": "Custom Resource",
@@ -23105,9 +22746,7 @@
   },
   "one_simple": {
     "kind": "action_node",
-    "node_paths": [
-      "OneSimpleApi"
-    ],
+    "node_paths": ["OneSimpleApi"],
     "resources": {
       "information": "Information",
       "socialProfile": "Social Profile",
@@ -23188,9 +22827,7 @@
   },
   "onfleet": {
     "kind": "action_node",
-    "node_paths": [
-      "Onfleet"
-    ],
+    "node_paths": ["Onfleet"],
     "resources": {
       "admin": "Admin",
       "container": "Container",
@@ -23473,9 +23110,7 @@
   },
   "oracle_d_b": {
     "kind": "action_node",
-    "node_paths": [
-      "Oracle"
-    ],
+    "node_paths": ["Oracle"],
     "resources": {},
     "operationsByResource": {
       "database": [
@@ -23517,13 +23152,48 @@
         }
       ]
     },
-    "operationsNoResource": []
+    "operationsNoResource": [
+      {
+        "label": "Delete",
+        "value": "deleteTable",
+        "action": "Delete table or rows",
+        "description": "Delete an entire table or rows in a table"
+      },
+      {
+        "label": "Execute SQL",
+        "value": "execute",
+        "action": "Execute SQL",
+        "description": "Execute an SQL"
+      },
+      {
+        "label": "Insert",
+        "value": "insert",
+        "action": "Insert rows in a table",
+        "description": "Insert rows in a table"
+      },
+      {
+        "label": "Insert or Update",
+        "value": "upsert",
+        "action": "Insert or update rows in a table",
+        "description": "Insert or update rows in a table"
+      },
+      {
+        "label": "Select",
+        "value": "select",
+        "action": "Select rows from a table",
+        "description": "Select rows from a table"
+      },
+      {
+        "label": "Update",
+        "value": "update",
+        "action": "Update rows in a table",
+        "description": "Update rows in a table"
+      }
+    ]
   },
   "orbit": {
     "kind": "action_node",
-    "node_paths": [
-      "Orbit"
-    ],
+    "node_paths": ["Orbit"],
     "resources": {
       "activity": "Activity",
       "member": "Member",
@@ -23628,9 +23298,7 @@
   },
   "oura": {
     "kind": "action_node",
-    "node_paths": [
-      "Oura"
-    ],
+    "node_paths": ["Oura"],
     "resources": {
       "profile": "Profile",
       "summary": "Summary"
@@ -23669,9 +23337,7 @@
   },
   "paddle": {
     "kind": "action_node",
-    "node_paths": [
-      "Paddle"
-    ],
+    "node_paths": ["Paddle"],
     "resources": {
       "coupon": "Coupon",
       "payment": "Payment",
@@ -23757,9 +23423,7 @@
   },
   "peekalink": {
     "kind": "action_node",
-    "node_paths": [
-      "Peekalink"
-    ],
+    "node_paths": ["Peekalink"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -23779,9 +23443,7 @@
   },
   "phantombuster": {
     "kind": "action_node",
-    "node_paths": [
-      "Phantombuster"
-    ],
+    "node_paths": ["Phantombuster"],
     "resources": {
       "agent": "Agent"
     },
@@ -23829,9 +23491,7 @@
   },
   "philips_hue": {
     "kind": "action_node",
-    "node_paths": [
-      "PhilipsHue"
-    ],
+    "node_paths": ["PhilipsHue"],
     "resources": {
       "light": "Light"
     },
@@ -23867,9 +23527,7 @@
   },
   "profit_well": {
     "kind": "action_node",
-    "node_paths": [
-      "ProfitWell"
-    ],
+    "node_paths": ["ProfitWell"],
     "resources": {
       "company": "Company",
       "metric": "Metric"
@@ -23896,9 +23554,7 @@
   },
   "pushbullet": {
     "kind": "action_node",
-    "node_paths": [
-      "Pushbullet"
-    ],
+    "node_paths": ["Pushbullet"],
     "resources": {
       "push": "Push"
     },
@@ -23934,9 +23590,7 @@
   },
   "pushcut": {
     "kind": "action_node",
-    "node_paths": [
-      "Pushcut"
-    ],
+    "node_paths": ["Pushcut"],
     "resources": {
       "notification": "Notification"
     },
@@ -23954,9 +23608,7 @@
   },
   "pushover": {
     "kind": "action_node",
-    "node_paths": [
-      "Pushover"
-    ],
+    "node_paths": ["Pushover"],
     "resources": {
       "message": "Message"
     },
@@ -23979,9 +23631,7 @@
   },
   "quickbase": {
     "kind": "action_node",
-    "node_paths": [
-      "QuickBase"
-    ],
+    "node_paths": ["QuickBase"],
     "resources": {
       "field": "Field",
       "file": "File",
@@ -24062,9 +23712,7 @@
   },
   "rabbitmq": {
     "kind": "action_node",
-    "node_paths": [
-      "RabbitMQ"
-    ],
+    "node_paths": ["RabbitMQ"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -24094,9 +23742,7 @@
   },
   "rundeck": {
     "kind": "action_node",
-    "node_paths": [
-      "Rundeck"
-    ],
+    "node_paths": ["Rundeck"],
     "resources": {
       "job": "Job"
     },
@@ -24118,9 +23764,7 @@
   },
   "s3": {
     "kind": "action_node",
-    "node_paths": [
-      "S3"
-    ],
+    "node_paths": ["S3"],
     "resources": {
       "bucket": "Bucket",
       "file": "File",
@@ -24131,9 +23775,7 @@
   },
   "salesmate": {
     "kind": "action_node",
-    "node_paths": [
-      "Salesmate"
-    ],
+    "node_paths": ["Salesmate"],
     "resources": {
       "activity": "Activity",
       "company": "Company",
@@ -24241,18 +23883,14 @@
   },
   "schema_registry": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Kafka"
-    ],
+    "node_paths": ["Kafka"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "sea_table": {
     "kind": "action_node",
-    "node_paths": [
-      "SeaTable"
-    ],
+    "node_paths": ["SeaTable"],
     "resources": {
       "row": "Row",
       "base": "Base",
@@ -24405,9 +24043,7 @@
   },
   "security_scorecard": {
     "kind": "action_node",
-    "node_paths": [
-      "SecurityScorecard"
-    ],
+    "node_paths": ["SecurityScorecard"],
     "resources": {
       "company": "Company",
       "industry": "Industry",
@@ -24548,9 +24184,7 @@
   },
   "sendy": {
     "kind": "action_node",
-    "node_paths": [
-      "Sendy"
-    ],
+    "node_paths": ["Sendy"],
     "resources": {
       "campaign": "Campaign",
       "subscriber": "Subscriber"
@@ -24601,9 +24235,7 @@
   },
   "service_now": {
     "kind": "action_node",
-    "node_paths": [
-      "ServiceNow"
-    ],
+    "node_paths": ["ServiceNow"],
     "resources": {
       "attachment": "Attachment",
       "businessService": "Business Service",
@@ -24792,9 +24424,7 @@
   },
   "service_now_basic": {
     "kind": "action_node",
-    "node_paths": [
-      "ServiceNow"
-    ],
+    "node_paths": ["ServiceNow"],
     "resources": {
       "attachment": "Attachment",
       "businessService": "Business Service",
@@ -24988,9 +24618,7 @@
   },
   "sms77": {
     "kind": "action_node",
-    "node_paths": [
-      "Sms77"
-    ],
+    "node_paths": ["Sms77"],
     "resources": {
       "sms": "SMS",
       "voice": "Voice Call"
@@ -25027,9 +24655,7 @@
   },
   "splunk": {
     "kind": "action_node",
-    "node_paths": [
-      "Splunk"
-    ],
+    "node_paths": ["Splunk"],
     "resources": {
       "firedAlert": "Fired Alert",
       "searchConfiguration": "Search Configuration",
@@ -25218,9 +24844,7 @@
   },
   "ssh_password": {
     "kind": "action_node",
-    "node_paths": [
-      "Ssh"
-    ],
+    "node_paths": ["Ssh"],
     "resources": {
       "command": "Command",
       "file": "File"
@@ -25253,9 +24877,7 @@
   },
   "ssh_private_key": {
     "kind": "action_node",
-    "node_paths": [
-      "Ssh"
-    ],
+    "node_paths": ["Ssh"],
     "resources": {
       "command": "Command",
       "file": "File"
@@ -25288,9 +24910,7 @@
   },
   "stackby": {
     "kind": "action_node",
-    "node_paths": [
-      "Stackby"
-    ],
+    "node_paths": ["Stackby"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -25322,9 +24942,7 @@
   },
   "storyblok_content": {
     "kind": "action_node",
-    "node_paths": [
-      "Storyblok"
-    ],
+    "node_paths": ["Storyblok"],
     "resources": {
       "story": "Story"
     },
@@ -25366,9 +24984,7 @@
   },
   "storyblok_management": {
     "kind": "action_node",
-    "node_paths": [
-      "Storyblok"
-    ],
+    "node_paths": ["Storyblok"],
     "resources": {
       "story": "Story"
     },
@@ -25410,9 +25026,7 @@
   },
   "strava": {
     "kind": "action_node",
-    "node_paths": [
-      "Strava"
-    ],
+    "node_paths": ["Strava"],
     "resources": {
       "activity": "Activity"
     },
@@ -25478,9 +25092,7 @@
   },
   "syncro_msp": {
     "kind": "action_node",
-    "node_paths": [
-      "SyncroMSP"
-    ],
+    "node_paths": ["SyncroMSP"],
     "resources": {
       "contact": "Contact",
       "customer": "Customer",
@@ -25626,9 +25238,7 @@
   },
   "taiga": {
     "kind": "action_node",
-    "node_paths": [
-      "Taiga"
-    ],
+    "node_paths": ["Taiga"],
     "resources": {
       "epic": "Epic",
       "issue": "Issue",
@@ -25769,9 +25379,7 @@
   },
   "tapfiliate": {
     "kind": "action_node",
-    "node_paths": [
-      "Tapfiliate"
-    ],
+    "node_paths": ["Tapfiliate"],
     "resources": {
       "affiliate": "Affiliate",
       "affiliateMetadata": "Affiliate Metadata",
@@ -25861,9 +25469,7 @@
   },
   "the_hive": {
     "kind": "action_node",
-    "node_paths": [
-      "TheHive"
-    ],
+    "node_paths": ["TheHive"],
     "resources": {
       "alert": "Alert",
       "case": "Case",
@@ -25907,9 +25513,7 @@
   },
   "the_hive_project": {
     "kind": "action_node",
-    "node_paths": [
-      "TheHiveProject"
-    ],
+    "node_paths": ["TheHiveProject"],
     "resources": {
       "alert": "Alert",
       "case": "Case",
@@ -26230,18 +25834,14 @@
   },
   "toggl": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Toggl"
-    ],
+    "node_paths": ["Toggl"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "totp": {
     "kind": "action_node",
-    "node_paths": [
-      "Totp"
-    ],
+    "node_paths": ["Totp"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -26260,9 +25860,7 @@
   },
   "twake": {
     "kind": "action_node",
-    "node_paths": [
-      "Twake"
-    ],
+    "node_paths": ["Twake"],
     "resources": {
       "message": "Message"
     },
@@ -26280,9 +25878,7 @@
   },
   "twake_server": {
     "kind": "action_node",
-    "node_paths": [
-      "Twake"
-    ],
+    "node_paths": ["Twake"],
     "resources": {
       "message": "Message"
     },
@@ -26300,9 +25896,7 @@
   },
   "twist": {
     "kind": "action_node",
-    "node_paths": [
-      "Twist"
-    ],
+    "node_paths": ["Twist"],
     "resources": {
       "channel": "Channel",
       "comment": "Comment",
@@ -26455,9 +26049,7 @@
   },
   "unleashed_software": {
     "kind": "action_node",
-    "node_paths": [
-      "UnleashedSoftware"
-    ],
+    "node_paths": ["UnleashedSoftware"],
     "resources": {
       "salesOrder": "Sales Order",
       "stockOnHand": "Stock On Hand"
@@ -26490,9 +26082,7 @@
   },
   "uplead": {
     "kind": "action_node",
-    "node_paths": [
-      "Uplead"
-    ],
+    "node_paths": ["Uplead"],
     "resources": {
       "company": "Company",
       "person": "Person"
@@ -26519,18 +26109,14 @@
   },
   "uproc": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "UProc"
-    ],
+    "node_paths": ["UProc"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "uptime_robot": {
     "kind": "action_node",
-    "node_paths": [
-      "UptimeRobot"
-    ],
+    "node_paths": ["UptimeRobot"],
     "resources": {
       "account": "Account",
       "alertContact": "Alert Contact",
@@ -26680,9 +26266,7 @@
   },
   "url_scan_io": {
     "kind": "action_node",
-    "node_paths": [
-      "UrlScanIo"
-    ],
+    "node_paths": ["UrlScanIo"],
     "resources": {
       "scan": "Scan"
     },
@@ -26712,9 +26296,7 @@
   },
   "venafi_tls_protect": {
     "kind": "action_node",
-    "node_paths": [
-      "Venafi"
-    ],
+    "node_paths": ["Venafi"],
     "resources": {
       "certificate": "Certificate",
       "policy": "Policy",
@@ -26792,9 +26374,7 @@
   },
   "venafi_tls_protect_datacenter": {
     "kind": "action_node",
-    "node_paths": [
-      "Venafi"
-    ],
+    "node_paths": ["Venafi"],
     "resources": {
       "certificate": "Certificate",
       "policy": "Policy",
@@ -26872,9 +26452,7 @@
   },
   "vero": {
     "kind": "action_node",
-    "node_paths": [
-      "Vero"
-    ],
+    "node_paths": ["Vero"],
     "resources": {
       "user": "User",
       "event": "Event"
@@ -26942,9 +26520,7 @@
   },
   "wekan": {
     "kind": "action_node",
-    "node_paths": [
-      "Wekan"
-    ],
+    "node_paths": ["Wekan"],
     "resources": {
       "board": "Board",
       "card": "Card",
@@ -27120,9 +26696,7 @@
   },
   "wordpress": {
     "kind": "action_node",
-    "node_paths": [
-      "Wordpress"
-    ],
+    "node_paths": ["Wordpress"],
     "resources": {
       "post": "Post",
       "page": "Page",
@@ -27212,9 +26786,7 @@
   },
   "workable": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Workable"
-    ],
+    "node_paths": ["Workable"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
@@ -27226,9 +26798,7 @@
   },
   "yourls": {
     "kind": "action_node",
-    "node_paths": [
-      "Yourls"
-    ],
+    "node_paths": ["Yourls"],
     "resources": {
       "url": "URL"
     },
@@ -27263,9 +26833,7 @@
   },
   "zammad_basic_auth": {
     "kind": "action_node",
-    "node_paths": [
-      "Zammad"
-    ],
+    "node_paths": ["Zammad"],
     "resources": {
       "group": "Group",
       "organization": "Organization",
@@ -27412,9 +26980,7 @@
   },
   "zammad_token_auth": {
     "kind": "action_node",
-    "node_paths": [
-      "Zammad"
-    ],
+    "node_paths": ["Zammad"],
     "resources": {
       "group": "Group",
       "organization": "Organization",
@@ -27566,9 +27132,7 @@
   },
   "zulip": {
     "kind": "action_node",
-    "node_paths": [
-      "Zulip"
-    ],
+    "node_paths": ["Zulip"],
     "resources": {
       "message": "Message",
       "stream": "Stream",
@@ -27682,18 +27246,14 @@
   },
   "acuity_scheduling": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "AcuityScheduling"
-    ],
+    "node_paths": ["AcuityScheduling"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "adalo": {
     "kind": "action_node",
-    "node_paths": [
-      "Adalo"
-    ],
+    "node_paths": ["Adalo"],
     "resources": {
       "collection": "Collection"
     },
@@ -27733,9 +27293,7 @@
   },
   "airtable": {
     "kind": "action_node",
-    "node_paths": [
-      "Airtable"
-    ],
+    "node_paths": ["Airtable"],
     "resources": {
       "base": "Base",
       "record": "Record"
@@ -27829,9 +27387,7 @@
   },
   "beeminder": {
     "kind": "action_node",
-    "node_paths": [
-      "Beeminder"
-    ],
+    "node_paths": ["Beeminder"],
     "resources": {
       "charge": "Charge",
       "datapoint": "Datapoint",
@@ -27960,9 +27516,7 @@
   },
   "bubble": {
     "kind": "action_node",
-    "node_paths": [
-      "Bubble"
-    ],
+    "node_paths": ["Bubble"],
     "resources": {
       "object": "Object"
     },
@@ -28004,18 +27558,14 @@
   },
   "calendly": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Calendly"
-    ],
+    "node_paths": ["Calendly"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "clockify": {
     "kind": "action_node",
-    "node_paths": [
-      "Clockify"
-    ],
+    "node_paths": ["Clockify"],
     "resources": {
       "client": "Client",
       "project": "Project",
@@ -28195,9 +27745,7 @@
   },
   "coda": {
     "kind": "action_node",
-    "node_paths": [
-      "Coda"
-    ],
+    "node_paths": ["Coda"],
     "resources": {
       "control": "Control",
       "formula": "Formula",
@@ -28326,27 +27874,21 @@
   },
   "eventbrite": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Eventbrite"
-    ],
+    "node_paths": ["Eventbrite"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "figma": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Figma"
-    ],
+    "node_paths": ["Figma"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "flow": {
     "kind": "action_node",
-    "node_paths": [
-      "Flow"
-    ],
+    "node_paths": ["Flow"],
     "resources": {
       "task": "Task"
     },
@@ -28382,9 +27924,7 @@
   },
   "google_calendar": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Calendar"
-    ],
+    "node_paths": ["Google/Calendar"],
     "resources": {
       "calendar": "Calendar",
       "event": "Event"
@@ -28435,9 +27975,7 @@
   },
   "google_contacts": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Contacts"
-    ],
+    "node_paths": ["Google/Contacts"],
     "resources": {
       "contact": "Contact"
     },
@@ -28479,9 +28017,7 @@
   },
   "google_tasks": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/Task"
-    ],
+    "node_paths": ["Google/Task"],
     "resources": {
       "task": "Task"
     },
@@ -28523,9 +28059,7 @@
   },
   "microsoft_to_do": {
     "kind": "action_node",
-    "node_paths": [
-      "Microsoft/ToDo"
-    ],
+    "node_paths": ["Microsoft/ToDo"],
     "resources": {
       "linkedResource": "Linked Resource",
       "list": "List",
@@ -28638,9 +28172,7 @@
   },
   "notion": {
     "kind": "action_node",
-    "node_paths": [
-      "Notion"
-    ],
+    "node_paths": ["Notion"],
     "resources": {
       "block": "Block",
       "database": "Database",
@@ -28787,9 +28319,7 @@
   },
   "raindrop": {
     "kind": "action_node",
-    "node_paths": [
-      "Raindrop"
-    ],
+    "node_paths": ["Raindrop"],
     "resources": {
       "bookmark": "Bookmark",
       "collection": "Collection",
@@ -28888,9 +28418,7 @@
   },
   "todoist": {
     "kind": "action_node",
-    "node_paths": [
-      "Todoist"
-    ],
+    "node_paths": ["Todoist"],
     "resources": {
       "task": "Task",
       "project": "Project",
@@ -29133,9 +28661,7 @@
   },
   "airtop": {
     "kind": "action_node",
-    "node_paths": [
-      "Airtop"
-    ],
+    "node_paths": ["Airtop"],
     "resources": {
       "agent": "Agent",
       "extraction": "Extraction",
@@ -29306,9 +28832,7 @@
   },
   "brandfetch": {
     "kind": "action_node",
-    "node_paths": [
-      "Brandfetch"
-    ],
+    "node_paths": ["Brandfetch"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -29374,9 +28898,7 @@
   },
   "http_ssl_auth": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "HttpRequest"
-    ],
+    "node_paths": ["HttpRequest"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
@@ -29388,9 +28910,7 @@
   },
   "hunter": {
     "kind": "action_node",
-    "node_paths": [
-      "Hunter"
-    ],
+    "node_paths": ["Hunter"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": [
@@ -29421,9 +28941,7 @@
   },
   "signl4": {
     "kind": "action_node",
-    "node_paths": [
-      "Signl4"
-    ],
+    "node_paths": ["Signl4"],
     "resources": {
       "alert": "Alert"
     },
@@ -29452,9 +28970,7 @@
   },
   "bitwarden": {
     "kind": "action_node",
-    "node_paths": [
-      "Bitwarden"
-    ],
+    "node_paths": ["Bitwarden"],
     "resources": {
       "collection": "Collection",
       "event": "Event",
@@ -29609,9 +29125,7 @@
   },
   "cortex": {
     "kind": "action_node",
-    "node_paths": [
-      "Cortex"
-    ],
+    "node_paths": ["Cortex"],
     "resources": {
       "analyzer": "Analyzer",
       "job": "Job",
@@ -29663,9 +29177,7 @@
   },
   "elastic_security": {
     "kind": "action_node",
-    "node_paths": [
-      "Elastic"
-    ],
+    "node_paths": ["Elastic"],
     "resources": {
       "case": "Case",
       "caseComment": "Case Comment",
@@ -29850,9 +29362,7 @@
   },
   "misp": {
     "kind": "action_node",
-    "node_paths": [
-      "Misp"
-    ],
+    "node_paths": ["Misp"],
     "resources": {
       "attribute": "Attribute",
       "event": "Event",
@@ -30173,9 +29683,7 @@
   },
   "currents": {
     "kind": "action_node",
-    "node_paths": [
-      "Currents"
-    ],
+    "node_paths": ["Currents"],
     "resources": {
       "action": "Action",
       "instance": "Instance",
@@ -30340,45 +29848,35 @@
   },
   "facebook_graph": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Facebook"
-    ],
+    "node_paths": ["Facebook"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "facebook_graph_api": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Facebook"
-    ],
+    "node_paths": ["Facebook"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "facebook_graph_app": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "Facebook"
-    ],
+    "node_paths": ["Facebook"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "facebook_lead_ads": {
     "kind": "trigger_only_or_unparsed",
-    "node_paths": [
-      "FacebookLeadAds"
-    ],
+    "node_paths": ["FacebookLeadAds"],
     "resources": {},
     "operationsByResource": {},
     "operationsNoResource": []
   },
   "linked_in": {
     "kind": "action_node",
-    "node_paths": [
-      "LinkedIn"
-    ],
+    "node_paths": ["LinkedIn"],
     "resources": {
       "post": "Post"
     },
@@ -30396,9 +29894,7 @@
   },
   "linked_in_community_management": {
     "kind": "action_node",
-    "node_paths": [
-      "LinkedIn"
-    ],
+    "node_paths": ["LinkedIn"],
     "resources": {
       "post": "Post"
     },
@@ -30416,9 +29912,7 @@
   },
   "medium": {
     "kind": "action_node",
-    "node_paths": [
-      "Medium"
-    ],
+    "node_paths": ["Medium"],
     "resources": {
       "post": "Post",
       "publication": "Publication"
@@ -30445,9 +29939,7 @@
   },
   "reddit": {
     "kind": "action_node",
-    "node_paths": [
-      "Reddit"
-    ],
+    "node_paths": ["Reddit"],
     "resources": {
       "post": "Post",
       "postComment": "Post Comment",
@@ -30549,9 +30041,7 @@
   },
   "twitter": {
     "kind": "action_node",
-    "node_paths": [
-      "Twitter"
-    ],
+    "node_paths": ["Twitter"],
     "resources": {
       "directMessage": "Direct Message",
       "tweet": "Tweet",
@@ -30620,9 +30110,7 @@
   },
   "you_tube": {
     "kind": "action_node",
-    "node_paths": [
-      "Google/YouTube"
-    ],
+    "node_paths": ["Google/YouTube"],
     "resources": {
       "channel": "Channel",
       "playlist": "Playlist",
@@ -30763,5 +30251,11 @@
       ]
     },
     "operationsNoResource": []
+  },
+  "http": {
+    "kind": "generic_http",
+    "node_paths": [],
+    "node_type": "n8n-nodes-base.httpRequest",
+    "note": "Generic HTTP Request node, confirmed via n8n docs (docs.n8n.io/nodes/n8n-nodes-base.httpRequest). No resource/operation menu - just a Method dropdown (DELETE/GET/HEAD/OPTIONS/PATCH/POST/PUT). Universal verb maps to a method via HTTP_METHOD_BY_VERB in node_registry.py, not via operationsByResource."
   }
 }

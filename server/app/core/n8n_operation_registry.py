@@ -65,24 +65,60 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-_REGISTRY_PATH = Path(__file__).resolve().parent.parent / "utils" / "n8n_operation_registry.json"
+_REGISTRY_PATH = (
+    Path(__file__).resolve().parent.parent / "utils" / "n8n_operation_registry.json"
+)
 print(_REGISTRY_PATH)
 
 # Universal verb -> keyword(s) likely to appear in the matching real n8n
 # operation's label/action text. A deterministic heuristic to narrow a
 # resource's operation list to plausible candidates - not a guarantee.
 VERB_KEYWORDS = {
-    "create":   ["create", "add", "new", "post", "schedule", "upload", "insert"],
-    "read":     ["get", "read", "fetch", "retrieve", "info", "profile", "download"],
-    "list":     ["getall", "getmany", "list", "search"],
-    "update":   ["update", "edit", "modify", "set"],
-    "delete":   ["delete", "remove", "archive", "trash"],
-    "send":     ["send", "post", "publish", "notify"],
-    "search":   ["search", "find", "query", "lookup"],
+    "create": ["create", "add", "new", "post", "schedule", "upload", "insert"],
+    "read": [
+        "get",
+        "read",
+        "fetch",
+        "retrieve",
+        "info",
+        "profile",
+        "download",
+        "select",
+    ],
+    "list": ["getall", "getmany", "list", "search"],
+    "update": ["update", "edit", "modify", "set"],
+    "delete": ["delete", "remove", "archive", "trash"],
+    "send": ["send", "post", "publish", "notify"],
+    "search": ["search", "find", "query", "lookup"],
     "generate": ["generate", "create"],
-    "upload":   ["upload", "add", "create"],
+    "upload": ["upload", "add", "create"],
     "download": ["download", "get", "export"],
 }
+
+# Universal verb -> HTTP method, for services classified as "generic_http"
+# (currently just "http" - the generic HTTP Request node has no resource/
+# operation menu at all, confirmed against n8n's own docs: it's just a
+# Method dropdown with these exact literal values). Standard REST convention,
+# not an n8n-specific guess - applies to any future "generic_http" entry.
+HTTP_METHOD_BY_VERB = {
+    "create": "POST",
+    "read": "GET",
+    "list": "GET",
+    "update": "PUT",
+    "delete": "DELETE",
+    "send": "POST",
+    "search": "GET",
+    "generate": "POST",
+    "upload": "POST",
+    "download": "GET",
+}
+
+
+def resolve_http_method(universal_verb: str) -> str | None:
+    """Maps a universal verb to an HTTP method for "generic_http" kind
+    services. Returns None for verbs with no sensible REST mapping (caller
+    should treat that as "needs a human to pick a method")."""
+    return HTTP_METHOD_BY_VERB.get(universal_verb)
 
 
 @lru_cache(maxsize=1)
@@ -109,7 +145,9 @@ def list_resources(service: str) -> dict:
     return entry.get("resources", {})
 
 
-def resolve_operation(service: str, universal_verb: str, resource: str | None = None) -> dict | None:
+def resolve_operation(
+    service: str, universal_verb: str, resource: str | None = None
+) -> dict | None:
     """
     Best-effort resolution of (service, universal_verb[, resource]) -> a single
     real n8n operation dict {"label", "value", "action", "description"}.
@@ -127,15 +165,28 @@ def resolve_operation(service: str, universal_verb: str, resource: str | None = 
 
     keywords = VERB_KEYWORDS.get(universal_verb, [universal_verb])
 
-    if resource:
+    if entry.get("resources"):
+        # This service genuinely has distinct resources (e.g. gmail's
+        # draft/label/message/thread) - the caller must supply one, and it's
+        # looked up literally, since these resource keys are real and stable.
+        if not resource:
+            return None  # ambiguous - caller must supply a resource
         candidates = entry.get("operationsByResource", {}).get(resource, [])
-    elif entry.get("resources"):
-        return None  # ambiguous - caller must supply a resource
     else:
+        # Empty "resources" IS the registry's signal that this service has no
+        # meaningful resource concept for a caller to target - regardless of
+        # whatever "target" Groq generated (it has no way to know internal
+        # registry key names like postgres's "database"). Ignoring `resource`
+        # here is deliberate: trusting it was the confirmed bug that made
+        # postgres/mysql/etc. only resolve when target happened to be "".
         candidates = entry.get("operationsNoResource", [])
 
     for op in candidates:
-        haystack = " ".join(filter(None, [op.get("value", ""), op.get("label", ""), op.get("action", "")])).lower()
+        haystack = " ".join(
+            filter(
+                None, [op.get("value", ""), op.get("label", ""), op.get("action", "")]
+            )
+        ).lower()
         if any(kw in haystack for kw in keywords):
             return op
     return None

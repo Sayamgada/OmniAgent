@@ -1,0 +1,255 @@
+{
+  "automation_name": "AI Expense Policy Violation Detector",
+  "automation_description": "Analyzes expense claims and receipt images, assigns a compliance risk level, and routes non‑compliant claims for manual review.",
+  "schema_version": 4,
+  "task_summary": "Analyzes expense claims and receipt images, assigns a compliance risk level, and routes non‑compliant claims for manual review.",
+  "intent_type": "automation_preview",
+  "complexity": "high",
+  "required_agents": [
+    {
+      "agent_name": "http",
+      "role": "Workflow step",
+      "responsibilities": [
+        "read"
+      ]
+    },
+    {
+      "agent_name": "groq",
+      "role": "Workflow step",
+      "responsibilities": [
+        "generate"
+      ]
+    },
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": [
+        "Send a message"
+      ]
+    },
+    {
+      "agent_name": "google_sheets",
+      "role": "Workflow step",
+      "responsibilities": [
+        "Create or update a sheet"
+      ]
+    }
+  ],
+  "workflow": [
+    {
+      "step": 1,
+      "description": "read",
+      "agent": "http",
+      "service": "http",
+      "action": "read",
+      "input": "",
+      "output": "",
+      "operation": "read",
+      "target": "",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": false
+    },
+    {
+      "step": 2,
+      "description": "generate",
+      "agent": "groq",
+      "service": "groq",
+      "action": "generate",
+      "input": "",
+      "output": "",
+      "operation": "generate",
+      "target": "",
+      "parameters": {},
+      "depends_on": [
+        1
+      ],
+      "condition": {
+        "branches": [
+          "compliant",
+          "non_compliant"
+        ]
+      },
+      "n8n_resolved": false
+    },
+    {
+      "step": 3,
+      "description": "Send a message",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Send a message",
+      "input": "",
+      "output": "",
+      "operation": "send",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [
+        2
+      ],
+      "branch": "non_compliant",
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Send",
+        "value": "send",
+        "action": "Send a message",
+        "description": null
+      }
+    },
+    {
+      "step": 4,
+      "description": "Create or update a sheet",
+      "agent": "google_sheets",
+      "service": "google_sheets",
+      "action": "Create or update a sheet",
+      "input": "",
+      "output": "",
+      "operation": "update",
+      "target": "sheet",
+      "parameters": {},
+      "depends_on": [
+        2
+      ],
+      "branch": "compliant",
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Create or Update",
+        "value": "upsert",
+        "action": "Create or update a sheet",
+        "description": "Create a new record, or update the current one if it already exists (upsert)"
+      }
+    }
+  ],
+  "inputs_required": [],
+  "expected_outputs": [
+    "Expense claim is assessed with a risk level and either sent for manual review or logged as compliant."
+  ],
+  "tools_required": [
+    "groq",
+    "AI Provider (Groq)",
+    "http",
+    "OCR Service (HTTP)",
+    "gmail",
+    "Gmail",
+    "google_sheets",
+    "Google Sheets"
+  ],
+  "constraints": [],
+  "trigger_type": "Webhook",
+  "edge_cases": [],
+  "success_criteria": [
+    "Expense claim is assessed with a risk level and either sent for manual review or logged as compliant."
+  ],
+  "required_integrations": [
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "http",
+      "display_name": "OCR Service (HTTP)",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "google_sheets",
+      "display_name": "Google Sheets",
+      "required": true,
+      "available": true
+    }
+  ],
+  "preview_json": {
+    "title": "AI Expense Policy Violation Detector",
+    "description": "Analyzes expense claims and receipt images, assigns a compliance risk level, and routes non‑compliant claims for manual review.",
+    "trigger": {
+      "type": "Webhook",
+      "service": "",
+      "description": "Incoming expense claim submission"
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "http",
+        "operation": "read",
+        "target": "",
+        "parameters": {},
+        "depends_on": [],
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "unmapped"
+      },
+      {
+        "step": 2,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [
+          1
+        ],
+        "instructions": "Analyze the extracted text from the receipt and expense claim data obtained in step 1, compare it against the company's expense policies, and assign a risk level (e.g., low, medium, high) indicating compliance.",
+        "condition": {
+          "branches": [
+            "compliant",
+            "non_compliant"
+          ]
+        },
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 3,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [
+          2
+        ],
+        "branch": "non_compliant",
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message",
+          "description": null
+        },
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 4,
+        "service": "google_sheets",
+        "operation": "update",
+        "target": "sheet",
+        "parameters": {},
+        "depends_on": [
+          2
+        ],
+        "branch": "compliant",
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Create or Update",
+          "value": "upsert",
+          "action": "Create or update a sheet",
+          "description": "Create a new record, or update the current one if it already exists (upsert)"
+        },
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "Expense claim is assessed with a risk level and either sent for manual review or logged as compliant."
+  }
+}

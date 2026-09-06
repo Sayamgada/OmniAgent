@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import Literal
-from app.services.workflow_storage import store_generated_workflow, store_generated_workflow_mongo
+from app.services.workflow_storage import (
+    store_generated_workflow,
+    store_generated_workflow_mongo,
+)
 from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
@@ -11,16 +14,12 @@ from app.services.credential_checker import check_required_integrations
 from app.services.workflow_generator import (
     generate_groq_workflow,
     fetch_mongo_workflow,
+    CURRENT_SCHEMA_VERSION,
 )
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 Domain = Literal["Corporate", "Education", "Finance"]
-
-# Must match the "schema_version" value embedded in workflow_generator.py's
-# SYSTEM_INSTRUCTION output schema. Bump both together on any future breaking
-# IR schema change.
-CURRENT_SCHEMA_VERSION = 2
 
 # Calibrated via scripts/calibrate_threshold.py against the clean, seed-only
 # FAISS index (rebuild_index.py) with the BGE instruction prefix removed
@@ -50,10 +49,12 @@ class WorkflowRequest(BaseModel):
     description: str = Field(..., min_length=3)
     top_k: int = 5
 
+
 class WorkflowResponse(BaseModel):
     workflow: dict
     integrations: list[dict]
     all_required_available: bool
+
 
 @router.post("/extract-workflow", response_model=WorkflowResponse)
 async def extract_workflow(
@@ -80,23 +81,35 @@ async def extract_workflow(
         else:
             best_doc = max(docs, key=lambda d: d["similarity_score"])
             context = "\n\n".join(
-                                f"Automation Name: {doc['automation_name']}\n"
-                                f"Automation Description: {doc['description']}"
-                                for doc in docs
-                            )
+                f"Automation Name: {doc['automation_name']}\n"
+                f"Automation Description: {doc['description']}"
+                for doc in docs
+            )
             print(best_doc)
             if best_doc["similarity_score"] >= SIMILARITY_THRESHOLD:
                 print("similarity")
 
                 workflow = await fetch_mongo_workflow(
                     automation_name=best_doc["automation_name"],
-                    automation_description=best_doc["description"]
+                    automation_description=best_doc["description"],
                 )
 
                 # print(workflow)
 
-                if workflow is None:
-                    print("not workflow")
+                is_stale = (
+                    workflow is not None
+                    and workflow.get("schema_version") != CURRENT_SCHEMA_VERSION
+                )
+                if is_stale:
+                    print(
+                        f"stale cache: cached schema_version="
+                        f"{workflow.get('schema_version')!r}, current="
+                        f"{CURRENT_SCHEMA_VERSION!r} - regenerating instead of "
+                        f"serving an out-of-date IR shape"
+                    )
+
+                if workflow is None or is_stale:
+                    print("not workflow" if workflow is None else "stale workflow")
                     workflow = await generate_groq_workflow(
                         domain=body.domain,
                         description=body.description,

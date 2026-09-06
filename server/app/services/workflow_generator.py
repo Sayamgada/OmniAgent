@@ -1,8 +1,12 @@
-print(__file__)
 from functools import lru_cache
+
 from app.models.automation_preview_model import automation_preview_collection
 from app.services.llm_service import generate_workflow_from_prompt
-from app.core.n8n_operation_registry import get_service_entry, resolve_operation
+from app.core.n8n_operation_registry import (
+    get_service_entry,
+    resolve_operation,
+    resolve_http_method,
+)
 from app.core.integration_catalog import INTEGRATION_CATALOG
 
 # Service keys the catalog carries for generic/abstract auth mechanisms, not
@@ -12,9 +16,16 @@ from app.core.integration_catalog import INTEGRATION_CATALOG
 # itself, since integration_catalog.py may still need them as valid
 # n8n_credential_type owners for OTHER services' auth_options.
 _EXCLUDED_SERVICE_KEYS = {
-    "http_basic_auth", "http_digest_auth", "http_header_auth", "http_query_auth",
-    "http_custom_auth", "http_ssl_auth", "http_multiple_headers_auth",
-    "http_templated_custom_auth", "o_auth1_api", "o_auth2_api",
+    "http_basic_auth",
+    "http_digest_auth",
+    "http_header_auth",
+    "http_query_auth",
+    "http_custom_auth",
+    "http_ssl_auth",
+    "http_multiple_headers_auth",
+    "http_templated_custom_auth",
+    "o_auth1_api",
+    "o_auth2_api",
 }
 
 # "http" and "webhook" are the prompt's designated fallback values for
@@ -53,6 +64,7 @@ def _build_service_whitelist() -> dict:
     for use by _check_service().
     """
     from app.core.n8n_operation_registry import get_kind  # local import avoids a hard
+
     # dependency for callers that only need integration_catalog behavior
 
     by_category: dict[str, list[str]] = {}
@@ -83,6 +95,7 @@ def _valid_service_keys() -> frozenset:
     by_category = _build_service_whitelist()
     keys = {s for services in by_category.values() for s in services}
     return frozenset(keys | _FALLBACK_SERVICE_KEYS)
+
 
 CURRENT_SCHEMA_VERSION = 4
 # v2 -> v3: two additions to each workflow step. The five-key top-level
@@ -147,14 +160,29 @@ _REQUIRED_TOP_LEVEL_KEYS = _ALLOWED_TOP_LEVEL_KEYS  # all five are mandatory
 # caught and logged rather than silently trusted, same rationale as the
 # top-level key check above.
 _ALLOWED_OPERATIONS = {
-    "create", "read", "update", "delete", "list",
-    "send", "search", "generate", "upload", "download",
+    "create",
+    "read",
+    "update",
+    "delete",
+    "list",
+    "send",
+    "search",
+    "generate",
+    "upload",
+    "download",
 }
 
 
 _APPROVAL_LANGUAGE_KEYWORDS = (
-    "approve", "approval", "reject", "decision", "accept", "decline",
-    "based on the outcome", "if approved", "if rejected",
+    "approve",
+    "approval",
+    "reject",
+    "decision",
+    "accept",
+    "decline",
+    "based on the outcome",
+    "if approved",
+    "if rejected",
 )
 
 
@@ -176,7 +204,9 @@ def _check_approval_branching(automation_description: str, preview_json: dict) -
     if not isinstance(automation_description, str):
         return
     description_lower = automation_description.lower()
-    matched_keywords = [kw for kw in _APPROVAL_LANGUAGE_KEYWORDS if kw in description_lower]
+    matched_keywords = [
+        kw for kw in _APPROVAL_LANGUAGE_KEYWORDS if kw in description_lower
+    ]
     if not matched_keywords:
         return
 
@@ -214,6 +244,7 @@ def _check_operations(preview_json: dict) -> None:
         _check_target(step)
         _check_service(step)
         _check_depends_on(step, steps)
+        _check_parallel_depends_on(step, steps)
         _check_condition_branch(step, steps)
         _check_ai_instructions(step)
 
@@ -287,7 +318,11 @@ def _check_ai_instructions(step: dict) -> None:
     if step.get("service") != "groq":
         return
     instructions = step.get("instructions")
-    if not instructions or not isinstance(instructions, str) or not instructions.strip():
+    if (
+        not instructions
+        or not isinstance(instructions, str)
+        or not instructions.strip()
+    ):
         print(
             f"[workflow_generator] Step {step.get('step')} is a groq step "
             f"with no 'instructions' field - required by SYSTEM_INSTRUCTION, "
@@ -342,6 +377,44 @@ def _check_depends_on(step: dict, all_steps: list) -> None:
             )
 
 
+def _check_parallel_depends_on(step: dict, all_steps: list) -> None:
+    """
+    Same non-fatal logging pattern as _check_depends_on. Flags the specific
+    failure mode confirmed live: a step depending on an earlier step that
+    uses the SAME service and operation (e.g. two independent "download a
+    file" reads chained together instead of left parallel - see the
+    DEPENDS_ON "specific trap" example in SYSTEM_INSTRUCTION). This isn't
+    proof of a mistake - two same-service steps can legitimately depend on
+    each other in rarer cases - but it's the exact structural shape the
+    confirmed bug had, so it's worth a human glance rather than silence.
+    """
+    if not isinstance(step, dict):
+        return
+    this_step = step.get("step")
+    service = step.get("service")
+    operation = step.get("operation")
+    depends_on = step.get("depends_on", [])
+    if not isinstance(depends_on, list) or not service:
+        return
+
+    steps_by_number = {s.get("step"): s for s in all_steps if isinstance(s, dict)}
+    for ref in depends_on:
+        upstream = steps_by_number.get(ref)
+        if not upstream:
+            continue  # already flagged by _check_depends_on
+        if (
+            upstream.get("service") == service
+            and upstream.get("operation") == operation
+        ):
+            print(
+                f"[workflow_generator] Step {this_step} depends_on step {ref} - "
+                f"both use service '{service}' / operation '{operation}'. This is "
+                f"the same shape as a confirmed bug (two independent reads spuriously "
+                f"chained instead of left parallel) - verify step {this_step} genuinely "
+                f"needs step {ref}'s output, not just that they're conceptually related."
+            )
+
+
 def _check_condition_branch(step: dict, all_steps: list) -> None:
     """
     Same non-fatal logging pattern, for the new v4 "condition"/"branch"
@@ -376,10 +449,16 @@ def _check_condition_branch(step: dict, all_steps: list) -> None:
             if not isinstance(s, dict):
                 continue
             s_num = s.get("step")
-            if not isinstance(this_step, int) or not isinstance(s_num, int) or s_num >= this_step:
+            if (
+                not isinstance(this_step, int)
+                or not isinstance(s_num, int)
+                or s_num >= this_step
+            ):
                 continue
             s_condition = s.get("condition")
-            if isinstance(s_condition, dict) and isinstance(s_condition.get("branches"), list):
+            if isinstance(s_condition, dict) and isinstance(
+                s_condition.get("branches"), list
+            ):
                 declared_branches.update(s_condition["branches"])
         if branch not in declared_branches:
             print(
@@ -450,7 +529,9 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
             step["n8n_subnode"] = {
                 "root_node_type": _AI_AGENT_ROOT_NODE_TYPE,
                 "connection_type": _AI_LANGUAGE_MODEL_CONNECTION_TYPE,
-                "chat_model_node_type": _AI_SUBNODE_CHAT_MODEL_TYPES.get(service),  # None = not yet mapped for this provider
+                "chat_model_node_type": _AI_SUBNODE_CHAT_MODEL_TYPES.get(
+                    service
+                ),  # None = not yet mapped for this provider
                 # Resolved: SYSTEM_INSTRUCTION now requires Groq to populate
                 # step["instructions"] directly on every groq step. The
                 # compiler reads that field verbatim as the AI Agent node's
@@ -459,16 +540,79 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
             }
             continue
 
-        if not entry or entry.get("kind") != "action_node":
+        if entry and entry.get("kind") == "generic_http":
+            # Same reasoning as ai_subnode: NOT a failure. n8n's HTTP Request
+            # node has no resource/operation menu at all (confirmed against
+            # n8n's own docs) - the universal verb maps to an HTTP method
+            # instead. n8n_resolved stays False for the same backward-
+            # compatibility reason as ai_subnode; n8n_resolution_kind is the
+            # unambiguous signal for the compiler.
+            method = resolve_http_method(verb)
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
-            step["n8n_resolution_kind"] = "unmapped" if not entry else "unsupported_kind"
+            step["n8n_resolution_kind"] = "generic_http"
+            step["n8n_http_node"] = {
+                "node_type": entry.get("node_type"),
+                "method": method,  # None if this verb has no sensible REST mapping - needs a human look
+            }
+            continue
+
+        if entry and entry.get("kind") == "http_only":
+            # A real, known third-party service (has a credential in
+            # integration_catalog.py) but no dedicated n8n node - reachable
+            # ONLY via a generic HTTP Request node, same mechanically as
+            # "generic_http", but kept as a distinct resolution_kind so the
+            # compiler knows this needs THIS service's own auth/base-URL
+            # details (from integration_catalog), not a truly generic call.
+            method = resolve_http_method(verb)
+            step["n8n_resolved"] = False
+            step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "http_only"
+            step["n8n_http_node"] = {
+                "node_type": "n8n-nodes-base.httpRequest",
+                "method": method,  # None if this verb has no sensible REST mapping - needs a human look
+            }
+            continue
+
+        if entry and entry.get("kind") == "trigger_only_or_unparsed":
+            # Deliberately NOT given an automatic compile path, unlike the
+            # three kinds above. This means the extractor found the node but
+            # got zero operations from it - either it's a genuine trigger-
+            # only node being used in a non-trigger step (a modeling problem
+            # worth a human's attention, not a data gap to patch around), or
+            # a legacy `name:'action'` property this version of the
+            # extractor doesn't parse (see node_registry.py's own docstring -
+            # FileMaker confirmed as one such case). Guessing which one
+            # without checking risks silently accepting a broken step.
+            step["n8n_resolved"] = False
+            step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "trigger_only_or_unparsed"
+            continue
+
+        if not entry:
+            step["n8n_resolved"] = False
+            step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "unmapped"
+            continue
+
+        if entry.get("kind") != "action_node":
+            # Should be unreachable now that ai_subnode / generic_http /
+            # http_only / trigger_only_or_unparsed are all handled above -
+            # kept as a safety net in case node_registry.json ever adds a
+            # new `kind` value this function hasn't been taught yet, so that
+            # case fails loudly as "unsupported_kind" instead of silently
+            # falling through to resolve_operation with a kind it can't use.
+            step["n8n_resolved"] = False
+            step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "unsupported_kind"
             continue
 
         op = resolve_operation(service, verb, resource=target)
         step["n8n_resolved"] = op is not None
         step["n8n_operation"] = op  # full dict or None - never a guessed partial value
-        step["n8n_resolution_kind"] = "action_node" if op is not None else "no_operation_match"
+        step["n8n_resolution_kind"] = (
+            "action_node" if op is not None else "no_operation_match"
+        )
 
     return preview_json
 
@@ -483,7 +627,11 @@ def _summarize_resolution(preview_json: dict) -> dict:
         {"total": 4, "resolved": 3, "unresolved_steps": [3]}
     """
     steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
-    unresolved = [s.get("step") for s in steps if isinstance(s, dict) and not s.get("n8n_resolved")]
+    unresolved = [
+        s.get("step")
+        for s in steps
+        if isinstance(s, dict) and not s.get("n8n_resolved")
+    ]
     return {
         "total": len(steps),
         "resolved": len(steps) - len(unresolved),
@@ -521,12 +669,16 @@ def _sanitize_workflow_output(raw: dict) -> dict:
     if dropped:
         # Not fatal — just stripped. Logged so drift frequency can be tracked
         # and the prompt/model choice revisited if this fires often.
-        print(f"[workflow_generator] Stripped non-conforming keys from Groq output: {sorted(dropped)}")
+        print(
+            f"[workflow_generator] Stripped non-conforming keys from Groq output: {sorted(dropped)}"
+        )
 
     sanitized = {key: raw[key] for key in _ALLOWED_TOP_LEVEL_KEYS}
     sanitized["schema_version"] = CURRENT_SCHEMA_VERSION
     _check_operations(sanitized.get("preview_json", {}))
-    _check_approval_branching(sanitized.get("automation_description", ""), sanitized.get("preview_json", {}))
+    _check_approval_branching(
+        sanitized.get("automation_description", ""), sanitized.get("preview_json", {})
+    )
     _enrich_with_real_operations(sanitized.get("preview_json", {}))
     return sanitized
 
@@ -873,16 +1025,37 @@ async def generate_groq_workflow(
         "service": "google_sheets",
         "operation": "update",
         "target": "sheet",
-        "parameters": { "sheet_id": "" }
+        "parameters": { "sheet_id": "SHEET_ID_HERE" }
         }
 
-        In the second example, "sheet_id" is structural (which sheet to write to) -
-        not runtime content. "target" is set to "sheet" because Google Sheets can
-        act on more than one kind of object ("sheet" vs "spreadsheet") - do not
-        leave "target" empty for google_sheets steps; pick whichever of its
-        resources the action actually applies to.
-        If the automation does not name a specific sheet, document, folder, or
-        table, leave "parameters" as {}.
+        The above is ONLY correct when the automation's description itself names
+        a specific sheet (e.g. "update the Q3 Budget spreadsheet"). "sheet_id" is
+        structural (which sheet to write to), not runtime content - but adding
+        this key is the EXCEPTION, not something to reproduce on every
+        google_sheets step out of habit.
+
+        Contrast - same service, but the automation does NOT name a specific
+        sheet, document, folder, or table:
+
+        {
+        "step": 2,
+        "service": "google_sheets",
+        "operation": "update",
+        "target": "sheet",
+        "parameters": {}
+        }
+
+        This is the default for google_sheets, exactly as for every other
+        service. Do not add "sheet_id" (or any other key) as a placeholder,
+        and never with an empty-string value - an empty string is not
+        structural information, it is a promise to fill something in later,
+        which is exactly what "parameters" must not do at preview stage. If
+        in doubt about whether a specific resource was named, leave
+        "parameters" as {}.
+        "target" is still set to "sheet" in both cases above - "target" and
+        "parameters" are independent: target always names the resource kind
+        being acted on; parameters is populated only when a specific instance
+        of that resource is actually named in the request.
 
         --------------------------------------------------
         DEPENDS_ON
@@ -907,6 +1080,24 @@ async def generate_groq_workflow(
         Most steps depend on nothing but the trigger - [] is the expected,
         correct value for most steps, same as an empty "parameters". Do not
         list a step number just because it comes earlier in the workflow.
+
+        A specific trap: two steps using the SAME service and operation to
+        read two DIFFERENT instances of something (e.g. downloading a "new"
+        file and a "previous" file, or reading two different records) are
+        independent reads, not a sequence - one does not need the other's
+        output just because they're conceptually related or get compared
+        later. Compare the two shapes below:
+
+        WRONG - treating two independent reads as sequential because they
+        feel related:
+        {"step": 1, "service": "google_drive", "operation": "read", "target": "file", "depends_on": []}
+        {"step": 2, "service": "google_drive", "operation": "read", "target": "file", "depends_on": [1]}
+
+        RIGHT - both reads are independent; only the step that actually
+        needs BOTH outputs (e.g. the AI step comparing them) depends on both:
+        {"step": 1, "service": "google_drive", "operation": "read", "target": "file", "depends_on": []}
+        {"step": 2, "service": "google_drive", "operation": "read", "target": "file", "depends_on": []}
+        {"step": 3, "service": "groq", "operation": "generate", "depends_on": [1, 2]}
 
         --------------------------------------------------
         CONDITION / BRANCH
@@ -1030,12 +1221,9 @@ async def generate_groq_workflow(
     )
 
     print("Groq")
-    raw_workflow = await generate_workflow_from_prompt(
-        user_content,
-        system_instruction
-    )
+    raw_workflow = await generate_workflow_from_prompt(user_content, system_instruction)
     result = _sanitize_workflow_output(raw_workflow)
-    print("SANITIZED KEYS:", sorted(result.keys()))   # <-- add this
+    print("SANITIZED KEYS:", sorted(result.keys()))  # <-- add this
     return result
     return _sanitize_workflow_output(raw_workflow)
 
