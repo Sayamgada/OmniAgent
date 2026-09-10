@@ -8943,7 +8943,7 @@
     "node_paths": ["Google/Gmail"],
     "resources": {
       "draft": "Draft",
-      "label": "Label",
+      "label": "",
       "message": "Message",
       "messageLabel": "Message Label",
       "thread": "Thread"

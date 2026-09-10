@@ -1,25 +1,45 @@
 # app/services/vectorstore.py
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from app.core.config import settings
 from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_core.documents import Document
 
+_embeddings = None
+_vectorstore = None
 
-embeddings = HuggingFaceEmbeddings(
-    model_name=settings.EMBEDDING_MODEL,
-    encode_kwargs={"normalize_embeddings": True}
-)
 
-vectorstore = FAISS.load_local(
-    settings.FAISS_INDEX_PATH,
-    embeddings,
-    distance_strategy=DistanceStrategy.COSINE,
-    allow_dangerous_deserialization=True
-)
+def get_embeddings():
+    global _embeddings
+
+    if _embeddings is None:
+        _embeddings = HuggingFaceEmbeddings(
+            model_name=settings.EMBEDDING_MODEL,
+            encode_kwargs={"normalize_embeddings": True},
+        )
+
+    return _embeddings
+
+
+def get_vectorstore():
+    global _vectorstore
+
+    if _vectorstore is None:
+        _vectorstore = FAISS.load_local(
+            settings.FAISS_INDEX_PATH,
+            get_embeddings(),
+            distance_strategy=DistanceStrategy.COSINE,
+            allow_dangerous_deserialization=True,
+        )
+
+    return _vectorstore
+
 
 def printVectorStore():
+    vectorstore = get_vectorstore()
     print("Total vectors:", vectorstore.index.ntotal)
+
 
 def search_automations(query: str, category: str | None = None, top_k: int = 5):
     # NOTE: no BGE "Represent this sentence for searching relevant passages: "
@@ -32,16 +52,15 @@ def search_automations(query: str, category: str | None = None, top_k: int = 5):
     # prefix vs. ~0.91+ without it. Passages were already stored without any
     # prefix (see add_automation below), so this keeps both sides symmetric.
 
+    vectorstore = get_vectorstore()
+
     if category:
         results = vectorstore.similarity_search_with_score(
-            query=query,
-            k=top_k,
-            filter={"category": category}
+            query=query, k=top_k, filter={"category": category}
         )
     else:
         results = vectorstore.similarity_search_with_relevance_scores(
-            query=query,
-            k=top_k
+            query=query, k=top_k
         )
 
     response = []
@@ -49,29 +68,31 @@ def search_automations(query: str, category: str | None = None, top_k: int = 5):
     for doc, distance in results:
         similarity = max(0.0, 1 - (float(distance) / 2))
 
-        response.append({
-            "automation_name": doc.metadata["name"],
-            "description": doc.metadata["description"],
-            "metadata": {
-                "category": doc.metadata["category"],
-                "row_index": doc.metadata["row_index"],
-                "source": doc.metadata["source"]
-            },
-            "similarity_score": round(similarity, 2)
-        })
+        response.append(
+            {
+                "automation_name": doc.metadata["name"],
+                "description": doc.metadata["description"],
+                "metadata": {
+                    "category": doc.metadata["category"],
+                    "row_index": doc.metadata["row_index"],
+                    "source": doc.metadata["source"],
+                },
+                "similarity_score": round(similarity, 2),
+            }
+        )
 
     return response
 
 
 def add_automation(
-    automation_name: str,
-    automation_description: str,
-    domain: str
+    automation_name: str, automation_description: str, domain: str
 ) -> None:
     """
     Adds a newly generated automation to the FAISS index
     and persists it to disk.
     """
+
+    vectorstore = get_vectorstore()
 
     document = Document(
         page_content=automation_description,
