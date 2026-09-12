@@ -16,38 +16,38 @@ export function StatCard({ stat, index = 0 }: StatCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.35 }}
-      className="glass-card-hover group rounded-2xl p-5"
+      transition={{ delay: index * 0.04, duration: 0.3 }}
+      className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
     >
-      <motion.div className="flex items-start justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20 group-hover:shadow-[0_0_20px_hsl(211_100%_50%_/_0.25)]">
-          <Icon className="h-5 w-5" />
+      <div className="flex items-center justify-between">
+        <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
+          <Icon className="size-4" />
         </div>
         <div
           className={cn(
-            "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-            isPositive ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive"
+            "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono font-medium",
+            isPositive ? "bg-secondary/10 text-secondary border border-secondary/30" : "bg-destructive/10 text-destructive border border-destructive/30"
           )}
         >
           {isPositive ? (
-            <TrendingUp className="h-3 w-3" />
+            <TrendingUp className="size-3" />
           ) : (
-            <TrendingDown className="h-3 w-3" />
+            <TrendingDown className="size-3" />
           )}
           {Math.abs(stat.trend)}%
         </div>
-      </motion.div>
-      <p className="mt-4 text-2xl font-bold tracking-tight">
+      </div>
+      <p className="mt-3 text-xl font-bold tracking-tight text-foreground font-mono">
         <AnimatedCounter
           value={stat.value}
           decimals={stat.suffix === "%" && stat.value < 100 ? 1 : 0}
           suffix={stat.suffix}
         />
       </p>
-      <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
-      <p className="mt-0.5 text-xs text-muted-foreground/70">{stat.trendLabel}</p>
+      <p className="mt-0.5 text-xs font-medium text-muted-foreground truncate">{stat.label}</p>
+      <p className="text-[10px] text-muted-foreground/70">{stat.trendLabel}</p>
     </motion.div>
   );
 }

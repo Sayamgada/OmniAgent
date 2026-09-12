@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-
 import { cn } from "../../lib/utils";
 
 export type AuthInputFieldProps = {
@@ -33,25 +32,27 @@ const AuthInputField = ({
   const ok = Boolean(showSuccess && !hasError && value.trim().length > 0);
 
   return (
-    <div className="space-y-1.5">
-      <label htmlFor={id} className="sr-only">
+    <div className="space-y-1.5 text-left">
+      <label htmlFor={id} className="block text-xs font-medium text-foreground">
         {label}
       </label>
       <div
         className={cn(
-          "group relative flex items-center rounded-xl border bg-[#1E1E1E]/90 backdrop-blur-sm transition-all duration-300",
-          "border-[#2A2A2A]",
-          hasError && "border-destructive shadow-[0_0_0_1px_hsl(var(--destructive)/0.45)]",
-          ok && "border-secondary shadow-[0_0_20px_hsl(122_39%_49%_/_0.12)]",
-          !hasError && !ok && "focus-within:border-[#007BFF] focus-within:shadow-[0_0_24px_hsl(211_100%_50%_/_0.18)]",
+          "relative flex items-center rounded-lg border bg-background/60 transition-colors",
+          "border-border",
+          hasError && "border-destructive ring-1 ring-destructive/30",
+          ok && "border-secondary/60",
+          !hasError && !ok && "focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40",
         )}
       >
-        <Icon
-          className={cn(
-            "pointer-events-none absolute left-3.5 size-[18px] transition-colors",
-            hasError ? "text-destructive" : ok ? "text-secondary" : "text-muted-foreground group-focus-within:text-[#007BFF]",
-          )}
-        />
+        <div className="pointer-events-none absolute left-3 flex items-center justify-center">
+          <Icon
+            className={cn(
+              "size-4 transition-colors",
+              hasError ? "text-destructive" : ok ? "text-secondary" : "text-muted-foreground",
+            )}
+          />
+        </div>
         <input
           id={id}
           type={type}
@@ -60,26 +61,14 @@ const AuthInputField = ({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           disabled={disabled}
-          placeholder=" "
+          placeholder={`Enter your ${label.toLowerCase()}`}
           className={cn(
-            "peer h-14 w-full rounded-xl bg-transparent pl-11 pr-4 pb-2.5 pt-5 text-sm text-[#F5F5F5]",
-            "placeholder-transparent focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
+            "h-10 w-full rounded-lg bg-transparent pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60",
+            "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
           )}
         />
-        <span
-          className={cn(
-            "pointer-events-none absolute left-11 top-1/2 origin-left -translate-y-1/2 text-sm text-muted-foreground transition-all duration-200",
-            "peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-sm",
-            "peer-focus:top-3 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-[#007BFF]",
-            "peer-[:not(:placeholder-shown)]:top-3 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px]",
-            hasError && "text-destructive peer-focus:text-destructive peer-[:not(:placeholder-shown)]:text-destructive",
-            ok && "text-secondary peer-focus:text-secondary peer-[:not(:placeholder-shown)]:text-secondary",
-          )}
-        >
-          {label}
-        </span>
       </div>
-      {error ? <p className="animate-in fade-in text-xs text-destructive duration-200">{error}</p> : null}
+      {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
     </div>
   );
 };

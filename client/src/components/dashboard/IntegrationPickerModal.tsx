@@ -36,30 +36,30 @@ export function IntegrationPickerModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] max-w-2xl">
+      <DialogContent className="border-border bg-card max-h-[85vh] max-w-2xl text-left">
         <DialogHeader>
-          <DialogTitle>Add Integration</DialogTitle>
+          <DialogTitle className="text-base font-bold text-foreground">Add Integration</DialogTitle>
         </DialogHeader>
 
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
           <Input
             autoFocus
-            placeholder="Search integrations..."
+            placeholder="Search integrations by service or category..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-9"
+            className="h-9 pl-9 border-border bg-background/50 text-xs"
           />
         </div>
 
-        <div className="max-h-[55vh] space-y-5 overflow-y-auto pr-1">
+        <div className="max-h-[50vh] space-y-5 overflow-y-auto pr-1">
           {Object.keys(grouped).length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">No matching integrations.</p>
+            <p className="py-8 text-center font-mono text-xs text-muted-foreground">No matching integrations found.</p>
           )}
 
           {Object.entries(grouped).map(([category, items]) => (
-            <div key={category}>
-              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{category}</p>
+            <div key={category} className="space-y-2">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{category}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {items.map((item) => {
                   const Icon = integrationIcons[item.service] ?? DefaultIntegrationIcon;
@@ -71,14 +71,16 @@ export function IntegrationPickerModal({
                         onOpenChange(false);
                         setQuery("");
                       }}
-                      className="flex flex-col items-start gap-1 rounded-lg border border-border/60 bg-card/50 p-3 text-left transition hover:border-primary/60 hover:bg-primary/10"
+                      className="flex flex-col items-start gap-1 rounded-xl border border-border bg-background/40 p-3 text-left transition hover:border-primary/50 hover:bg-primary/5"
                     >
                       <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">{item.display_name}</span>
+                        <div className="flex size-6 items-center justify-center rounded-md border border-border bg-card text-primary">
+                          <Icon className="size-3.5" />
+                        </div>
+                        <span className="text-xs font-semibold text-foreground truncate">{item.display_name}</span>
                       </div>
-                      <span className="line-clamp-2 text-xs text-muted-foreground">
-                        {item.auth_options.map((o) => o.label).join(" / ")}
+                      <span className="font-mono text-[10px] text-muted-foreground line-clamp-1">
+                        {item.auth_options.map((o) => o.label).join(" · ")}
                       </span>
                     </button>
                   );

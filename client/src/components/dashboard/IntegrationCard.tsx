@@ -104,8 +104,6 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
     }
   };
 
-  // Catalog has no free-text "description" field -- use the connected auth method (or the
-  // default one, if not yet connected) as the subtitle instead.
   const activeOption =
     integration.auth_options.find((o) => o.option_id === integration.connected_option) ??
     integration.auth_options.find((o) => o.option_id === integration.default_option) ??
@@ -113,58 +111,60 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.3 }}
+      transition={{ delay: index * 0.04, duration: 0.25 }}
       className={cn(
-        "glass-card-hover rounded-2xl p-5 transition-all duration-300",
-        integration.connected && "border-primary/20 shadow-[0_0_24px_hsl(211_100%_50%_/_0.12)]"
+        "rounded-xl border border-border bg-card p-5 text-left transition-all",
+        integration.connected
+          ? "border-primary/40 bg-card hover:border-primary/60"
+          : "hover:border-border/80"
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-            <Icon className="h-6 w-6 text-primary" />
+          <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-background/60 text-primary">
+            <Icon className="size-5" />
           </div>
           <div>
-            <h3 className="font-semibold">{integration.display_name}</h3>
-            <p className="text-xs text-muted-foreground">{integration.category}</p>
+            <h3 className="text-sm font-bold text-foreground">{integration.display_name}</h3>
+            <p className="font-mono text-[10px] text-muted-foreground">{integration.category}</p>
           </div>
         </div>
         <Badge
           variant="outline"
           className={cn(
-            "text-xs",
+            "font-mono text-[10px] font-semibold px-2 py-0.5",
             integration.connected
-              ? "border-secondary/40 bg-secondary/10 text-secondary"
-              : "border-muted-foreground/30 text-muted-foreground"
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+              : "border-muted-foreground/30 bg-muted/40 text-muted-foreground"
           )}
         >
           {integration.connected ? "Connected" : "Disconnected"}
         </Badge>
       </div>
 
-      <p className="mt-3 text-sm text-muted-foreground">
+      <p className="mt-3 text-xs text-muted-foreground line-clamp-1">
         {integration.connected ? `Connected via ${activeOption.label}` : activeOption.label}
       </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => onConfigure(integration)}>
-          <Key className="h-3.5 w-3.5" />
+      <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 border-border bg-background/50 text-xs" onClick={() => onConfigure(integration)}>
+          <Key className="size-3" />
           Edit Keys
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Settings2 className="h-3.5 w-3.5" />
-          Permissions
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 border-border bg-background/50 text-xs" onClick={() => toast.info("Permissions managed via credentials")}>
+          <Settings2 className="size-3" />
+          Config
         </Button>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="ml-auto gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="ml-auto h-8 gap-1 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={() => setConfirmOpen(true)}
           disabled={deleting}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="size-3" />
           {deleting ? "Removing..." : "Delete"}
         </Button>
       </div>
@@ -173,7 +173,7 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={`Disconnect ${integration.display_name}?`}
-        description="This removes the credential from n8n too, not just from OmniAgent."
+        description="This removes the credential from the orchestrator engine."
         confirmLabel="Disconnect"
         destructive
         loading={deleting}

@@ -14,29 +14,29 @@ type WorkflowPipelinePreviewProps = {
 
 const changeStyles: Record<
   PipelineNodeChange,
-  { border: string; glow: string; badge: string; badgeText: string }
+  { border: string; bg: string; badge: string; badgeText: string }
 > = {
   unchanged: {
-    border: "border-white/[0.08]",
-    glow: "",
+    border: "border-border/80 hover:border-border",
+    bg: "bg-card/90",
     badge: "",
     badgeText: "",
   },
   added: {
-    border: "border-secondary/50",
-    glow: "shadow-[0_0_20px_rgba(34,197,94,0.2)]",
-    badge: "bg-secondary/15 text-secondary border-secondary/30",
-    badgeText: "New",
+    border: "border-emerald-500/50 shadow-[0_0_16px_rgba(16,185,129,0.15)]",
+    bg: "bg-emerald-950/20",
+    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    badgeText: "Added",
   },
   removed: {
-    border: "border-red-500/50",
-    glow: "shadow-[0_0_20px_rgba(239,68,68,0.18)] opacity-60",
-    badge: "bg-red-500/15 text-red-400 border-red-500/30",
+    border: "border-destructive/50 opacity-60 shadow-[0_0_16px_rgba(239,68,68,0.15)]",
+    bg: "bg-destructive/10",
+    badge: "bg-destructive/15 text-destructive border-destructive/30",
     badgeText: "Removed",
   },
   modified: {
-    border: "border-primary/50",
-    glow: "shadow-[0_0_20px_rgba(29,143,255,0.25)]",
+    border: "border-primary/60 shadow-[0_0_16px_rgba(0,102,255,0.2)]",
+    bg: "bg-primary/10",
     badge: "bg-primary/15 text-primary border-primary/30",
     badgeText: "Modified",
   },
@@ -52,15 +52,15 @@ export function WorkflowPipelinePreview({
   return (
     <div className={cn("space-y-4", className)}>
       {(label || version) && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
           {label && (
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <p className="text-xs font-semibold text-foreground">
               {label}
             </p>
           )}
           {version && (
-            <span className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-              Version {version}
+            <span className="font-mono rounded border border-border bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+              v{version}
             </span>
           )}
         </div>
@@ -72,43 +72,41 @@ export function WorkflowPipelinePreview({
           const styles = changeStyles[change];
 
           return (
-            <div key={`${node.id}-${index}`} className="flex w-full max-w-xs flex-col items-center">
+            <div key={`${node.id}-${index}`} className="flex w-full max-w-sm flex-col items-center">
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.06, duration: 0.28 }}
+                transition={{ delay: index * 0.05, duration: 0.25 }}
                 className={cn(
-                  "relative w-full rounded-2xl border bg-[#1E1E1E]/95 px-4 py-3.5 text-center backdrop-blur-sm",
-                  styles.border,
-                  styles.glow
+                  "relative w-full rounded-xl border p-3.5 text-center transition-all",
+                  styles.bg,
+                  styles.border
                 )}
               >
-                <p className="text-sm font-medium text-foreground">{node.label}</p>
-                {styles.badgeText && (
-                  <span
-                    className={cn(
-                      "absolute -right-2 -top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
-                      styles.badge
-                    )}
-                  >
-                    {styles.badgeText}
-                  </span>
-                )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] text-muted-foreground">0{index + 1}</span>
+                  <p className="text-xs font-semibold text-foreground flex-1 text-center">{node.label}</p>
+                  {styles.badgeText ? (
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider border",
+                        styles.badge
+                      )}
+                    >
+                      {styles.badgeText}
+                    </span>
+                  ) : (
+                    <span className="w-6" />
+                  )}
+                </div>
               </motion.div>
 
               {index < nodes.length - 1 && (
-                <div className="relative flex h-8 w-px flex-col items-center justify-center">
-                  <motion.div
-                    className="absolute inset-0 w-px bg-gradient-to-b from-primary/60 via-primary to-primary/40"
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_rgba(29,143,255,0.8)]"
-                    animate={{ top: ["0%", "100%"], opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <ArrowDown className="relative z-10 size-3.5 text-primary/80" />
+                <div className="relative flex h-7 w-px flex-col items-center justify-center">
+                  <div className="absolute inset-0 w-px bg-border" />
+                  <div className="relative z-10 flex size-4 items-center justify-center rounded-full bg-background border border-border text-muted-foreground">
+                    <ArrowDown className="size-2.5" />
+                  </div>
                 </div>
               )}
             </div>
@@ -117,10 +115,10 @@ export function WorkflowPipelinePreview({
       </div>
 
       {showLegend && (
-        <div className="flex flex-wrap items-center justify-center gap-4 border-t border-white/[0.06] pt-4 text-[11px] text-muted-foreground">
-          <LegendDot className="bg-secondary" label="New nodes" />
-          <LegendDot className="bg-red-500" label="Removed nodes" />
-          <LegendDot className="bg-primary" label="Modified nodes" />
+        <div className="flex flex-wrap items-center justify-center gap-4 border-t border-border/60 pt-3 font-mono text-[11px] text-muted-foreground">
+          <LegendDot className="bg-emerald-500" label="Added" />
+          <LegendDot className="bg-primary" label="Modified" />
+          <LegendDot className="bg-destructive" label="Removed" />
         </div>
       )}
     </div>
@@ -130,7 +128,7 @@ export function WorkflowPipelinePreview({
 function LegendDot({ className, label }: { className: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={cn("size-2 rounded-full", className)} />
+      <span className={cn("size-1.5 rounded-full", className)} />
       {label}
     </span>
   );

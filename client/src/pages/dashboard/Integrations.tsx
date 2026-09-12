@@ -42,52 +42,77 @@ export default function Integrations() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-6 text-left">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Integrations</h1>
-          <p className="text-sm text-muted-foreground">
-            Connect external platforms to power your AI agents
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Integrations</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Connect external data sources, communication channels, and AI inference providers to your agent ecosystem.
           </p>
         </div>
-        <Button onClick={() => setPickerOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button
+          onClick={() => setPickerOpen(true)}
+          className="h-9 gap-1.5 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
+        >
+          <Plus className="size-3.5" />
           Add Integration
         </Button>
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card flex items-center gap-4 rounded-2xl p-5"
+        className="flex items-center justify-between rounded-xl border border-border bg-card p-4 sm:p-5"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
-          <Plug className="h-6 w-6" />
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+            <Plug className="size-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-foreground">
+              <span className="font-mono text-primary font-semibold">{connectedCount}</span> of <span className="font-mono text-foreground font-semibold">{yourIntegrations.length}</span> active integrations connected
+            </p>
+            <p className="font-mono text-[11px] text-muted-foreground">
+              {integrations.length - yourIntegrations.length} additional services available in catalog
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold">
-            {connectedCount} of {yourIntegrations.length} added integrations connected
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {integrations.length - yourIntegrations.length} more services available to add
-          </p>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPickerOpen(true)}
+          className="hidden sm:flex h-8 gap-1.5 border-border bg-background/50 text-xs"
+        >
+          <Plus className="size-3" />
+          Browse Catalog
+        </Button>
       </motion.div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading integrations…</p>
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <p className="font-mono text-xs text-muted-foreground">Loading integrations catalog…</p>
+        </div>
       ) : yourIntegrations.length === 0 ? (
-        <div className="glass-card rounded-2xl p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            You haven't added any integrations yet.
-          </p>
-          <Button onClick={() => setPickerOpen(true)} className="mt-4 gap-2">
-            <Plus className="h-4 w-4" />
-            Add your first integration
+        <div className="rounded-xl border border-border bg-card p-12 text-center space-y-3">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-xl border border-border bg-background/60 text-muted-foreground">
+            <Plug className="size-6" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-foreground">No integrations configured yet</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Add integrations to give your agents access to communication channels, storage, and models.
+            </p>
+          </div>
+          <Button
+            onClick={() => setPickerOpen(true)}
+            className="h-9 gap-1.5 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
+          >
+            <Plus className="size-3.5" />
+            Add First Integration
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {yourIntegrations.map((integration, i) => (
             <IntegrationCard
               key={integration.service}

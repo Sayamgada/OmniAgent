@@ -2,47 +2,71 @@ import { motion } from "framer-motion";
 import { Network, Sparkles, MessageCircle, Brain, Plug, ShieldCheck } from "lucide-react";
 
 const features = [
-  { icon: Network, title: "Multi-Agent Workflows", desc: "Orchestrate multiple agents working together on complex tasks." },
-  { icon: Sparkles, title: "Smart Prompt Engineering", desc: "Advanced prompt optimization for accurate, context-aware responses." },
-  { icon: MessageCircle, title: "Chat-Based Interaction", desc: "Natural conversational interface for seamless human-AI collaboration." },
-  { icon: Brain, title: "Memory & Context Awareness", desc: "Agents remember past interactions and maintain context across sessions." },
-  { icon: Plug, title: "API & Tool Integrations", desc: "Connect to external APIs, databases, and tools out of the box." },
-  { icon: ShieldCheck, title: "Secure & Scalable", desc: "Enterprise-grade security with auto-scaling infrastructure." },
+  {
+    icon: Network,
+    title: "Multi-Agent Orchestration",
+    desc: "Coordinate specialized LLM agents (extractors, summarizers, planners) with structured communication graph topologies.",
+  },
+  {
+    icon: Sparkles,
+    title: "Deterministic Compilation",
+    desc: "Transforms fuzzy user prompts into executable JSON IR schemas with validated argument types and error states.",
+  },
+  {
+    icon: MessageCircle,
+    title: "Direct Sandbox Testing",
+    desc: "Test agent responses, simulated payloads, and execution outputs directly within an integrated sandbox.",
+  },
+  {
+    icon: Brain,
+    title: "Context & Memory Management",
+    desc: "Maintain task context and execution variables across intermediate steps and external system calls.",
+  },
+  {
+    icon: Plug,
+    title: "OAuth & Native Integrations",
+    desc: "Direct connections to Gmail, Google Calendar, Slack, Notion, and webhooks with secure credential isolation.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Transparent & Auditable",
+    desc: "Inspect every decision node, tool call payload, and LLM reasoning step with full JSON visibility.",
+  },
 ];
 
 const FeaturesSection = () => (
-  <section id="features" className="py-24 relative">
-    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent" />
-    <div className="container mx-auto px-4 relative">
+  <section id="features" className="py-20 border-t border-border/60 bg-background/50 relative">
+    <div className="container mx-auto px-4 sm:px-6 relative">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-center mb-16"
+        transition={{ duration: 0.5 }}
+        className="text-center mb-12"
       >
-        <h2 className="text-3xl md:text-5xl font-bold mb-4">
-          Key <span className="gradient-text">Features</span>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3">
+          Platform <span className="gradient-text">Capabilities</span>
         </h2>
-        <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-          Everything you need to build, deploy, and manage AI agents at scale.
+        <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
+          Built for teams requiring developer-grade precision with the speed of no-code generation.
         </p>
       </motion.div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {features.map((f, i) => (
           <motion.div
             key={f.title}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.08 }}
-            className="glass-card-hover rounded-xl p-6 group"
+            transition={{ delay: i * 0.06, duration: 0.4 }}
+            className="rounded-xl border border-border bg-card/70 p-5 hover:border-primary/40 transition-colors"
           >
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:glow-primary transition-shadow">
-              <f.icon className="w-6 h-6 text-primary" />
+            <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center mb-3.5 text-primary">
+              <f.icon className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+            <h3 className="font-semibold text-sm mb-1.5 text-foreground">{f.title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
           </motion.div>
         ))}
       </div>

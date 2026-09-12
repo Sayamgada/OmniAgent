@@ -1,9 +1,5 @@
-import { motion } from "framer-motion";
 import { format } from "date-fns";
 import {
-  BarChart3,
-  Bot,
-  MessageSquare,
   Plus,
   Upload,
   Workflow,
@@ -27,54 +23,50 @@ export default function DashboardHome() {
     "there";
 
   return (
-    <div className="space-y-8">
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-primary/10 via-card/60 to-purple-500/10 p-6 backdrop-blur-xl lg:p-8"
-      >
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-[80px]" />
-        <div className="relative">
-          <p className="text-sm text-muted-foreground">
-            {format(now, "EEEE, MMMM d, yyyy · h:mm a")}
-          </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight lg:text-3xl">
-            Welcome back, <span className="gradient-text">{displayName}</span>
-          </h1>
-          <p className="mt-2 max-w-xl text-muted-foreground">
-            You currently have{" "}
-            <span className="font-medium text-foreground">8 active agents</span>{" "}
-            across{" "}
-            <span className="font-medium text-foreground">3 industries</span>.
-            Your AI workspace is operating at peak efficiency.
-          </p>
+    <div className="space-y-6 text-left">
+      <section className="relative overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-mono text-[11px] text-muted-foreground">
+              {format(now, "EEEE, MMMM d, yyyy")}
+            </p>
+            <h1 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Welcome back, <span className="gradient-text">{displayName}</span>
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground max-w-xl">
+              Workspace running <span className="font-semibold text-foreground font-mono">8 active agents</span> across <span className="font-semibold text-foreground font-mono">3 industry domains</span>.
+            </p>
+          </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild className="gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" asChild className="h-9 gap-1.5 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary">
               <Link to="/new-agent">
-                <Plus className="h-4 w-4" />
+                <Plus className="size-3.5" />
                 Create Agent
               </Link>
             </Button>
-            <Button variant="outline" asChild className="gap-2 border-border/60">
+            <Button size="sm" variant="outline" asChild className="h-9 gap-1.5 border-border bg-background/50 text-xs text-foreground hover:bg-card">
               <Link to="/integrations">
-                <Upload className="h-4 w-4" />
-                Upload Knowledge
+                <Upload className="size-3.5" />
+                Integrations
               </Link>
             </Button>
-            <Button variant="outline" asChild className="gap-2 border-border/60">
+            <Button size="sm" variant="outline" asChild className="h-9 gap-1.5 border-border bg-background/50 text-xs text-foreground hover:bg-card">
               <Link to="/agents">
-                <Workflow className="h-4 w-4" />
-                Start Workflow
+                <Workflow className="size-3.5" />
+                My Agents
               </Link>
             </Button>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       <section>
-        <h2 className="mb-4 text-lg font-semibold">Quick Stats</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-xs font-bold text-foreground">Workspace Metrics</h2>
+          <span className="font-mono text-[10px] text-muted-foreground">Updated real-time</span>
+        </div>
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {dashboardStats.map((stat, i) => (
             <StatCard key={stat.id} stat={stat} index={i} />
           ))}
@@ -82,7 +74,6 @@ export default function DashboardHome() {
       </section>
 
       <IndustryOverview />
-          
     </div>
   );
 }

@@ -34,16 +34,10 @@ import {
   suggestionChips,
   type PipelineNode,
 } from "../../lib/edit-agent-data";
-import { industryColors, industryLabels } from "../../lib/dashboard-data";
+import { industryLabels } from "../../lib/dashboard-data";
 import { cn } from "../../lib/utils";
 
 const MAX_CHARS = 1200;
-
-const sectionMotion = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.35, ease: "easeOut" as const },
-};
 
 export default function EditAgent() {
   const { id } = useParams<{ id: string }>();
@@ -119,7 +113,7 @@ export default function EditAgent() {
     { label: "Primary Goal", value: agent.primaryGoal, icon: Target },
     { label: "Connected Workflow", value: agent.connectedWorkflow, icon: Link2 },
     { label: "Knowledge Source", value: agent.knowledgeSource, icon: FileText },
-    { label: "LLM", value: agent.model, icon: Bot },
+    { label: "LLM Model", value: agent.model, icon: Bot },
     {
       label: "Memory Enabled",
       value: agent.memoryEnabled ? "Enabled" : "Disabled",
@@ -127,127 +121,116 @@ export default function EditAgent() {
     },
     {
       label: "Integrations",
-      value: agent.integrations.length ? agent.integrations.join(", ") : "None",
+      value: agent.integrations.length ? agent.integrations.join(", ") : "None configured",
       icon: Link2,
     },
   ];
 
   return (
-    <div className="relative mx-auto max-w-[1400px] space-y-8">
+    <div className="relative mx-auto max-w-6xl space-y-6 text-left">
       {/* Header */}
-      <motion.div
-        {...sectionMotion}
-        className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-      >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Edit Agent</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Review your existing AI agent, describe the changes you want, preview the updated
-            workflow, and apply improvements before deployment.
+          <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+            <Link to="/agents" className="hover:text-foreground">Agents</Link>
+            <span>/</span>
+            <span>{agent.id}</span>
+          </div>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Edit Agent</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Refine agent configuration, simulate workflow modifications, and verify pipeline execution changes.
           </p>
         </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            "w-fit shrink-0 px-3 py-1 text-xs",
-            agent.status === "active"
-              ? "border-secondary/40 bg-secondary/10 text-secondary"
-              : "border-muted-foreground/30 bg-muted text-muted-foreground"
-          )}
-        >
-          {agent.status === "active" ? "Active" : "Inactive"}
-        </Badge>
-      </motion.div>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className={cn(
+              "font-mono text-xs font-semibold px-2.5 py-1",
+              agent.status === "active"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                : "border-muted-foreground/30 bg-muted/40 text-muted-foreground"
+            )}
+          >
+            {agent.status === "active" ? "Active" : "Inactive"}
+          </Badge>
+          <span className="font-mono text-xs rounded border border-border bg-card px-2 py-1 text-muted-foreground">
+            v{agent.version}
+          </span>
+        </div>
+      </div>
 
       {/* Section 1 — Overview */}
-      <motion.section
-        {...sectionMotion}
-        transition={{ ...sectionMotion.transition, delay: 0.04 }}
-        className="glass-card rounded-2xl p-6 lg:p-8"
-      >
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1 space-y-3">
+          <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-semibold tracking-tight lg:text-2xl">{agent.name}</h2>
-              <Badge variant="outline" className={cn("text-xs", industryColors[agent.industry])}>
+              <h2 className="text-lg font-bold tracking-tight text-foreground">{agent.name}</h2>
+              <span className="rounded border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                 {industryLabels[agent.industry]}
-              </Badge>
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground lg:max-w-2xl">{agent.description}</p>
-            <p className="text-xs text-muted-foreground">{agent.category}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground lg:max-w-2xl">{agent.description}</p>
+            <p className="font-mono text-[11px] text-muted-foreground/80">{agent.category}</p>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:max-w-md">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:max-w-md w-full">
             <MetaItem icon={Bot} label="Model" value={agent.model} />
-            <MetaItem icon={Layers} label="Version" value={agent.version} />
+            <MetaItem icon={Layers} label="Version" value={`v${agent.version}`} />
             <MetaItem icon={Calendar} label="Created" value={agent.createdAt} />
-            <MetaItem icon={Clock} label="Last Modified" value={agent.lastModified} />
+            <MetaItem icon={Clock} label="Modified" value={agent.lastModified} />
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Section 2 — Configuration */}
-      <motion.section
-        {...sectionMotion}
-        transition={{ ...sectionMotion.transition, delay: 0.08 }}
-        className="space-y-4"
-      >
+      <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">Current Agent Configuration</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Read-only snapshot of how this agent is configured today.
+          <h2 className="text-xs font-bold text-foreground">Current Agent Configuration</h2>
+          <p className="text-[11px] text-muted-foreground">
+            Read-only configuration snapshot of the deployed instance.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
           {configItems.map((item) => (
             <div
               key={item.label}
-              className="glass-card rounded-2xl border-white/[0.06] p-4 transition-colors hover:border-primary/20"
+              className="rounded-xl border border-border bg-card/80 p-3.5"
             >
-              <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-                <item.icon className="size-3.5 text-primary/80" />
-                <span className="text-[10px] uppercase tracking-wider">{item.label}</span>
+              <div className="mb-1.5 flex items-center gap-1.5 text-muted-foreground">
+                <item.icon className="size-3 text-primary" />
+                <span className="font-mono text-[10px] uppercase tracking-wider">{item.label}</span>
               </div>
-              <p className="text-sm font-medium text-foreground">{item.value}</p>
+              <p className="text-xs font-semibold text-foreground truncate">{item.value}</p>
             </div>
           ))}
         </div>
-      </motion.section>
+      </section>
 
       {/* Section 3 — Current Workflow */}
-      <motion.section
-        {...sectionMotion}
-        transition={{ ...sectionMotion.transition, delay: 0.1 }}
-        className="glass-card rounded-2xl p-6 lg:p-8"
-      >
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Workflow className="size-4 text-primary" />
-            <h2 className="text-lg font-semibold">Existing Workflow Preview</h2>
+            <h2 className="text-xs font-bold text-foreground">Existing Workflow Pipeline</h2>
           </div>
-          <p className="text-xs text-muted-foreground">Live visualization · not editable</p>
+          <span className="font-mono text-[11px] text-muted-foreground">Live visualization · Read-only</span>
         </div>
         <WorkflowPipelinePreview
           nodes={agent.currentWorkflow}
-          label="Current Workflow"
+          label="Current Production Workflow"
           version={agent.version}
         />
-      </motion.section>
+      </section>
 
       {/* Section 4 — Describe Changes */}
-      <motion.section
-        {...sectionMotion}
-        transition={{ ...sectionMotion.transition, delay: 0.12 }}
-        className="glass-card rounded-2xl p-6 lg:p-8"
-      >
-        <div className="mb-5 flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-            <Pencil className="size-4 text-primary" />
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+            <Pencil className="size-4" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Describe the Changes</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Tell OmniAgent how you’d like this agent to evolve. Use natural language — no coding
-              required.
+            <h2 className="text-sm font-bold text-foreground">Describe Modifications</h2>
+            <p className="text-xs text-muted-foreground">
+              Provide natural language instructions for the changes or node pipeline extensions required.
             </p>
           </div>
         </div>
@@ -256,9 +239,9 @@ export default function EditAgent() {
           value={changeRequest}
           onChange={(e) => setChangeRequest(e.target.value.slice(0, MAX_CHARS))}
           placeholder={
-            "Examples:\n• Add email notifications after approval.\n• Make responses shorter.\n• Connect Slack.\n• Use Claude instead of GPT-4o.\n• Add PDF document support.\n• Improve policy retrieval accuracy.\n• Add approval workflow."
+            "Examples:\n• Add email notifications after approval.\n• Make responses shorter and more concise.\n• Connect Slack workspace notifications.\n• Switch reasoning model to Claude 3.5 Sonnet.\n• Add PDF compliance document validation step."
           }
-          className="min-h-[180px] resize-y border-border/50 bg-muted/30 text-sm leading-relaxed placeholder:text-muted-foreground/60"
+          className="min-h-[140px] resize-y rounded-lg border-border bg-background/50 font-sans text-xs leading-relaxed placeholder:text-muted-foreground/60"
         />
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -267,8 +250,8 @@ export default function EditAgent() {
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5 border-border/60 bg-card/40"
-              onClick={() => toast.message("Document attach coming soon")}
+              className="h-8 gap-1.5 border-border bg-background/50 text-xs"
+              onClick={() => toast.message("Document attachment coming soon")}
             >
               <Paperclip className="size-3.5" />
               Attach Document
@@ -277,32 +260,23 @@ export default function EditAgent() {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={() => toast.message("Voice input coming soon")}
             >
-              <Mic className="size-4" />
+              <Mic className="size-3.5" />
             </Button>
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="font-mono text-[11px] text-muted-foreground">
             {changeRequest.length}/{MAX_CHARS}
           </span>
         </div>
-      </motion.section>
+      </section>
 
       {/* Section 5 — Suggestions */}
-      <motion.section
-        {...sectionMotion}
-        transition={{ ...sectionMotion.transition, delay: 0.14 }}
-        className="space-y-4"
-      >
-        <div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-primary" />
-            <h2 className="text-lg font-semibold">Suggested Improvements</h2>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Click a suggestion to add it to your change request.
-          </p>
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-3.5 text-primary" />
+          <h2 className="text-xs font-bold text-foreground">Suggested Modifications</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {suggestionChips.map((chip) => (
@@ -310,27 +284,27 @@ export default function EditAgent() {
               key={chip}
               type="button"
               onClick={() => handleSuggestionClick(chip)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#1E1E1E]/80 px-3.5 py-2 text-xs font-medium text-foreground/90 transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_16px_rgba(29,143,255,0.15)]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground/90 transition hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
             >
-              <Check className="size-3 text-secondary" />
+              <Check className="size-3 text-emerald-400" />
               {chip}
             </button>
           ))}
         </div>
-      </motion.section>
+      </section>
 
       {/* Primary CTA */}
-      <div className="flex justify-center">
+      <div className="flex justify-center py-2">
         <Button
           size="lg"
           onClick={handleGeneratePreview}
           disabled={generating}
-          className="glow-primary-strong gap-2 border border-primary/50 px-8 text-base"
+          className="h-10 gap-2 bg-primary px-6 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
         >
           {generating ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Generating Preview…
+              Simulating Workflow Changes…
             </>
           ) : (
             <>
@@ -346,45 +320,44 @@ export default function EditAgent() {
         {(generating || updatedNodes) && (
           <motion.section
             key="updated-preview"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="glass-card space-y-6 rounded-2xl p-6 lg:p-8"
+            exit={{ opacity: 0, y: -8 }}
+            className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4"
           >
             <div>
-              <h2 className="text-lg font-semibold">Updated Workflow Preview</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Compare the current automation with the AI-proposed changes.
+              <h2 className="text-sm font-bold text-foreground">Workflow Comparison Preview</h2>
+              <p className="text-xs text-muted-foreground">
+                Compare the active production pipeline against the proposed simulation.
               </p>
             </div>
 
             {generating ? (
-              <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 text-center">
-                <div className="relative flex size-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10">
-                  <Loader2 className="size-7 animate-spin text-primary" />
-                  <span className="absolute inset-0 animate-ping rounded-full border border-primary/20" />
+              <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-center">
+                <div className="flex size-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+                  <Loader2 className="size-5 animate-spin" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">OmniAgent is evolving your workflow</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Analyzing your request and composing an updated pipeline…
+                  <p className="text-xs font-semibold text-foreground">Analyzing modification request</p>
+                  <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                    Synthesizing updated node pipeline…
                   </p>
                 </div>
               </div>
             ) : (
               updatedNodes && (
-                <div className="grid gap-8 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-white/[0.06] bg-background/40 p-5">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-background/50 p-4">
                     <WorkflowPipelinePreview
                       nodes={agent.currentWorkflow}
-                      label="Current"
+                      label="Current Pipeline"
                       version={agent.version}
                     />
                   </div>
-                  <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-5">
+                  <div className="rounded-xl border border-primary/40 bg-primary/[0.02] p-4">
                     <WorkflowPipelinePreview
                       nodes={updatedNodes}
-                      label="Updated"
+                      label="Proposed Pipeline"
                       version={`${bumpVersion(agent.version)} (draft)`}
                       showLegend
                     />
@@ -400,18 +373,18 @@ export default function EditAgent() {
       <AnimatePresence>
         {aiSummary && !generating && (
           <motion.section
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="glass-card rounded-2xl border-primary/20 p-6 lg:p-8"
+            className="rounded-xl border border-primary/30 bg-card p-5"
           >
-            <div className="flex items-start gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/40 bg-primary/15 shadow-[0_0_20px_rgba(29,143,255,0.2)]">
-                <Sparkles className="size-5 text-primary" />
+            <div className="flex items-start gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+                <Sparkles className="size-4" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">AI Summary</h2>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{aiSummary}</p>
+                <h2 className="text-xs font-bold text-foreground">Synthesis Summary</h2>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{aiSummary}</p>
               </div>
             </div>
           </motion.section>
@@ -419,98 +392,88 @@ export default function EditAgent() {
       </AnimatePresence>
 
       {/* Section 8 — Version History */}
-      <motion.section
-        {...sectionMotion}
-        transition={{ ...sectionMotion.transition, delay: 0.16 }}
-        className="glass-card rounded-2xl p-6 lg:p-8"
-      >
-        <div className="mb-6 flex items-center gap-2">
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4">
+        <div className="flex items-center gap-2">
           <History className="size-4 text-primary" />
-          <h2 className="text-lg font-semibold">Version History</h2>
+          <h2 className="text-xs font-bold text-foreground">Version History</h2>
         </div>
 
-        <div className="relative space-y-0 pl-2">
-          <div className="absolute bottom-4 left-[19px] top-4 w-px bg-gradient-to-b from-primary/50 via-border to-transparent" />
+        <div className="space-y-3">
           {versions.map((v, i) => (
-            <div key={`${v.version}-${i}`} className="relative flex gap-4 pb-8 last:pb-0">
-              <div
-                className={cn(
-                  "relative z-10 mt-1 flex size-9 shrink-0 items-center justify-center rounded-full border",
-                  i === 0
-                    ? "border-primary/50 bg-primary/15 text-primary shadow-[0_0_12px_rgba(29,143,255,0.3)]"
-                    : "border-border bg-card text-muted-foreground"
-                )}
-              >
-                <span className="text-[10px] font-bold">{v.version.replace("Version ", "").slice(0, 3)}</span>
-              </div>
-              <div className="min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-[#1E1E1E]/60 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">Version {v.version}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{v.date}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{v.summary}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 border-border/60 bg-card/40 text-xs"
-                      onClick={() => toast.message(`Viewing details for v${v.version}`)}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 gap-1.5 text-xs text-muted-foreground"
-                      onClick={() => toast.success(`Restored version ${v.version}`)}
-                    >
-                      <RotateCcw className="size-3" />
-                      Restore Version
-                    </Button>
-                  </div>
+            <div key={`${v.version}-${i}`} className="flex flex-col gap-3 rounded-xl border border-border bg-background/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-foreground">v{v.version}</span>
+                  {i === 0 && (
+                    <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-primary">
+                      Current
+                    </span>
+                  )}
+                  <span className="font-mono text-[11px] text-muted-foreground">{v.date}</span>
                 </div>
+                <p className="text-xs text-muted-foreground">{v.summary}</p>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 border-border bg-card text-xs"
+                  onClick={() => toast.message(`Viewing details for v${v.version}`)}
+                >
+                  Details
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => toast.success(`Restored version ${v.version}`)}
+                >
+                  <RotateCcw className="size-3" />
+                  Restore
+                </Button>
               </div>
             </div>
           ))}
         </div>
-      </motion.section>
+      </section>
 
       {/* Sticky bottom action bar */}
-      <div className="sticky bottom-0 z-40 -mx-4 border-t border-border/40 bg-background/90 px-4 py-3 backdrop-blur-xl lg:-mx-6 lg:px-6">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3">
-          <p className="hidden text-xs text-muted-foreground sm:block">
-            Describe changes → preview → apply when ready
+      <div className="sticky bottom-0 z-40 -mx-4 border-t border-border/80 bg-background/95 px-4 py-3 backdrop-blur-md lg:-mx-6 lg:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <p className="hidden font-mono text-[11px] text-muted-foreground sm:block">
+            Specify changes → generate preview → apply to update version
           </p>
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-            <Button variant="ghost" className="gap-1.5" asChild>
+            <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground" asChild>
               <Link to="/agents">
-                <X className="size-4" />
+                <X className="size-3.5" />
                 Cancel
               </Link>
             </Button>
             <Button
               variant="outline"
-              className="gap-1.5 border-border/60"
+              size="sm"
+              className="h-9 gap-1.5 border-border bg-card text-xs"
               onClick={handleRegenerate}
               disabled={generating || !changeRequest.trim()}
             >
-              <RotateCcw className="size-3.5" />
+              <RotateCcw className="size-3" />
               Regenerate
             </Button>
             <Button
-              className="glow-primary gap-1.5 border border-primary/50"
+              size="sm"
+              className="h-9 gap-1.5 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
               onClick={handleApply}
               disabled={applying || !updatedNodes || generating}
             >
               {applying ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Applying…
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Applying Changes…
                 </>
               ) : (
                 <>
-                  <Check className="size-4" />
+                  <Check className="size-3.5" />
                   Apply Changes
                 </>
               )}
@@ -532,12 +495,12 @@ function MetaItem({
   value: string;
 }) {
   return (
-    <div>
-      <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
+    <div className="rounded-lg border border-border/80 bg-background/40 p-2.5">
+      <div className="mb-1 flex items-center gap-1 text-muted-foreground">
         <Icon className="size-3" />
-        <span className="text-[10px] uppercase tracking-wider">{label}</span>
+        <span className="font-mono text-[9px] uppercase tracking-wider">{label}</span>
       </div>
-      <p className="text-sm font-medium">{value}</p>
+      <p className="font-mono text-xs font-semibold text-foreground truncate">{value}</p>
     </div>
   );
 }

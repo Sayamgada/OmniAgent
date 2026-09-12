@@ -1,29 +1,31 @@
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 
 const CtaSection = () => (
-  <section className="py-24">
-    <div className="container mx-auto px-4">
+  <section className="py-20 border-t border-border/60 bg-background relative">
+    <div className="container mx-auto px-4 sm:px-6">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
         className="relative max-w-3xl mx-auto text-center"
       >
-        <div className="absolute -inset-8 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 rounded-3xl blur-3xl" />
-        <div className="relative glass-card rounded-2xl p-12 md:p-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            Start Building Your First AI Agent{" "}
-            <span className="gradient-text">Today</span>
+        <div className="relative rounded-2xl border border-border bg-card p-8 sm:p-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3 text-foreground">
+            Ready to Build Your <span className="gradient-text">First AI Agent?</span>
           </h2>
-          <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto">
-            Join thousands of teams using OmniAgent to automate workflows and unlock AI-powered productivity.
+          <p className="text-muted-foreground text-sm sm:text-base mb-6 max-w-lg mx-auto">
+            Design, compile, and deploy autonomous workflows tailored to your industry domain in minutes.
           </p>
-          <Button size="lg" className="glow-primary-strong text-base px-10 py-6 animate-gradient-shift bg-gradient-to-r from-primary to-secondary">
-            Get Started Free
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button size="lg" className="h-11 px-8 bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
+              <Link to="/sign-up">
+                Start Building Free
+              </Link>
+            </Button>
+          </div>
         </div>
       </motion.div>
     </div>

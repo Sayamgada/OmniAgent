@@ -1,16 +1,17 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
   Briefcase,
   Check,
   CheckCircle2,
-  CircleUserRound,
   GraduationCap,
   Landmark,
   Loader2,
-  WandSparkles,
+  Sparkles,
+  ArrowLeft,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -18,84 +19,95 @@ import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { cn } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
-import { toast } from "sonner";
+import { cn } from "../lib/utils";
 import { WorkflowReviewStep } from "../components/workflow/WorkflowReviewStep";
+import { toast } from "sonner";
 
 type DomainId = "corporate" | "education" | "finance";
 
-const domains: Array<{
+type DomainOption = {
   id: DomainId;
   title: string;
+  label: string;
   description: string;
+  badge: string;
   icon: typeof Briefcase;
   hint: string;
-}> = [
-    {
-      id: "corporate",
-      title: "Corporate Operations",
-      description: "Automate workflow, communication, and task coordination.",
-      icon: Briefcase,
-      hint: "Your agent will be configured for Corporate Operations tasks",
-    },
-    {
-      id: "education",
-      title: "Education",
-      description: "Support learning plans, tutoring, and curriculum workflows.",
-      icon: GraduationCap,
-      hint: "Your agent will be configured for Education workflows",
-    },
-    {
-      id: "finance",
-      title: "Finance",
-      description: "Analyze reports, forecast trends, and simplify decisions.",
-      icon: Landmark,
-      hint: "Your agent will be configured for Finance insights",
-    },
-  ];
+  stats: { agents: string; workflows: string };
+};
+
+const domains: DomainOption[] = [
+  {
+    id: "corporate",
+    title: "Corporate Operations",
+    label: "Corporate Operations",
+    badge: "Enterprise",
+    description: "Enterprise operations, HR lifecycle, compliance, executive reporting, and cross-team knowledge workflows.",
+    icon: Briefcase,
+    hint: "Optimal for SLA governance, role permissions, and compliance guardrails.",
+    stats: { agents: "4 Agents", workflows: "12 Flows" },
+  },
+  {
+    id: "education",
+    title: "Education & Research",
+    label: "Education & Research",
+    badge: "Academic",
+    description: "Curriculum pacing, intelligent quiz generation, rubric grading assistance, and student research retrieval.",
+    icon: GraduationCap,
+    hint: "Configured with academic citations and factual grounding thresholds.",
+    stats: { agents: "2 Agents", workflows: "5 Flows" },
+  },
+  {
+    id: "finance",
+    title: "Financial Services",
+    label: "Financial Services",
+    badge: "Audit-Ready",
+    description: "Expense auditing, ledger reconciliation, anomaly detection, and automated variance analysis.",
+    icon: Landmark,
+    hint: "Hardened with numeric validation and deterministic calculation modules.",
+    stats: { agents: "2 Agents", workflows: "7 Flows" },
+  },
+];
 
 const promptTemplates = [
   {
-    title: "Email Assistant",
+    title: "HR Policy Assistant",
     prompt:
-      "Create an AI assistant that drafts professional emails, summarizes inbox priorities, and suggests meeting times based on team availability.",
+      "Draft an internal policy assistant that answers employee questions regarding leave, remote work policies, and travel expenses using verified internal Notion knowledge bases.",
   },
   {
-    title: "Study Planner",
+    title: "Executive Meeting Briefing",
     prompt:
-      "Build an AI tutor that creates weekly study plans, explains topics step-by-step, and generates short quizzes for exam preparation.",
+      "Synthesize upcoming Google Calendar meetings, extract attendees and recent email threads from Gmail, and generate concise 3-bullet prep briefing docs.",
   },
   {
-    title: "Finance Report Analyzer",
+    title: "Expense Anomaly Scanner",
     prompt:
-      "Design a finance AI that reviews monthly reports, flags unusual trends, and generates executive-ready summary highlights.",
+      "Parse incoming invoice PDF attachments, verify itemized totals against policy limits, and trigger a Slack approval message for line items exceeding $500.",
   },
 ];
 
 const stepMotion = {
-  initial: { opacity: 0, y: 18 },
+  initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -18 },
-  transition: { duration: 0.28, ease: "easeOut" as const },
+  exit: { opacity: 0, y: -12 },
+  transition: { duration: 0.25, ease: "easeOut" as const },
 };
 
-const NewAgentCreation = () => {
-  const { token } = useAuth();
-  const [step, setStep] = useState(1);
+export default function NewAgentCreation() {
+  const { token, user } = useAuth();
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");
-  const [agentName, setAgentName] = useState("Omni Ops Assistant");
+  const [agentName, setAgentName] = useState("Omni Assistant");
   const [description, setDescription] = useState(
     "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities."
   );
-
-
 
   const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(null);
   const [integrations, setIntegrations] = useState<
     { service: string; display_name: string; required: boolean; available: boolean }[]
   >([]);
-  const [allRequiredAvailable, setAllRequiredAvailable] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [created, setCreated] = useState(false);
@@ -111,6 +123,8 @@ const NewAgentCreation = () => {
     finance: "Finance",
   };
 
+  const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "User";
+
   const handleStepTwoContinue = async () => {
     if (!agentName.trim()) {
       toast.error("Please enter an agent name");
@@ -125,7 +139,6 @@ const NewAgentCreation = () => {
     setStep(3);
     setWorkflow(null);
     setIntegrations([]);
-    setAllRequiredAvailable(false);
     setGenerating(true);
     setCreated(false);
 
@@ -161,133 +174,169 @@ const NewAgentCreation = () => {
 
       setWorkflow(data.workflow);
       setIntegrations(data.integrations);
-      setAllRequiredAvailable(data.all_required_available);
 
       toast.success("AI output generated successfully");
     } catch (err: any) {
       setWorkflow(null);
       setIntegrations([]);
-      setAllRequiredAvailable(false);
       toast.error(err.message || "Failed to generate AI output");
     } finally {
       setGenerating(false);
     }
   };
 
-  const handleCreateAgent = () => {
+  const handleCreateAgent = async () => {
+    if (!workflow) {
+      toast.error("No workflow IR schema available to compile");
+      return;
+    }
+
     setIsCreating(true);
 
-    window.setTimeout(() => {
-      setIsCreating(false);
+    try {
+      const res = await fetch(`http://localhost:8000/agents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          name: agentName.trim() || "Untitled Agent",
+          description: description.trim() || undefined,
+          ir_schema: workflow,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to create and compile agent");
+      }
+
+      const createdAgent = await res.json();
       setCreated(true);
-      toast.success("Demo agent created successfully!");
-    }, 1400);
+      toast.success(
+        `Agent "${createdAgent.name}" compiled and deployed successfully! (ID: ${createdAgent.n8n_workflow_id || createdAgent.id})`
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create and deploy agent");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(211_100%_50%_/_0.18),_transparent_45%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,hsl(0_0%_16.5%_/_0.4)_50%,transparent_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(hsl(0_0%_16.5%_/_0.25)_1px,transparent_1px),linear-gradient(90deg,hsl(0_0%_16.5%_/_0.25)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        {Array.from({ length: 8 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="animate-float absolute size-1.5 rounded-full bg-primary/70"
-            style={{
-              left: `${(idx + 1) * 11}%`,
-              top: `${14 + (idx % 3) * 20}%`,
-              animationDelay: `${idx * 0.8}s`,
-            }}
-          />
-        ))}
+    <div className="relative min-h-screen bg-background text-foreground">
+      {/* Precision ambient background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-primary/8 rounded-full blur-[140px]" />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
       </div>
 
-      <motion.nav
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="fixed left-0 right-0 top-0 z-50 glass-card border-b border-border/30"
-      >
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <a href="/" className="flex items-center gap-2 text-xl font-bold">
-            <Bot className="h-7 w-7 text-primary" />
-            <span className="gradient-text">OmniAgent</span>
-          </a>
-          <div className="flex items-center gap-3 rounded-full border border-border bg-card/70 px-3 py-2">
-            <CircleUserRound className="size-5 text-primary" />
-            <span className="text-sm text-foreground/90">Sayam Gada</span>
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
+        <div className="container mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Dashboard</span>
+            </Link>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <div className="flex size-6 items-center justify-center rounded-md bg-primary/10 border border-primary/30 text-primary">
+                <Bot className="size-3.5" />
+              </div>
+              <span className="text-xs font-bold text-foreground">Agent Creator</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="hidden sm:inline font-medium text-foreground">{displayName}</span>
           </div>
         </div>
-      </motion.nav>
+      </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-10 pt-24">
-        <div className="mb-8 flex items-center justify-between gap-4">
+      <main className="relative z-10 mx-auto w-full max-w-5xl px-4 sm:px-6 pb-16 pt-6">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold leading-tight md:text-4xl">
-              Create New AI Agent
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Create AI Agent
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground md:text-base">
-              Design and generate a custom AI assistant in minutes
+            <p className="text-xs text-muted-foreground">
+              Define domain objectives, compile multi-agent workflow, and inspect execution topology
             </p>
           </div>
-          <div className="hidden rounded-full border border-border bg-card/60 px-4 py-2 text-xs text-muted-foreground backdrop-blur md:flex md:items-center md:gap-2">
-            <span className="size-2 animate-pulse rounded-full bg-secondary" />
-            Autosave enabled
-          </div>
         </div>
 
-        <Card className="glass-card mb-6 border-border/80">
-          <CardContent className="p-5">
-            <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              {["Select Domain", "Describe Agent", "Preview & Test"].map((label, index) => {
-                const itemStep = index + 1;
-                const isActive = itemStep === step;
-                const isComplete = itemStep < step;
+        {/* Sequential Step Progress Bar */}
+        <div className="mb-6 rounded-xl border border-border bg-card p-3 sm:p-4">
+          <div className="flex items-center justify-between max-w-2xl mx-auto">
+            {[
+              { num: 1, label: "Select Domain" },
+              { num: 2, label: "Describe Agent" },
+              { num: 3, label: "Inspect & Deploy" },
+            ].map((s, idx) => {
+              const isDone = s.num < step;
+              const isCurrent = s.num === step;
 
-                return (
-                  <div key={label} className="flex items-center gap-2">
+              return (
+                <div key={s.num} className="flex items-center gap-2 sm:gap-3 flex-1 last:flex-none">
+                  <div className="flex items-center gap-2">
                     <div
                       className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-full border text-sm transition-all duration-300",
-                        isComplete && "border-secondary/60 bg-secondary/15 text-secondary glow-secondary",
-                        isActive && "border-primary/70 bg-primary/15 text-primary glow-primary",
-                        !isActive && !isComplete && "border-border bg-muted/20 text-muted-foreground"
+                        "flex size-7 items-center justify-center rounded-lg text-xs font-bold transition-all",
+                        isDone && "bg-secondary/15 border border-secondary/40 text-secondary",
+                        isCurrent && "bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_hsl(var(--primary)/0.3)]",
+                        !isDone && !isCurrent && "border border-border bg-muted/40 text-muted-foreground"
                       )}
                     >
-                      {isComplete ? <Check className="size-4" /> : itemStep}
+                      {isDone ? <Check className="size-3.5" /> : s.num}
                     </div>
-                    <p className={cn("text-sm", isActive ? "text-foreground" : "text-muted-foreground")}>
-                      {label}
-                    </p>
-                    {index < 2 && <div className="mx-1 h-px w-8 bg-border/80 md:w-14" />}
+                    <span
+                      className={cn(
+                        "text-xs font-medium hidden sm:inline",
+                        isCurrent ? "text-foreground font-bold" : "text-muted-foreground"
+                      )}
+                    >
+                      {s.label}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  {idx < 2 && <div className="h-px flex-1 bg-border mx-2 hidden sm:block" />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.section key="step-1" {...stepMotion}>
-              <Card className="glass-card border-border/70">
-                <CardContent className="space-y-6 p-6">
-                  <div className="flex items-center justify-between gap-3">
+              <Card className="border-border bg-card">
+                <CardContent className="space-y-5 p-5 sm:p-6">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-semibold">Select Domain</h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Choose the core industry context for your AI agent
+                      <h2 className="text-base font-bold text-foreground">Select Industry Domain</h2>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Anchors domain-specific knowledge, tools, and regulatory constraints
                       </p>
                     </div>
-                    <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
+                    <Badge variant="outline" className="font-mono text-[10px] text-primary border-primary/30">
                       Step 1 of 3
                     </Badge>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     {domains.map((domain) => {
                       const Icon = domain.icon;
-                      const selected = domain.id === selectedDomain;
+                      const isSelected = domain.id === selectedDomain;
 
                       return (
                         <button
@@ -295,33 +344,25 @@ const NewAgentCreation = () => {
                           type="button"
                           onClick={() => setSelectedDomain(domain.id)}
                           className={cn(
-                            "glass-card-hover rounded-xl border p-4 text-left",
-                            selected
-                              ? "border-primary/70 bg-primary/10 shadow-[0_0_35px_rgba(0,123,255,0.25)]"
-                              : "border-border/70"
+                            "rounded-xl border p-4 text-left transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.15)] ring-1 ring-primary"
+                              : "border-border bg-background/50 hover:border-border/80 hover:bg-card"
                           )}
                         >
                           <div className="mb-3 flex items-center justify-between">
-                            <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-background/40">
-                              <Icon className="size-5 text-primary" />
+                            <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-card">
+                              <Icon className="size-4 text-primary" />
                             </div>
-                            {selected && <CheckCircle2 className="size-5 text-primary" />}
+                            {isSelected && <CheckCircle2 className="size-4 text-primary" />}
                           </div>
-                          <h3 className="text-base font-semibold">{domain.title}</h3>
-                          <p className="mt-1 text-sm text-muted-foreground">
+                          <h3 className="text-xs font-bold text-foreground">{domain.title}</h3>
+                          <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
                             {domain.description}
                           </p>
                         </button>
                       );
                     })}
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="flex items-end">
-                      <p className="rounded-lg border border-border bg-card/55 px-3 py-2 text-xs text-muted-foreground">
-                        Tip: Be specific to get better AI results
-                      </p>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -331,58 +372,68 @@ const NewAgentCreation = () => {
           {step === 2 && (
             <motion.section key="step-2" {...stepMotion}>
               <div className="grid gap-5 lg:grid-cols-5">
-                <Card className="glass-card border-border/70 lg:col-span-3">
-                  <CardContent className="space-y-5 p-6">
+                <Card className="border-border bg-card lg:col-span-3">
+                  <CardContent className="space-y-4 p-5 sm:p-6 text-left">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-semibold">Describe Agent</h2>
-                      <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
+                      <div>
+                        <h2 className="text-base font-bold text-foreground">Describe Your Agent</h2>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          State desired capabilities and tools in plain language
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="font-mono text-[10px] text-primary border-primary/30">
                         Step 2 of 3
                       </Badge>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="agent-name">Agent Name</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="agent-name" className="text-xs font-medium text-foreground">
+                        Agent Name
+                      </Label>
                       <Input
                         id="agent-name"
                         value={agentName}
                         onChange={(event) => setAgentName(event.target.value)}
-                        className="border-border/80 bg-card/70 focus-visible:ring-primary"
+                        className="h-10 border-border bg-background/60 text-xs focus-visible:ring-primary"
+                        placeholder="e.g. Omni Ops Assistant"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="agent-description">Agent Description</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="agent-description" className="text-xs font-medium text-foreground">
+                        Agent Objective & Prompt
+                      </Label>
                       <Textarea
                         id="agent-description"
                         value={description}
                         onChange={(event) => setDescription(event.target.value)}
-                        className="min-h-[180px] border-border/80 bg-card/70 focus-visible:ring-primary"
-                        placeholder="Create an AI assistant that helps draft professional emails and schedule meetings..."
+                        className="min-h-[160px] border-border bg-background/60 text-xs leading-relaxed focus-visible:ring-primary"
+                        placeholder="Describe what the agent should accomplish..."
                       />
-                      <p className="text-xs text-primary/90">{activeDomain.hint}</p>
+                      <p className="text-[11px] text-primary/90 font-medium">{activeDomain.hint}</p>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-border/70 lg:col-span-2">
-                  <CardContent className="space-y-4 p-6">
-                    <div className="flex items-center gap-2">
-                      <WandSparkles className="size-4 text-primary" />
-                      <h3 className="font-semibold">Smart Suggestions</h3>
+                <Card className="border-border bg-card lg:col-span-2">
+                  <CardContent className="space-y-3 p-5 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="size-4 text-primary" />
+                      <h3 className="text-xs font-bold text-foreground">Prompt Blueprints</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Click a template to autofill your description
+                    <p className="text-[11px] text-muted-foreground">
+                      Click a blueprint template to populate your prompt
                     </p>
-                    <div className="space-y-3">
+                    <div className="space-y-2 pt-1">
                       {promptTemplates.map((template) => (
                         <button
                           key={template.title}
                           type="button"
                           onClick={() => setDescription(template.prompt)}
-                          className="w-full rounded-xl border border-border bg-card/60 p-3 text-left transition-all hover:border-primary/60 hover:bg-primary/10"
+                          className="w-full rounded-lg border border-border bg-background/50 p-3 text-left transition-colors hover:border-primary/50 hover:bg-card"
                         >
-                          <p className="font-medium">{template.title}</p>
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                          <p className="text-xs font-bold text-foreground">{template.title}</p>
+                          <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground leading-relaxed">
                             {template.prompt}
                           </p>
                         </button>
@@ -396,11 +447,16 @@ const NewAgentCreation = () => {
 
           {step === 3 && (
             <motion.section key="step-3" {...stepMotion}>
-              <Card className="glass-card border-border/70">
-                <CardContent className="space-y-6 p-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Preview & Test Agent</h2>
-                    <Badge className="bg-secondary/15 text-secondary hover:bg-secondary/20">
+              <Card className="border-border bg-card">
+                <CardContent className="space-y-4 p-5 sm:p-6">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <div>
+                      <h2 className="text-base font-bold text-foreground">Inspect & Deploy Agent</h2>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Verify intermediate schema, node connections, and deploy to runtime
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="font-mono text-[10px] text-secondary border-secondary/30">
                       Step 3 of 3
                     </Badge>
                   </div>
@@ -416,25 +472,28 @@ const NewAgentCreation = () => {
           )}
         </AnimatePresence>
 
-        <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-5 md:flex-row md:items-center md:justify-between">
+        {/* Persistent Bottom Bar */}
+        <div className="mt-6 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
-            {created ? "Demo agent successfully prepared." : "Progress is saved automatically"}
+            {created ? "Agent compiled and deployed successfully." : "Parameters saved in session state."}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Button
               variant="outline"
-              onClick={() => setStep((prev) => Math.max(1, prev - 1))}
+              size="sm"
+              onClick={() => setStep((prev) => (prev === 3 ? 2 : 1))}
               disabled={step === 1 || isCreating || generating}
-              className="border-border bg-card/60 hover:bg-card"
+              className="h-9 border-border bg-card text-xs text-foreground hover:bg-muted"
             >
               Back
             </Button>
 
             {step === 1 && (
               <Button
+                size="sm"
                 onClick={() => setStep(2)}
-                className="glow-primary border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-9 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
               >
                 Continue
               </Button>
@@ -442,42 +501,44 @@ const NewAgentCreation = () => {
 
             {step === 2 && (
               <Button
+                size="sm"
                 onClick={handleStepTwoContinue}
                 disabled={generating}
-                className="glow-primary border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-9 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
               >
                 {generating ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Generating...
+                    <Loader2 className="mr-2 size-3.5 animate-spin" />
+                    Compiling Architecture…
                   </>
                 ) : (
-                  "Continue"
+                  "Compile Workflow"
                 )}
               </Button>
             )}
 
             {step === 3 && (
               <Button
+                size="sm"
                 onClick={handleCreateAgent}
                 disabled={isCreating || created || generating || !workflow}
                 className={cn(
-                  "min-w-36 border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90",
+                  "h-9 min-w-32 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90",
                   !created && !isCreating && "glow-primary"
                 )}
               >
                 {isCreating ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Creating...
+                    <Loader2 className="mr-2 size-3.5 animate-spin" />
+                    Deploying Runtime…
                   </>
                 ) : created ? (
                   <>
-                    <CheckCircle2 className="mr-2 size-4 text-secondary" />
-                    Created
+                    <CheckCircle2 className="mr-2 size-3.5 text-secondary" />
+                    Deployed
                   </>
                 ) : (
-                  "Create Agent"
+                  "Deploy Agent"
                 )}
               </Button>
             )}
@@ -486,6 +547,4 @@ const NewAgentCreation = () => {
       </main>
     </div>
   );
-};
-
-export default NewAgentCreation;
+}
