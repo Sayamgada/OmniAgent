@@ -18,8 +18,8 @@ export const DOMAIN_DATA: Record<string, DomainInfo> = {
     tagline: "Adaptive Pedagogy & Research",
     color: "#38BDF8",
     glowColor: "rgba(56, 189, 248, 0.4)",
-    agents: ["Study Planning Agent", "Quiz & Exam Generator", "Socratic Summarizer"],
-    tools: ["Academic RAG", "Notion Sync", "Canvas LMS Webhook"],
+    agents: ["Study Planning", "Quiz Generation", "Summarization"],
+    tools: ["Academic RAG", "Notion Sync", "Canvas LMS"],
     metrics: "99.4% Citation Accuracy",
   },
   finance: {
@@ -28,8 +28,8 @@ export const DOMAIN_DATA: Record<string, DomainInfo> = {
     tagline: "Audit-Ready Fiscal Intelligence",
     color: "#2DD4BF",
     glowColor: "rgba(45, 212, 191, 0.4)",
-    agents: ["Invoice Anomaly Parser", "Ledger Auditor Agent", "Compliance & Risk Q&A"],
-    tools: ["PDF Table OCR", "Variance Gate", "Slack Escalations"],
+    agents: ["Invoice Analysis", "Report Summarization", "Compliance Q&A"],
+    tools: ["PDF Table OCR", "Variance Gate", "Slack Hooks"],
     metrics: "Zero-Shot Deterministic Audit",
   },
   corporate: {
@@ -38,7 +38,7 @@ export const DOMAIN_DATA: Record<string, DomainInfo> = {
     tagline: "Enterprise Operations & Knowledge",
     color: "#00F2FE",
     glowColor: "rgba(0, 242, 254, 0.4)",
-    agents: ["Email Ingestion Reasoner", "Autonomous Scheduler", "Policy Knowledge Graph"],
+    agents: ["Email Ingestion", "Auto Scheduler", "Knowledge Graph"],
     tools: ["Gmail API", "Calendar Dispatcher", "ERP Connector"],
     metrics: "< 350ms Orchestration Time",
   },
@@ -48,7 +48,7 @@ interface Node3D {
   id: string;
   label: string;
   subLabel?: string;
-  domain?: "education" | "finance" | "corporate" | "auxiliary";
+  domain?: "education" | "finance" | "corporate" | "auxiliary" | "exit";
   isCore?: boolean;
   isDomainHead?: boolean;
   x: number;
@@ -73,12 +73,20 @@ interface Particle {
 interface CinematicCanvasProps {
   activeDomain: string | null;
   onHoverDomain: (domain: string | null) => void;
+  scrollProgress?: number;
   className?: string;
+}
+
+// Smooth interpolation helper
+function smoothstep(min: number, max: number, value: number) {
+  const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  return x * x * (3 - 2 * x);
 }
 
 export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   activeDomain,
   onHoverDomain,
+  scrollProgress = 0,
   className = "",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -86,43 +94,59 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
   const animFrameRef = useRef<number | null>(null);
   const timeRef = useRef<number>(0);
-  const [isMobile, setIsMobile] = useState(false);
+  const scrollRef = useRef<number>(0);
 
-  // Define the 3D topology nodes
+  // Synchronize scroll progress into ref for 60fps render loop
+  useEffect(() => {
+    scrollRef.current = scrollProgress;
+  }, [scrollProgress]);
+
+  // Network topology nodes
   const nodesRef = useRef<Node3D[]>([
-    // Central Core
+    // ==========================================
+    // 1. CENTRAL OMNIAGENT AI CORE
+    // ==========================================
     {
       id: "core",
-      label: "OMNIAGENT CORE",
-      subLabel: "Neural Orchestrator",
+      label: "OMNI CORE",
+      subLabel: "Orchestration Engine",
       isCore: true,
       x: 0,
-      y: -10,
+      y: 40, // Centered in the open visual space beneath the headline
       z: 0,
       radius: 18,
       color: "#00F2FE",
-      connections: ["edu_head", "fin_head", "corp_head", "aux_research", "aux_memory", "aux_analytics"],
+      connections: [
+        "edu_head",
+        "corp_head",
+        "fin_head",
+        "aux_research",
+        "aux_memory",
+        "aux_analytics",
+      ],
     },
 
-    // Auxiliary Top Layer (Neural foundation)
+    // ==========================================
+    // 2. TOP ARCH (Framing Top Atmosphere)
+    // ==========================================
     {
       id: "aux_research",
       label: "RESEARCH",
       domain: "auxiliary",
-      x: -160,
-      y: -105,
-      z: -40,
+      x: -280,
+      y: -140,
+      z: -30,
       radius: 5,
       color: "#64748B",
-      connections: [],
+      connections: ["edu_head"],
     },
     {
       id: "aux_memory",
       label: "MEMORY & RAG",
       domain: "auxiliary",
       x: 0,
-      y: -130,
-      z: -60,
+      y: -170,
+      z: -50,
       radius: 5,
       color: "#64748B",
       connections: [],
@@ -131,24 +155,26 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       id: "aux_analytics",
       label: "ANALYTICS",
       domain: "auxiliary",
-      x: 160,
-      y: -105,
-      z: -40,
+      x: 280,
+      y: -140,
+      z: -30,
       radius: 5,
       color: "#64748B",
-      connections: [],
+      connections: ["corp_head"],
     },
 
-    // EDUCATION BRANCH (Left perspective)
+    // ==========================================
+    // 3. EDUCATION WING (Wide Left of Central Core)
+    // ==========================================
     {
       id: "edu_head",
       label: "EDUCATION",
       subLabel: "Pedagogy Hub",
       domain: "education",
       isDomainHead: true,
-      x: -240,
-      y: 65,
-      z: 40,
+      x: -380,
+      y: 0,
+      z: 30,
       radius: 11,
       color: "#38BDF8",
       connections: ["edu_sub_1", "edu_sub_2", "edu_sub_3"],
@@ -157,20 +183,20 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       id: "edu_sub_1",
       label: "Study Planning",
       domain: "education",
-      x: -340,
-      y: 10,
-      z: 80,
+      x: -520,
+      y: -60,
+      z: 60,
       radius: 6,
       color: "#38BDF8",
       connections: [],
     },
     {
       id: "edu_sub_2",
-      label: "Quiz Generator",
+      label: "Quiz Generation",
       domain: "education",
-      x: -310,
-      y: 140,
-      z: 90,
+      x: -470,
+      y: 80,
+      z: 70,
       radius: 6,
       color: "#38BDF8",
       connections: [],
@@ -179,72 +205,26 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       id: "edu_sub_3",
       label: "Summarization",
       domain: "education",
-      x: -400,
-      y: 85,
-      z: 120,
+      x: -560,
+      y: 20,
+      z: 90,
       radius: 6,
       color: "#38BDF8",
       connections: [],
     },
 
-    // FINANCE BRANCH (Center-Down perspective)
-    {
-      id: "fin_head",
-      label: "FINANCE",
-      subLabel: "Fiscal Hub",
-      domain: "finance",
-      isDomainHead: true,
-      x: 0,
-      y: 115,
-      z: 50,
-      radius: 11,
-      color: "#2DD4BF",
-      connections: ["fin_sub_1", "fin_sub_2", "fin_sub_3"],
-    },
-    {
-      id: "fin_sub_1",
-      label: "Invoice Parser",
-      domain: "finance",
-      x: -95,
-      y: 195,
-      z: 90,
-      radius: 6,
-      color: "#2DD4BF",
-      connections: [],
-    },
-    {
-      id: "fin_sub_2",
-      label: "Report Synthesis",
-      domain: "finance",
-      x: 0,
-      y: 225,
-      z: 110,
-      radius: 6,
-      color: "#2DD4BF",
-      connections: [],
-    },
-    {
-      id: "fin_sub_3",
-      label: "Compliance Q&A",
-      domain: "finance",
-      x: 95,
-      y: 195,
-      z: 90,
-      radius: 6,
-      color: "#2DD4BF",
-      connections: [],
-    },
-
-    // CORPORATE BRANCH (Right perspective)
+    // ==========================================
+    // 4. CORPORATE WING (Wide Right of Central Core)
+    // ==========================================
     {
       id: "corp_head",
       label: "CORPORATE",
       subLabel: "Operations Hub",
       domain: "corporate",
       isDomainHead: true,
-      x: 240,
-      y: 65,
-      z: 40,
+      x: 380,
+      y: 0,
+      z: 30,
       radius: 11,
       color: "#00F2FE",
       connections: ["corp_sub_1", "corp_sub_2", "corp_sub_3"],
@@ -253,9 +233,9 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       id: "corp_sub_1",
       label: "Email Ingestion",
       domain: "corporate",
-      x: 340,
-      y: 10,
-      z: 80,
+      x: 520,
+      y: -60,
+      z: 60,
       radius: 6,
       color: "#00F2FE",
       connections: [],
@@ -264,9 +244,9 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       id: "corp_sub_2",
       label: "Auto Scheduler",
       domain: "corporate",
-      x: 310,
-      y: 140,
-      z: 90,
+      x: 470,
+      y: 80,
+      z: 70,
       radius: 6,
       color: "#00F2FE",
       connections: [],
@@ -275,11 +255,61 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       id: "corp_sub_3",
       label: "Knowledge Graph",
       domain: "corporate",
-      x: 400,
-      y: 85,
-      z: 120,
+      x: 560,
+      y: 20,
+      z: 90,
       radius: 6,
       color: "#00F2FE",
+      connections: [],
+    },
+
+    // ==========================================
+    // 5. FINANCE CLUSTER (Lower Depth Hub)
+    // ==========================================
+    {
+      id: "fin_head",
+      label: "FINANCE",
+      subLabel: "Fiscal Hub",
+      domain: "finance",
+      isDomainHead: true,
+      x: 0,
+      y: 160,
+      z: 40,
+      radius: 11,
+      color: "#2DD4BF",
+      connections: ["fin_sub_1", "fin_sub_2", "fin_sub_3"],
+    },
+    {
+      id: "fin_sub_1",
+      label: "Invoice Analysis",
+      domain: "finance",
+      x: -140,
+      y: 230,
+      z: 70,
+      radius: 6,
+      color: "#2DD4BF",
+      connections: [],
+    },
+    {
+      id: "fin_sub_2",
+      label: "Report Summarization",
+      domain: "finance",
+      x: 0,
+      y: 260,
+      z: 90,
+      radius: 6,
+      color: "#2DD4BF",
+      connections: [],
+    },
+    {
+      id: "fin_sub_3",
+      label: "Compliance Q&A",
+      domain: "finance",
+      x: 140,
+      y: 230,
+      z: 70,
+      radius: 6,
+      color: "#2DD4BF",
       connections: [],
     },
   ]);
@@ -287,20 +317,17 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   // Particles state
   const particlesRef = useRef<Particle[]>([]);
 
-  // Initialize particles along the graph paths
   useEffect(() => {
     const nodes = nodesRef.current;
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     const newParticles: Particle[] = [];
 
-    // Create particle pools for each connection
     nodes.forEach((source) => {
       source.connections.forEach((targetId) => {
         const target = nodeMap.get(targetId);
         if (!target) return;
 
-        // Number of particles based on branch importance
-        const count = source.isCore ? 5 : 3;
+        const count = source.isCore ? 6 : 3;
         for (let i = 0; i < count; i++) {
           newParticles.push({
             sourceId: source.id,
@@ -319,25 +346,15 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
     particlesRef.current = newParticles;
   }, []);
 
-  // Screen resize tracking
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Mouse move handler for parallax tilt
+  // Mouse move handler for subtle parallax
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2; // -1 to 1
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2; // -1 to 1
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
 
-    mouseRef.current.targetX = x * 28; // Max tilt offset px
-    mouseRef.current.targetY = y * 20;
+    mouseRef.current.targetX = x * 22;
+    mouseRef.current.targetY = y * 15;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -346,7 +363,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
     onHoverDomain(null);
   }, [onHoverDomain]);
 
-  // Check hit tests on canvas click/move
+  // Hit testing for interactive nodes
   const handleCanvasMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
@@ -355,14 +372,16 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      // Find if mouse is over any domain node
       const nodes = nodesRef.current;
       const width = rect.width;
       const height = rect.height;
+      const isMobile = width < 768;
+      const isTablet = width >= 768 && width < 1100;
+
       const centerX = width / 2;
-      const centerY = height * (isMobile ? 0.38 : 0.44);
+      const centerY = height * 0.54;
       const focalLength = isMobile ? 360 : 500;
-      const mobileScaleMultiplier = isMobile ? 0.65 : 1.0;
+      const mobileScaleMultiplier = isMobile ? 0.6 : isTablet ? 0.82 : 1.0;
 
       const pX = mouseRef.current.x;
       const pY = mouseRef.current.y;
@@ -377,9 +396,9 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         const nodeZ = node.z;
 
         const scale = focalLength / (focalLength + nodeZ);
-        const screenX = centerX + (nodeX + pX * (1 + nodeZ / 150)) * scale;
-        const screenY = centerY + (nodeY + pY * (1 + nodeZ / 150)) * scale;
-        const hitRadius = (node.radius + 16) * scale;
+        const screenX = centerX + (nodeX + pX * (1 + nodeZ / 160)) * scale;
+        const screenY = centerY + (nodeY + pY * (1 + nodeZ / 160)) * scale;
+        const hitRadius = (node.radius + 18) * scale;
 
         const dist = Math.hypot(clickX - screenX, clickY - screenY);
         if (dist <= hitRadius) {
@@ -390,10 +409,10 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
       onHoverDomain(hovered);
     },
-    [onHoverDomain, isMobile]
+    [onHoverDomain]
   );
 
-  // Main Render Loop
+  // Main 60fps Canvas Render Loop with Cinematic Light Expansion Transition
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -407,7 +426,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       timeRef.current += 0.016;
       const t = timeRef.current;
 
-      // Parallax smoothing (lerp)
       const mouse = mouseRef.current;
       mouse.x += (mouse.targetX - mouse.x) * 0.06;
       mouse.y += (mouse.targetY - mouse.y) * 0.06;
@@ -425,273 +443,230 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, width, height);
 
-      const centerX = width / 2;
-      const centerY = height * (isMobile ? 0.38 : 0.44);
-      const focalLength = isMobile ? 360 : 500;
-      const mobileScaleMultiplier = isMobile ? 0.65 : 1.0;
+      const isMobile = width < 768;
+      const isTablet = width >= 768 && width < 1100;
+      const mobileScaleMultiplier = isMobile ? 0.6 : isTablet ? 0.82 : 1.0;
 
-      // Project 3D node coordinates
+      // -------------------------------------------------------------
+      // SCROLL STAGES & CINEMATIC TRANSITION VALUES
+      // -------------------------------------------------------------
+      const scroll = Math.max(0, Math.min(1, scrollRef.current));
+
+      // 1. Convergence factor (nodes pull toward central core)
+      const convergence = smoothstep(0.12, 0.68, scroll);
+
+      // 2. Camera push-in & Core Scale
+      const cameraPushScale = 1 + smoothstep(0.25, 0.85, scroll) * 2.5;
+
+      // 3. Core expansion & radial bloom factor
+      const coreExpandProgress = smoothstep(0.40, 0.88, scroll);
+      const coreRadiusScale = 1 + Math.pow(coreExpandProgress, 2.4) * 18;
+
+      // 4. Viewport Light Bloom Illumination
+      const lightBloomAlpha = smoothstep(0.48, 0.92, scroll);
+
+      // Center of projection
+      const centerX = width / 2;
+      const centerY = height * 0.54;
+      const focalLength = (isMobile ? 360 : 500) * cameraPushScale;
+
+      // Calculate projected 3D positions with convergence interpolation
       const nodes = nodesRef.current;
+      const coreNode = nodes.find((n) => n.isCore)!;
       const projectedMap = new Map<
         string,
-        { screenX: number; screenY: number; scale: number; node: Node3D }
+        { screenX: number; screenY: number; scale: number; node: Node3D; alpha: number }
       >();
 
       nodes.forEach((node) => {
-        const nodeX = node.x * mobileScaleMultiplier;
-        const nodeY = node.y * mobileScaleMultiplier;
-        const nodeZ = node.z;
+        let nx = node.x * mobileScaleMultiplier;
+        let ny = node.y * mobileScaleMultiplier;
+        let nz = node.z;
 
-        const scale = focalLength / (focalLength + nodeZ);
-        const screenX = centerX + (nodeX + mouse.x * (1 + nodeZ / 150)) * scale;
-        const screenY = centerY + (nodeY + mouse.y * (1 + nodeZ / 150)) * scale;
+        // Converge toward core position as scroll increases
+        if (!node.isCore) {
+          nx = nx * (1 - convergence) + (coreNode.x * mobileScaleMultiplier) * convergence;
+          ny = ny * (1 - convergence) + (coreNode.y * mobileScaleMultiplier) * convergence;
+          nz = nz * (1 - convergence) + coreNode.z * convergence;
+        }
 
-        projectedMap.set(node.id, { screenX, screenY, scale, node });
+        const scale = focalLength / (focalLength + nz);
+        const screenX = centerX + (nx + mouse.x * (1 - convergence * 0.8) * (1 + nz / 160)) * scale;
+        const screenY = centerY + (ny + mouse.y * (1 - convergence * 0.8) * (1 + nz / 160)) * scale;
+
+        // Node opacity: peripheral nodes fade into the light as convergence completes
+        const alpha = node.isCore ? 1.0 : Math.max(0, 1 - convergence * 1.3);
+
+        projectedMap.set(node.id, { screenX, screenY, scale, node, alpha });
       });
 
-      // -------------------------------------------------------------
-      // 1. Draw Background Perspective Depth Grid / Atmospheric Rings
-      // -------------------------------------------------------------
       const coreProj = projectedMap.get("core");
+      const cx = coreProj ? coreProj.screenX : centerX;
+      const cy = coreProj ? coreProj.screenY : centerY;
+
+      // -------------------------------------------------------------
+      // 1. DRAW ATMOSPHERIC AMBIENT GLOW (Originated FROM Core)
+      // -------------------------------------------------------------
       if (coreProj) {
-        const { screenX: cx, screenY: cy } = coreProj;
+        const baseGlowRadius = (isMobile ? 220 : 380) * (1 + coreExpandProgress * 2.5);
+        const glowAlpha = 0.22 + coreExpandProgress * 0.5;
 
-        // Subtle perspective concentric orbits
-        ctx.save();
-        for (let r = 70; r <= 360; r += 75) {
-          ctx.beginPath();
-          ctx.ellipse(
-            cx,
-            cy + (r * 0.2),
-            r * mobileScaleMultiplier,
-            r * 0.42 * mobileScaleMultiplier,
-            0,
-            0,
-            Math.PI * 2
-          );
-          ctx.strokeStyle = "rgba(0, 242, 254, 0.04)";
-          ctx.lineWidth = 1;
-          ctx.setLineDash([4, 12]);
-          ctx.stroke();
-        }
-        ctx.restore();
-
-        // Atmospheric central radial glow
-        const radialGlow = ctx.createRadialGradient(
-          cx,
-          cy,
-          4,
-          cx,
-          cy,
-          isMobile ? 180 : 340
-        );
-        radialGlow.addColorStop(0, "rgba(0, 242, 254, 0.16)");
-        radialGlow.addColorStop(0.3, "rgba(14, 165, 233, 0.08)");
-        radialGlow.addColorStop(0.7, "rgba(45, 212, 191, 0.02)");
+        const radialGlow = ctx.createRadialGradient(cx, cy, 4, cx, cy, baseGlowRadius);
+        radialGlow.addColorStop(0, `rgba(0, 242, 254, ${glowAlpha})`);
+        radialGlow.addColorStop(0.3, `rgba(14, 165, 233, ${glowAlpha * 0.6})`);
+        radialGlow.addColorStop(0.65, `rgba(45, 212, 191, ${glowAlpha * 0.2})`);
         radialGlow.addColorStop(1, "rgba(6, 9, 15, 0)");
+
         ctx.fillStyle = radialGlow;
         ctx.beginPath();
-        ctx.arc(cx, cy, isMobile ? 180 : 340, 0, Math.PI * 2);
+        ctx.arc(cx, cy, baseGlowRadius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Concentric computational energy rings (fade out during expansion)
+        if (convergence < 0.8) {
+          const ringAlpha = (1 - convergence) * 0.05;
+          ctx.save();
+          for (let r = 90; r <= 460; r += 95) {
+            ctx.beginPath();
+            ctx.ellipse(
+              cx,
+              cy + (r * 0.16),
+              r * mobileScaleMultiplier * (1 - convergence * 0.4),
+              r * 0.38 * mobileScaleMultiplier * (1 - convergence * 0.4),
+              0,
+              0,
+              Math.PI * 2
+            );
+            ctx.strokeStyle = `rgba(0, 242, 254, ${ringAlpha})`;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 14]);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
       }
 
       // -------------------------------------------------------------
-      // 2. Draw Circuit & Neural Network Connection Paths
+      // 2. DRAW CONNECTING CIRCUIT / NEURAL PATHS
       // -------------------------------------------------------------
-      nodes.forEach((source) => {
-        const sProj = projectedMap.get(source.id);
-        if (!sProj) return;
+      if (convergence < 0.95) {
+        nodes.forEach((source) => {
+          const sProj = projectedMap.get(source.id);
+          if (!sProj || sProj.alpha <= 0.01) return;
 
-        source.connections.forEach((targetId) => {
-          const tProj = projectedMap.get(targetId);
-          if (!tProj) return;
+          source.connections.forEach((targetId) => {
+            const tProj = projectedMap.get(targetId);
+            if (!tProj || tProj.alpha <= 0.01) return;
 
-          const isBranchActive =
-            activeDomain &&
-            (tProj.node.domain === activeDomain || source.domain === activeDomain);
+            const isBranchActive =
+              activeDomain &&
+              (tProj.node.domain === activeDomain || source.domain === activeDomain);
+
+            const pathAlpha = Math.min(sProj.alpha, tProj.alpha);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(sProj.screenX, sProj.screenY);
+
+            const midX = (sProj.screenX + tProj.screenX) / 2;
+            const midY = (sProj.screenY + tProj.screenY) / 2 - 8 * (1 - convergence);
+            ctx.quadraticCurveTo(midX, midY, tProj.screenX, tProj.screenY);
+
+            if (isBranchActive) {
+              ctx.strokeStyle = tProj.node.color || "#00F2FE";
+              ctx.lineWidth = 2.4;
+              ctx.shadowColor = tProj.node.color || "#00F2FE";
+              ctx.shadowBlur = 12;
+            } else {
+              ctx.strokeStyle =
+                source.isCore && tProj.node.domain === "auxiliary"
+                  ? `rgba(100, 116, 139, ${0.16 * pathAlpha})`
+                  : `rgba(56, 189, 248, ${0.22 * pathAlpha})`;
+              ctx.lineWidth = 1.2;
+              ctx.shadowBlur = 0;
+            }
+
+            ctx.stroke();
+            ctx.restore();
+          });
+        });
+      }
+
+      // -------------------------------------------------------------
+      // 3. DRAW TRAVELLING GLOWING PARTICLES
+      // -------------------------------------------------------------
+      if (convergence < 0.9) {
+        const particles = particlesRef.current;
+        particles.forEach((p) => {
+          const sProj = projectedMap.get(p.sourceId);
+          const tProj = projectedMap.get(p.targetId);
+          if (!sProj || !tProj) return;
+
+          const isBranchActive = activeDomain && p.domain === activeDomain;
+
+          // Flow direction: outward normally, accelerates inward during convergence
+          const speedMultiplier = 1 + scroll * 3.5;
+          const currentSpeed = isBranchActive ? p.speed * 2.2 : p.speed * speedMultiplier;
+
+          if (scroll > 0.25) {
+            // Inward flow toward core
+            p.t -= currentSpeed;
+            if (p.t < 0) p.t = 1;
+          } else {
+            // Outward flow
+            p.t += currentSpeed;
+            if (p.t > 1) p.t = 0;
+          }
+
+          const midX = (sProj.screenX + tProj.screenX) / 2;
+          const midY = (sProj.screenY + tProj.screenY) / 2 - 8 * (1 - convergence);
+
+          const invT = 1 - p.t;
+          const px =
+            invT * invT * sProj.screenX +
+            2 * invT * p.t * midX +
+            p.t * p.t * tProj.screenX;
+          const py =
+            invT * invT * sProj.screenY +
+            2 * invT * p.t * midY +
+            p.t * p.t * tProj.screenY;
+
+          const scale = (sProj.scale + tProj.scale) / 2;
+          const radius = p.size * scale * (isBranchActive ? 1.4 : 1.0);
+          const pAlpha = Math.min(sProj.alpha, tProj.alpha) * (1 - smoothstep(0.65, 0.9, scroll));
+
+          if (pAlpha <= 0.01) return;
 
           ctx.save();
           ctx.beginPath();
-          ctx.moveTo(sProj.screenX, sProj.screenY);
+          ctx.arc(px, py, Math.max(radius, 1), 0, Math.PI * 2);
 
-          // Render curved cybernetic path
-          const midX = (sProj.screenX + tProj.screenX) / 2;
-          const midY = (sProj.screenY + tProj.screenY) / 2 + 10;
-          ctx.quadraticCurveTo(midX, midY, tProj.screenX, tProj.screenY);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = pAlpha;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 8;
+          ctx.fill();
 
-          // Path styling
-          if (isBranchActive) {
-            ctx.strokeStyle = tProj.node.color || "#00F2FE";
-            ctx.lineWidth = 2.4;
-            ctx.shadowColor = tProj.node.color || "#00F2FE";
-            ctx.shadowBlur = 12;
-          } else {
-            ctx.strokeStyle =
-              source.isCore && tProj.node.domain === "auxiliary"
-                ? "rgba(100, 116, 139, 0.15)"
-                : "rgba(56, 189, 248, 0.18)";
-            ctx.lineWidth = 1.2;
-            ctx.shadowBlur = 0;
-          }
-
-          ctx.stroke();
           ctx.restore();
         });
-      });
+      }
 
       // -------------------------------------------------------------
-      // 3. Draw Travelling Glowing Particles (Information Flow)
-      // -------------------------------------------------------------
-      const particles = particlesRef.current;
-      particles.forEach((p) => {
-        const sProj = projectedMap.get(p.sourceId);
-        const tProj = projectedMap.get(p.targetId);
-        if (!sProj || !tProj) return;
-
-        const isBranchActive = activeDomain && p.domain === activeDomain;
-
-        // Progress particle
-        const currentSpeed = isBranchActive ? p.speed * 1.8 : p.speed;
-        p.t += currentSpeed;
-        if (p.t > 1) {
-          p.t = 0;
-        }
-
-        // Compute quadratic bezier point
-        const midX = (sProj.screenX + tProj.screenX) / 2;
-        const midY = (sProj.screenY + tProj.screenY) / 2 + 10;
-
-        const invT = 1 - p.t;
-        const px =
-          invT * invT * sProj.screenX +
-          2 * invT * p.t * midX +
-          p.t * p.t * tProj.screenX;
-        const py =
-          invT * invT * sProj.screenY +
-          2 * invT * p.t * midY +
-          p.t * p.t * tProj.screenY;
-
-        const scale = (sProj.scale + tProj.scale) / 2;
-        const radius = p.size * scale * (isBranchActive ? 1.4 : 1.0);
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(px, py, Math.max(radius, 1), 0, Math.PI * 2);
-
-        if (isBranchActive) {
-          ctx.fillStyle = "#FFFFFF";
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 12;
-        } else {
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 6;
-        }
-
-        ctx.fill();
-
-        // Draw particle tail on desktop
-        if (!isMobile) {
-          const tailT = Math.max(0, p.t - 0.04);
-          const invTailT = 1 - tailT;
-          const tailX =
-            invTailT * invTailT * sProj.screenX +
-            2 * invTailT * tailT * midX +
-            tailT * tailT * tProj.screenX;
-          const tailY =
-            invTailT * invTailT * sProj.screenY +
-            2 * invTailT * tailT * midY +
-            tailT * tailT * tProj.screenY;
-
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(tailX, tailY);
-          ctx.strokeStyle = p.color;
-          ctx.globalAlpha = 0.35;
-          ctx.lineWidth = radius * 0.8;
-          ctx.stroke();
-        }
-
-        ctx.restore();
-      });
-
-      // -------------------------------------------------------------
-      // 4. Draw Nodes (Core, Domain Heads, Sub-Nodes)
+      // 4. DRAW NODES (Domain Heads & Sub-Nodes)
       // -------------------------------------------------------------
       nodes.forEach((node) => {
-        const proj = projectedMap.get(node.id);
-        if (!proj) return;
+        if (node.isCore) return; // Core drawn in dedicated layer
 
-        const { screenX, screenY, scale } = proj;
+        const proj = projectedMap.get(node.id);
+        if (!proj || proj.alpha <= 0.01) return;
+
+        const { screenX, screenY, scale, alpha } = proj;
         const isHovered = activeDomain && node.domain === activeDomain;
 
         ctx.save();
+        ctx.globalAlpha = alpha;
 
-        if (node.isCore) {
-          // ================= OMNIAGENT CENTRAL CORE =================
-          const pulse = Math.sin(t * 2.2) * 0.08 + 1;
-          const coreRadius = node.radius * scale * pulse;
-
-          // Outer rotating ring with data ticks
-          ctx.save();
-          ctx.translate(screenX, screenY);
-          ctx.rotate(t * 0.4);
-          ctx.beginPath();
-          ctx.arc(0, 0, coreRadius * 2.1, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(0, 242, 254, 0.4)";
-          ctx.lineWidth = 1.2;
-          ctx.setLineDash([6, 8, 2, 8]);
-          ctx.stroke();
-
-          // Second counter-rotating ring
-          ctx.rotate(-t * 0.8);
-          ctx.beginPath();
-          ctx.arc(0, 0, coreRadius * 2.8, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(45, 212, 191, 0.25)";
-          ctx.lineWidth = 1;
-          ctx.setLineDash([2, 14]);
-          ctx.stroke();
-          ctx.restore();
-
-          // Core radiant gradient sphere
-          const coreGrad = ctx.createRadialGradient(
-            screenX,
-            screenY,
-            0,
-            screenX,
-            screenY,
-            coreRadius * 1.8
-          );
-          coreGrad.addColorStop(0, "#FFFFFF");
-          coreGrad.addColorStop(0.25, "#00F2FE");
-          coreGrad.addColorStop(0.6, "#0EA5E9");
-          coreGrad.addColorStop(1, "rgba(14, 165, 233, 0)");
-
-          ctx.beginPath();
-          ctx.arc(screenX, screenY, coreRadius * 1.8, 0, Math.PI * 2);
-          ctx.fillStyle = coreGrad;
-          ctx.shadowColor = "#00F2FE";
-          ctx.shadowBlur = 24;
-          ctx.fill();
-
-          // Central solid white-hot emitter
-          ctx.beginPath();
-          ctx.arc(screenX, screenY, coreRadius * 0.45, 0, Math.PI * 2);
-          ctx.fillStyle = "#FFFFFF";
-          ctx.shadowColor = "#FFFFFF";
-          ctx.shadowBlur = 10;
-          ctx.fill();
-
-          // Central Core Label Badge
-          ctx.font = `600 ${Math.max(10 * scale, 9)}px 'JetBrains Mono', monospace`;
-          ctx.fillStyle = "#E0F2FE";
-          ctx.textAlign = "center";
-          ctx.shadowColor = "rgba(0,0,0,0.8)";
-          ctx.shadowBlur = 4;
-          ctx.fillText("AI CORE", screenX, screenY - coreRadius * 2.8);
-          ctx.restore();
-        } else if (node.isDomainHead) {
-          // ================= DOMAIN HEAD NODES =================
+        if (node.isDomainHead) {
           const nodeRadius = node.radius * scale * (isHovered ? 1.35 : 1.0);
           const domainColor = node.color;
 
@@ -702,7 +677,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
             ctx.arc(screenX, screenY, glowRing, 0, Math.PI * 2);
             ctx.strokeStyle = domainColor;
             ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 3]);
             ctx.stroke();
           }
 
@@ -723,23 +697,17 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.fillStyle = isHovered ? "#FFFFFF" : domainColor;
           ctx.fill();
 
-          // Domain Label
-          ctx.font = `700 ${Math.max(11 * scale, 10)}px system-ui, -apple-system, sans-serif`;
-          ctx.fillStyle = isHovered ? "#FFFFFF" : "#CBD5E1";
-          ctx.textAlign = "center";
-          ctx.shadowColor = "rgba(0,0,0,0.9)";
-          ctx.shadowBlur = 6;
-          ctx.fillText(node.label, screenX, screenY + nodeRadius + 14 * scale);
-
-          // Sub-label / domain role
-          if (node.subLabel && !isMobile) {
-            ctx.font = `500 ${Math.max(9 * scale, 8)}px 'JetBrains Mono', monospace`;
-            ctx.fillStyle = isHovered ? domainColor : "#64748B";
-            ctx.fillText(node.subLabel, screenX, screenY + nodeRadius + 26 * scale);
+          // Domain Label (hidden during convergence)
+          if (alpha > 0.5) {
+            ctx.font = `700 ${Math.max(11 * scale, 10)}px system-ui, -apple-system, sans-serif`;
+            ctx.fillStyle = isHovered ? "#FFFFFF" : "#E2E8F0";
+            ctx.textAlign = "center";
+            ctx.shadowColor = "rgba(0,0,0,0.9)";
+            ctx.shadowBlur = 6;
+            ctx.fillText(node.label, screenX, screenY - nodeRadius - 8 * scale);
           }
-          ctx.restore();
         } else {
-          // ================= SUB-NODES / AUXILIARY =================
+          // Sub-nodes
           const subRadius = node.radius * scale * (isHovered ? 1.25 : 1.0);
 
           ctx.beginPath();
@@ -751,19 +719,107 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.shadowBlur = isHovered ? 12 : 4;
           ctx.fill();
           ctx.stroke();
+        }
 
-          // Micro label for sub-node
-          if (!isMobile && (isHovered || node.domain === "auxiliary")) {
-            ctx.font = `500 ${Math.max(8.5 * scale, 7.5)}px 'JetBrains Mono', monospace`;
-            ctx.fillStyle = isHovered ? "#F8FAFC" : "#94A3B8";
-            ctx.textAlign = "center";
-            ctx.shadowColor = "rgba(0,0,0,0.8)";
-            ctx.shadowBlur = 4;
-            ctx.fillText(node.label, screenX, screenY + subRadius + 11 * scale);
-          }
+        ctx.restore();
+      });
+
+      // -------------------------------------------------------------
+      // 5. DRAW EXPANDING OMNIAGENT AI CORE & RADIANT LIGHT TRANSITION
+      // -------------------------------------------------------------
+      if (coreProj) {
+        ctx.save();
+        const pulse = Math.sin(t * 2.2) * 0.08 + 1;
+        const currentCoreRadius = coreProj.node.radius * coreProj.scale * pulse * coreRadiusScale;
+
+        // Outer rotating telemetry rings (fade out smoothly during massive expansion)
+        if (coreExpandProgress < 0.75) {
+          const ringAlpha = (1 - coreExpandProgress * 1.3) * 0.5;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(t * 0.4);
+          ctx.beginPath();
+          ctx.arc(0, 0, currentCoreRadius * 2.2, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(0, 242, 254, ${ringAlpha})`;
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([6, 8, 2, 8]);
+          ctx.stroke();
+
+          ctx.rotate(-t * 0.8);
+          ctx.beginPath();
+          ctx.arc(0, 0, currentCoreRadius * 2.9, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(45, 212, 191, ${ringAlpha * 0.7})`;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 14]);
+          ctx.stroke();
           ctx.restore();
         }
-      });
+
+        // Core radiant gradient sphere
+        const coreGrad = ctx.createRadialGradient(
+          cx,
+          cy,
+          0,
+          cx,
+          cy,
+          currentCoreRadius * (1.8 + coreExpandProgress * 4.0)
+        );
+        coreGrad.addColorStop(0, "#FFFFFF");
+        coreGrad.addColorStop(0.18, "#E0F2FE");
+        coreGrad.addColorStop(0.40, "#00F2FE");
+        coreGrad.addColorStop(0.70, `rgba(14, 165, 233, ${0.9 - coreExpandProgress * 0.3})`);
+        coreGrad.addColorStop(1, "rgba(14, 165, 233, 0)");
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, currentCoreRadius * (1.8 + coreExpandProgress * 4.0), 0, Math.PI * 2);
+        ctx.fillStyle = coreGrad;
+        ctx.shadowColor = "#00F2FE";
+        ctx.shadowBlur = 28 + coreExpandProgress * 50;
+        ctx.fill();
+
+        // Central white-hot emitter
+        ctx.beginPath();
+        ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreExpandProgress * 0.8), 0, Math.PI * 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.shadowColor = "#FFFFFF";
+        ctx.shadowBlur = 14 + coreExpandProgress * 30;
+        ctx.fill();
+
+        // Core Label (fades out as convergence begins)
+        if (convergence < 0.25) {
+          ctx.font = `700 ${Math.max(10 * coreProj.scale, 9)}px 'JetBrains Mono', monospace`;
+          ctx.fillStyle = "#E0F2FE";
+          ctx.textAlign = "center";
+          ctx.shadowColor = "rgba(0,0,0,0.9)";
+          ctx.shadowBlur = 5;
+          ctx.fillText("OMNIAGENT AI CORE", cx, cy + currentCoreRadius * 2.6);
+        }
+
+        // -------------------------------------------------------------
+        // 6. VIEWPORT LUMINOUS FIELD EXPANSION (Originating FROM Core)
+        // -------------------------------------------------------------
+        if (lightBloomAlpha > 0.01) {
+          const maxBloomRadius = Math.max(width, height) * 1.4;
+          const bloomGrad = ctx.createRadialGradient(
+            cx,
+            cy,
+            currentCoreRadius * 0.5,
+            cx,
+            cy,
+            maxBloomRadius
+          );
+          bloomGrad.addColorStop(0, `rgba(255, 255, 255, ${lightBloomAlpha * 0.95})`);
+          bloomGrad.addColorStop(0.25, `rgba(224, 242, 254, ${lightBloomAlpha * 0.85})`);
+          bloomGrad.addColorStop(0.55, `rgba(0, 242, 254, ${lightBloomAlpha * 0.65})`);
+          bloomGrad.addColorStop(0.85, `rgba(14, 165, 233, ${lightBloomAlpha * 0.35})`);
+          bloomGrad.addColorStop(1, `rgba(6, 9, 15, ${lightBloomAlpha * 0.1})`);
+
+          ctx.fillStyle = bloomGrad;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        ctx.restore();
+      }
 
       ctx.restore();
       animFrameRef.current = requestAnimationFrame(render);
@@ -777,7 +833,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [activeDomain, isMobile]);
+  }, [activeDomain]);
 
   return (
     <div

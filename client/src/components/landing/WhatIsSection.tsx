@@ -1,3 +1,4 @@
+import React from "react";
 import { motion } from "framer-motion";
 import { Bot, Code2, Cpu, FileJson, Layers, Network, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 
@@ -29,24 +30,33 @@ const platformPillars = [
 ];
 
 const WhatIsSection = () => (
-  <section id="about" className="py-24 border-t border-border/80 bg-background/50 relative">
-    <div className="container mx-auto px-4 sm:px-6">
+  <section id="about" className="py-28 bg-[#06090F] relative overflow-hidden">
+    {/* Atmospheric light source connecting from the expanding AI Core above */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[450px] bg-primary/12 rounded-full blur-[180px] pointer-events-none" />
+
+    {/* Subtle top radiant gradient border */}
+    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+
+    <div className="container mx-auto px-4 sm:px-6 relative z-10">
       {/* Section Header */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.6 }}
         className="text-center max-w-3xl mx-auto mb-16"
       >
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-0.5 text-xs font-mono font-medium text-primary mb-3">
-          <Sparkles className="size-3" />
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-mono font-medium text-primary mb-4 shadow-sm">
+          <Sparkles className="size-3.5" />
           <span>Engineered For Precision</span>
         </div>
-        <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground mb-4">
-          Deterministic Automation. <span className="gradient-text">Zero Black Boxes.</span>
+        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-4 leading-tight">
+          Deterministic Automation. <br />
+          <span className="bg-gradient-to-r from-primary via-cyan-300 to-white bg-clip-text text-transparent">
+            Zero Black Boxes.
+          </span>
         </h2>
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           Traditional AI gives unpredictable text. OmniAgent translates human intent into structured intermediate representations (IR), compiles verifiable node graphs, and dispatches real API actions.
         </p>
       </motion.div>
@@ -58,11 +68,11 @@ const WhatIsSection = () => (
           return (
             <motion.div
               key={p.title}
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.4 }}
-              className="group relative rounded-2xl border border-border/80 bg-card/80 p-5 hover:border-primary/50 transition-all flex flex-col justify-between"
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              className="group relative rounded-2xl border border-border/80 bg-card/80 p-5 hover:border-primary/50 transition-all flex flex-col justify-between backdrop-blur-xl"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
