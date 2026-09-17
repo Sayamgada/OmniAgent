@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Menu, X } from "lucide-react";
+import { Bot, Menu, X, ArrowRight, ShieldCheck, Zap } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
 
 const landingLinks = [
   { label: "Overview", href: "#about" },
+  { label: "Simulator", href: "#interactive-demo" },
+  { label: "Industry Studio", href: "#industries" },
+  { label: "Architecture", href: "#how-it-works" },
   { label: "Capabilities", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Industries", href: "#use-cases" },
 ] as const;
 
 const authLinks = [
-  { label: "Capabilities", to: "/#features" },
   { label: "Overview", to: "/#about" },
+  { label: "Capabilities", to: "/#features" },
 ] as const;
 
 type NavbarProps = {
@@ -30,36 +31,42 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
     <motion.header
       initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed left-0 right-0 top-0 z-50 border-b border-border/80 bg-background/85 backdrop-blur-md"
+      transition={{ duration: 0.4 }}
+      className="fixed left-0 right-0 top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-2xl"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
+        {/* Brand */}
         <Link
           to="/"
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-2.5 group"
           onClick={() => setMobileOpen(false)}
         >
-          <div className="flex size-8 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary">
-            <Bot className="h-5 w-5" />
+          <div className="flex size-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary group-hover:border-primary/60 transition-colors shadow-sm">
+            <Bot className="h-4.5 w-4.5" />
           </div>
           <span className="text-base font-bold tracking-tight text-foreground">
-            Omni<span className="text-primary">Agent</span>
+            Omni<span className="text-primary font-extrabold">Agent</span>
+          </span>
+          <span className="hidden sm:inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+            v2.4
           </span>
         </Link>
 
+        {/* Desktop Nav Links */}
         {variant === "landing" ? (
-          <nav className="hidden items-center gap-7 md:flex" aria-label="Main Navigation">
+          <nav className="hidden items-center gap-7 lg:flex" aria-label="Main Navigation">
             {landingLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline underline-offset-8"
               >
                 {link.label}
               </a>
             ))}
           </nav>
         ) : (
-          <nav className="hidden items-center gap-7 md:flex" aria-label="Auth Navigation">
+          <nav className="hidden items-center gap-7 lg:flex" aria-label="Auth Navigation">
             {authLinks.map((item) => (
               <Link
                 key={item.label}
@@ -72,24 +79,33 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           </nav>
         )}
 
+        {/* Action CTAs */}
         <div className="hidden items-center gap-3 md:flex">
           {variant === "landing" && !isLoggedIn && (
             <>
-              <Button variant="ghost" size="sm" className="text-xs font-medium text-muted-foreground hover:text-foreground" asChild>
-                <Link to="/sign-in">Sign in</Link>
+              <Button variant="ghost" size="sm" className="text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-card" asChild>
+                <Link to="/sign-in">Sign In</Link>
               </Button>
-              <Button size="sm" className="h-8 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary" asChild>
-                <Link to="/sign-up">Start Free</Link>
+              <Button size="sm" className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
+                <Link to="/sign-up">
+                  <span>Start Free</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
               </Button>
             </>
           )}
+
           {variant === "landing" && isLoggedIn && (
-            <Button size="sm" className="h-8 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary" asChild>
-              <Link to="/dashboard">Open Workspace</Link>
+            <Button size="sm" className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
+              <Link to="/dashboard">
+                <Zap className="size-3.5" />
+                <span>Open Workspace</span>
+              </Link>
             </Button>
           )}
+
           {variant === "auth" && (
-            <Button size="sm" className="h-8 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary" asChild>
+            <Button size="sm" className="h-8.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
               <Link to={isLoggedIn ? "/dashboard" : "/sign-up"}>
                 {isLoggedIn ? "Open Workspace" : "Get Started"}
               </Link>
@@ -97,6 +113,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           )}
         </div>
 
+        {/* Mobile menu button */}
         <button
           type="button"
           className="flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground md:hidden"
@@ -108,44 +125,46 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
         </button>
       </div>
 
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-t border-border bg-card/95 px-4 pb-5 pt-2 backdrop-blur-md md:hidden"
+            className="border-t border-border bg-card/95 px-5 pb-6 pt-3 backdrop-blur-2xl md:hidden text-left"
           >
             {variant === "landing"
               ? landingLinks.map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    className="block py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {link.label}
-                  </a>
-                ))
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="block py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </a>
+              ))
               : authLinks.map((item) => (
-                  <Link
-                    key={item.label}
-                    to={item.to}
-                    className="block py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className="block py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
             <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
               {variant === "landing" && !isLoggedIn && (
                 <>
-                  <Button variant="outline" className="w-full text-xs" asChild>
+                  <Button variant="outline" className="w-full text-xs justify-center" asChild>
                     <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
-                      Sign in
+                      Sign In
                     </Link>
                   </Button>
-                  <Button className="w-full bg-primary text-xs text-primary-foreground" asChild>
+                  <Button className="w-full bg-primary text-xs font-semibold text-primary-foreground justify-center" asChild>
                     <Link to="/sign-up" onClick={() => setMobileOpen(false)}>
                       Start Free
                     </Link>
@@ -153,7 +172,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
                 </>
               )}
               {((variant === "landing" && isLoggedIn) || variant === "auth") && (
-                <Button className="w-full bg-primary text-xs text-primary-foreground" asChild>
+                <Button className="w-full bg-primary text-xs font-semibold text-primary-foreground justify-center" asChild>
                   <Link
                     to={isLoggedIn ? "/dashboard" : "/sign-up"}
                     onClick={() => setMobileOpen(false)}

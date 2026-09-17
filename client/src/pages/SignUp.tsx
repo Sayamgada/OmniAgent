@@ -1,6 +1,6 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Lock, Mail, UserRound } from "lucide-react";
+import { ArrowRight, Loader2, Lock, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import AuthCard from "../components/auth/AuthCard";
@@ -98,10 +98,13 @@ const SignUp = () => {
           title="Create Your AI Workspace"
           subtitle="Generate, inspect, and deploy domain-tailored multi-agent pipelines"
           footer={
-            <div className="flex flex-wrap items-center justify-center gap-2 text-center text-xs text-muted-foreground">
-              <span>Secure isolated workspace</span>
+            <div className="flex flex-wrap items-center justify-center gap-2 text-center text-xs font-mono text-muted-foreground">
+              <span className="flex items-center gap-1 text-emerald-400">
+                <ShieldCheck className="size-3.5" />
+                Isolated Workspace
+              </span>
               <span>·</span>
-              <span>Encrypted credential storage</span>
+              <span>Encrypted Vault</span>
             </div>
           }
         >
@@ -149,7 +152,7 @@ const SignUp = () => {
             <Button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="h-10 w-full rounded-lg bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary transition-all disabled:opacity-50"
+              className="h-10 w-full rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary transition-all disabled:opacity-50"
             >
               {submitting ? (
                 <>
@@ -157,16 +160,19 @@ const SignUp = () => {
                   Creating Workspace…
                 </>
               ) : (
-                "Create Workspace"
+                <span className="flex items-center justify-center gap-1.5">
+                  <span>Create Workspace</span>
+                  <ArrowRight className="size-3.5" />
+                </span>
               )}
             </Button>
 
             <div className="relative py-1">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
+                <span className="w-full border-t border-border/80" />
               </div>
               <div className="relative flex justify-center text-[10px] uppercase font-mono tracking-wider">
-                <span className="bg-card px-2 text-muted-foreground">or</span>
+                <span className="bg-card px-2 text-muted-foreground">or continue with</span>
               </div>
             </div>
 
@@ -175,10 +181,10 @@ const SignUp = () => {
               variant="outline"
               onClick={handleGoogle}
               disabled={submitting}
-              className="h-10 w-full rounded-lg border-border bg-background/50 text-xs font-medium text-foreground hover:bg-card transition-colors"
+              className="h-10 w-full rounded-xl border-border/80 bg-background/50 text-xs font-medium text-foreground hover:bg-card transition-colors"
             >
               <GoogleIcon className="mr-2 size-4" />
-              Continue with Google
+              <span>Continue with Google OAuth</span>
             </Button>
 
             <p className="text-center text-xs text-muted-foreground pt-1">

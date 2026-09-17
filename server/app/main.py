@@ -5,9 +5,13 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel
 from langchain_community.vectorstores import FAISS
 from app.database import engine, Base, mongo_db
+from app.models.user import User
+from app.models.integration import Integration
+from app.models.agent import Agent
 from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
 from app.routers.agent_router import router as agent_router
+from app.routers.agent_management_router import router as agent_management_router
 from app.routers.integration_router import router as integration_router
 from app.services.vectorstore import search_automations, printVectorStore
 from app.database import get_mongo_db
@@ -42,6 +46,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.include_router(auth_router)
 app.include_router(agent_router)
+app.include_router(agent_management_router)
 app.include_router(integration_router)
 
 @app.get("/")

@@ -90,6 +90,26 @@ async def get_credential_schema(credential_type: str) -> dict:
     return resp.json()
 
 
+async def create_workflow(payload: dict) -> dict:
+    """
+    Creates an n8n workflow via the public REST API (POST /api/v1/workflows).
+    Payload must match n8n's workflow creation schema:
+        { "name": str, "nodes": list[dict], "connections": dict, "settings": dict }
+    Returns n8n's response dict (which includes the created workflow's 'id').
+    # TODO(v1): Add workflow activation / trigger scheduling endpoint calls here.
+    """
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(f"{_base_url()}/workflows", headers=_headers(), json=payload)
+    if resp.status_code not in (200, 201):
+        raise N8nClientError(
+            f"n8n workflow creation failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+    return resp.json()
+
+
+
 # ---------------- Internal API (session cookie) ----------------
 
 _session_cookie: str | None = None  # module-level cache; one shared n8n owner session

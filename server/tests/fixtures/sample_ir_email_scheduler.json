@@ -1,0 +1,234 @@
+{
+  "automation_name": "Professional Email Drafting and Meeting Scheduler",
+  "automation_description": "Generates a polished professional email and proposes prioritized meeting times, then sends the email and creates calendar events.",
+  "schema_version": 4,
+  "task_summary": "Creates a professional email draft and suggests prioritized meeting slots, then sends the email and adds events to the calendar.",
+  "intent_type": "automation_preview",
+  "complexity": "medium",
+  "required_agents": [
+    {
+      "agent_name": "groq",
+      "role": "Workflow step",
+      "responsibilities": [
+        "generate"
+      ]
+    },
+    {
+      "agent_name": "groq",
+      "role": "Workflow step",
+      "responsibilities": [
+        "generate"
+      ]
+    },
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": [
+        "Send a message"
+      ]
+    },
+    {
+      "agent_name": "google_calendar",
+      "role": "Workflow step",
+      "responsibilities": [
+        "Create an event"
+      ]
+    }
+  ],
+  "workflow": [
+    {
+      "step": 1,
+      "description": "generate",
+      "agent": "groq",
+      "service": "groq",
+      "action": "generate",
+      "input": "",
+      "output": "",
+      "operation": "generate",
+      "target": "",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": false
+    },
+    {
+      "step": 2,
+      "description": "generate",
+      "agent": "groq",
+      "service": "groq",
+      "action": "generate",
+      "input": "",
+      "output": "",
+      "operation": "generate",
+      "target": "",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": false
+    },
+    {
+      "step": 3,
+      "description": "Send a message",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Send a message",
+      "input": "",
+      "output": "",
+      "operation": "send",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [
+        1
+      ],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Send",
+        "value": "send",
+        "action": "Send a message",
+        "description": null
+      }
+    },
+    {
+      "step": 4,
+      "description": "Create an event",
+      "agent": "google_calendar",
+      "service": "google_calendar",
+      "action": "Create an event",
+      "input": "",
+      "output": "",
+      "operation": "create",
+      "target": "event",
+      "parameters": {},
+      "depends_on": [
+        2
+      ],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Create",
+        "value": "create",
+        "action": "Create an event",
+        "description": "Add a event to calendar"
+      }
+    }
+  ],
+  "inputs_required": [],
+  "expected_outputs": [
+    "The professional email is sent and calendar events are created with the suggested prioritized meeting times."
+  ],
+  "tools_required": [
+    "groq",
+    "AI Provider (Groq)",
+    "gmail",
+    "Gmail",
+    "google_calendar",
+    "Google Calendar"
+  ],
+  "constraints": [],
+  "trigger_type": "Manual",
+  "edge_cases": [],
+  "success_criteria": [
+    "The professional email is sent and calendar events are created with the suggested prioritized meeting times."
+  ],
+  "required_integrations": [
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "google_calendar",
+      "display_name": "Google Calendar",
+      "required": true,
+      "available": true
+    }
+  ],
+  "preview_json": {
+    "title": "Professional Email Drafting and Meeting Scheduler",
+    "description": "Creates a professional email draft and suggests prioritized meeting slots, then sends the email and adds events to the calendar.",
+    "trigger": {
+      "type": "Manual",
+      "service": "",
+      "description": "User initiates the assistant manually."
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [],
+        "instructions": "Based on the user's request details, generate a polished professional email draft including subject and body.",
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 2,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [],
+        "instructions": "Based on the user's request, generate a prioritized list of meeting time slots suitable for the participants.",
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 3,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [
+          1
+        ],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message",
+          "description": null
+        },
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 4,
+        "service": "google_calendar",
+        "operation": "create",
+        "target": "event",
+        "parameters": {},
+        "depends_on": [
+          2
+        ],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Create",
+          "value": "create",
+          "action": "Create an event",
+          "description": "Add a event to calendar"
+        },
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "The professional email is sent and calendar events are created with the suggested prioritized meeting times."
+  }
+}

@@ -4,57 +4,58 @@
 
 @layer base {
   :root {
-    /* Dark Theme default (Obsidian Slate) */
-    --background: 222 36% 7%;        /* #0B0F17 */
-    --foreground: 210 40% 96%;        /* #F1F5F9 */
+    /* Deep Obsidian & Technical Slate Theme */
+    --background: 224 45% 4%;         /* #06090F - Deep Obsidian */
+    --foreground: 210 40% 98%;         /* #F8FAFC - Pure Crisp White */
 
-    --card: 220 37% 12%;              /* #131B2A */
-    --card-foreground: 210 40% 96%;
+    --card: 223 38% 8%;               /* #0D131F - Elevated Graphite Surface */
+    --card-foreground: 210 40% 98%;
 
-    --popover: 220 37% 12%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 223 38% 8%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 217 100% 50%;          /* #0066FF */
+    --primary: 217 100% 56%;           /* #1E70FF - Technical Azure */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 84% 39%;        /* #10B981 (Emerald) */
+    --secondary: 160 84% 42%;         /* #14C286 - Emerald Execution Pulse */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 34% 16%;             /* #1A2438 */
-    --muted-foreground: 215 20% 65%;  /* #94A3B8 */
+    --muted: 222 30% 12%;              /* #131A28 - Muted Fill */
+    --muted-foreground: 217 19% 65%;   /* #96A4B8 - Secondary Slate */
 
-    --accent: 199 89% 48%;            /* #0284C7 (Electric Sky) */
+    --accent: 198 93% 52%;             /* #0BA5EC - Radiant Cyan */
     --accent-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;            /* #F59E0B (Solar Amber) */
-    --warning-foreground: 222 36% 7%;
+    --warning: 38 96% 53%;             /* #FBBF24 - Solar Amber */
+    --warning-foreground: 224 45% 4%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 62%;          /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 34% 21%;            /* #243049 */
-    --input: 220 34% 21%;
-    --ring: 217 100% 50%;
+    --border: 220 28% 16%;             /* #1C2436 - Fine Hairline Border */
+    --input: 220 28% 16%;
+    --ring: 217 100% 56%;
 
-    --radius: 0.75rem;
+    --radius: 0.625rem;
 
-    --glow-primary: 0 0 24px hsl(217 100% 50% / 0.25);
-    --glow-primary-strong: 0 0 36px hsl(217 100% 50% / 0.4);
-    --glow-secondary: 0 0 24px hsl(160 84% 39% / 0.25);
+    --glow-primary: 0 0 28px hsl(217 100% 56% / 0.22);
+    --glow-primary-strong: 0 0 42px hsl(217 100% 56% / 0.38);
+    --glow-secondary: 0 0 28px hsl(160 84% 42% / 0.22);
+    --glow-accent: 0 0 28px hsl(198 93% 52% / 0.22);
 
-    --sidebar-background: 222 36% 7%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 217 100% 50%;
+    --sidebar-background: 224 45% 4.5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 100% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 34% 16%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 220 34% 21%;
-    --sidebar-ring: 217 100% 50%;
+    --sidebar-accent: 222 30% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 28% 14%;
+    --sidebar-ring: 217 100% 56%;
   }
 
   .light {
-    --background: 210 40% 98%;        /* #F8FAFC */
-    --foreground: 222 47% 11%;        /* #0F172A */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -62,15 +63,21 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --muted: 210 40% 94%;
-    --muted-foreground: 215 16% 47%;
+    --primary: 217 100% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --secondary: 160 84% 39%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 35% 93%;
+    --muted-foreground: 215 16% 45%;
+
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
 
     --sidebar-background: 210 40% 98%;
     --sidebar-accent: 210 40% 93%;
-    --sidebar-border: 214 32% 91%;
+    --sidebar-border: 214 32% 88%;
   }
 }
 
@@ -109,8 +116,12 @@
     box-shadow: var(--glow-secondary);
   }
 
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border;
+    @apply bg-card/80 backdrop-blur-xl border border-border/80;
   }
 
   .glass-card-hover {
@@ -118,12 +129,28 @@
   }
 
   .glass-card-hover:hover {
-    border-color: hsl(var(--primary) / 0.4);
-    box-shadow: 0 4px 20px -2px hsl(var(--primary) / 0.12);
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: 0 8px 30px -4px hsl(var(--primary) / 0.16);
   }
 
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary;
+  }
+
+  .gradient-text-subtle {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground;
+  }
+
+  .mesh-grid {
+    background-image: 
+      linear-gradient(to right, hsl(var(--border) / 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.4) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .mesh-dots {
+    background-image: radial-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
 
@@ -139,7 +166,7 @@
   }
 }
 
-/* Custom scrollbars */
+/* Custom technical scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -150,12 +177,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.25);
+  background: hsl(var(--border));
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.45);
+  background: hsl(var(--muted-foreground) / 0.4);
 }
 
 /* ReactFlow canvas styling */
@@ -164,12 +191,12 @@
 }
 
 .workflow-canvas .react-flow__edge.animated path {
-  stroke-dasharray: 5;
-  animation: flow-dash 1s linear infinite;
+  stroke-dasharray: 6;
+  animation: flow-dash 1.2s linear infinite;
 }
 
 @keyframes flow-dash {
   to {
-    stroke-dashoffset: -10;
+    stroke-dashoffset: -12;
   }
 }

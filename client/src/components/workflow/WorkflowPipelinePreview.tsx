@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Check, GitBranch, Layers, Sparkles } from "lucide-react";
 
 import type { PipelineNode, PipelineNodeChange } from "../../lib/edit-agent-data";
 import { cn } from "../../lib/utils";
@@ -14,31 +14,35 @@ type WorkflowPipelinePreviewProps = {
 
 const changeStyles: Record<
   PipelineNodeChange,
-  { border: string; bg: string; badge: string; badgeText: string }
+  { border: string; bg: string; badge: string; badgeText: string; glow: string }
 > = {
   unchanged: {
     border: "border-border/80 hover:border-border",
     bg: "bg-card/90",
     badge: "",
     badgeText: "",
+    glow: "",
   },
   added: {
-    border: "border-emerald-500/50 shadow-[0_0_16px_rgba(16,185,129,0.15)]",
+    border: "border-emerald-500/50",
     bg: "bg-emerald-950/20",
     badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     badgeText: "Added",
+    glow: "shadow-[0_0_16px_rgba(16,185,129,0.15)]",
   },
   removed: {
-    border: "border-destructive/50 opacity-60 shadow-[0_0_16px_rgba(239,68,68,0.15)]",
+    border: "border-destructive/50 opacity-60",
     bg: "bg-destructive/10",
     badge: "bg-destructive/15 text-destructive border-destructive/30",
     badgeText: "Removed",
+    glow: "shadow-[0_0_16px_rgba(239,68,68,0.15)]",
   },
   modified: {
-    border: "border-primary/60 shadow-[0_0_16px_rgba(0,102,255,0.2)]",
+    border: "border-primary/60",
     bg: "bg-primary/10",
     badge: "bg-primary/15 text-primary border-primary/30",
     badgeText: "Modified",
+    glow: "shadow-[0_0_16px_rgba(30,112,255,0.2)]",
   },
 };
 
@@ -52,14 +56,17 @@ export function WorkflowPipelinePreview({
   return (
     <div className={cn("space-y-4", className)}>
       {(label || version) && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
           {label && (
-            <p className="text-xs font-semibold text-foreground">
-              {label}
-            </p>
+            <div className="flex items-center gap-2">
+              <GitBranch className="size-3.5 text-primary" />
+              <p className="text-xs font-bold text-foreground">
+                {label}
+              </p>
+            </div>
           )}
           {version && (
-            <span className="font-mono rounded border border-border bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+            <span className="font-mono rounded-full border border-border bg-card px-2.5 py-0.5 text-[10px] text-muted-foreground font-semibold">
               v{version}
             </span>
           )}
@@ -78,18 +85,21 @@ export function WorkflowPipelinePreview({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, duration: 0.25 }}
                 className={cn(
-                  "relative w-full rounded-xl border p-3.5 text-center transition-all",
+                  "relative w-full rounded-2xl border p-3.5 text-center transition-all",
                   styles.bg,
-                  styles.border
+                  styles.border,
+                  styles.glow
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[10px] text-muted-foreground">0{index + 1}</span>
-                  <p className="text-xs font-semibold text-foreground flex-1 text-center">{node.label}</p>
+                  <span className="font-mono text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-background/60 border border-border/80">
+                    0{index + 1}
+                  </span>
+                  <p className="text-xs font-bold text-foreground flex-1 text-center truncate">{node.label}</p>
                   {styles.badgeText ? (
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider border",
+                        "rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider border",
                         styles.badge
                       )}
                     >
@@ -102,7 +112,7 @@ export function WorkflowPipelinePreview({
               </motion.div>
 
               {index < nodes.length - 1 && (
-                <div className="relative flex h-7 w-px flex-col items-center justify-center">
+                <div className="relative flex h-6 w-px flex-col items-center justify-center">
                   <div className="absolute inset-0 w-px bg-border" />
                   <div className="relative z-10 flex size-4 items-center justify-center rounded-full bg-background border border-border text-muted-foreground">
                     <ArrowDown className="size-2.5" />
@@ -115,10 +125,10 @@ export function WorkflowPipelinePreview({
       </div>
 
       {showLegend && (
-        <div className="flex flex-wrap items-center justify-center gap-4 border-t border-border/60 pt-3 font-mono text-[11px] text-muted-foreground">
-          <LegendDot className="bg-emerald-500" label="Added" />
-          <LegendDot className="bg-primary" label="Modified" />
-          <LegendDot className="bg-destructive" label="Removed" />
+        <div className="flex flex-wrap items-center justify-center gap-4 border-t border-border/60 pt-3 font-mono text-[10px] text-muted-foreground">
+          <LegendDot className="bg-emerald-500" label="Added Node" />
+          <LegendDot className="bg-primary" label="Modified Logic" />
+          <LegendDot className="bg-destructive" label="Decommissioned" />
         </div>
       )}
     </div>

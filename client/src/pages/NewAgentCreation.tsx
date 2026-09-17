@@ -1,17 +1,26 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowLeft,
+  ArrowRight,
   Bot,
   Briefcase,
   Check,
   CheckCircle2,
+  Cpu,
   GraduationCap,
   Landmark,
+  Layers,
   Loader2,
+  Play,
+  Rocket,
+  ShieldCheck,
   Sparkles,
-  ArrowLeft,
+  Workflow,
+  Zap,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -22,18 +31,18 @@ import { Textarea } from "../components/ui/textarea";
 import { useAuth } from "../context/AuthContext";
 import { cn } from "../lib/utils";
 import { WorkflowReviewStep } from "../components/workflow/WorkflowReviewStep";
-import { toast } from "sonner";
 
 type DomainId = "corporate" | "education" | "finance";
 
 type DomainOption = {
   id: DomainId;
   title: string;
-  label: string;
-  description: string;
   badge: string;
+  badgeColor: string;
+  description: string;
   icon: typeof Briefcase;
   hint: string;
+  guardrails: string;
   stats: { agents: string; workflows: string };
 };
 
@@ -41,48 +50,51 @@ const domains: DomainOption[] = [
   {
     id: "corporate",
     title: "Corporate Operations",
-    label: "Corporate Operations",
     badge: "Enterprise",
-    description: "Enterprise operations, HR lifecycle, compliance, executive reporting, and cross-team knowledge workflows.",
+    badgeColor: "text-primary border-primary/30 bg-primary/10",
+    description: "Enterprise lifecycle, cross-department scheduling, policy compliance, and executive briefing workflows.",
     icon: Briefcase,
-    hint: "Optimal for SLA governance, role permissions, and compliance guardrails.",
+    hint: "Configured with strict SLA governance, role permissions, and verified Notion/Postgres knowledge anchors.",
+    guardrails: "Role-based ACL · SOC2 Isolation · Deterministic Routing",
     stats: { agents: "4 Agents", workflows: "12 Flows" },
   },
   {
     id: "education",
     title: "Education & Research",
-    label: "Education & Research",
     badge: "Academic",
-    description: "Curriculum pacing, intelligent quiz generation, rubric grading assistance, and student research retrieval.",
+    badgeColor: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+    description: "Curriculum pacing, adaptive quiz generation, pedagogical feedback, and student research retrieval.",
     icon: GraduationCap,
-    hint: "Configured with academic citations and factual grounding thresholds.",
+    hint: "Hardened with academic citation verification, standard rubrics, and factual grounding thresholds.",
+    guardrails: "Citation Grounding · Pedagogy Framework · Hallucination Filter",
     stats: { agents: "2 Agents", workflows: "5 Flows" },
   },
   {
     id: "finance",
     title: "Financial Services",
-    label: "Financial Services",
     badge: "Audit-Ready",
+    badgeColor: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
     description: "Expense auditing, ledger reconciliation, anomaly detection, and automated variance analysis.",
     icon: Landmark,
-    hint: "Hardened with numeric validation and deterministic calculation modules.",
+    hint: "Hardened with numeric validation, policy ceiling triggers, and immutable audit log formatting.",
+    guardrails: "Numeric Assertions · Strict Thresholds · Audit Trail",
     stats: { agents: "2 Agents", workflows: "7 Flows" },
   },
 ];
 
 const promptTemplates = [
   {
-    title: "HR Policy Assistant",
+    title: "HR Policy & Leave Coordinator",
     prompt:
-      "Draft an internal policy assistant that answers employee questions regarding leave, remote work policies, and travel expenses using verified internal Notion knowledge bases.",
+      "Draft an internal policy assistant that parses employee leave requests, verifies PTO quotas against verified Notion policies, and schedules Google Calendar invites.",
   },
   {
-    title: "Executive Meeting Briefing",
+    title: "Executive Meeting Briefing Synthesizer",
     prompt:
-      "Synthesize upcoming Google Calendar meetings, extract attendees and recent email threads from Gmail, and generate concise 3-bullet prep briefing docs.",
+      "Synthesize upcoming Google Calendar meetings, extract attendee email threads from Gmail, and generate concise 3-bullet prep briefing docs.",
   },
   {
-    title: "Expense Anomaly Scanner",
+    title: "Expense Anomaly Scanner & Slack Escalation",
     prompt:
       "Parse incoming invoice PDF attachments, verify itemized totals against policy limits, and trigger a Slack approval message for line items exceeding $500.",
   },
@@ -97,11 +109,12 @@ const stepMotion = {
 
 export default function NewAgentCreation() {
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");
-  const [agentName, setAgentName] = useState("Omni Assistant");
+  const [agentName, setAgentName] = useState("Operations Policy Assistant");
   const [description, setDescription] = useState(
-    "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities."
+    "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities based on internal guidelines."
   );
 
   const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(null);
@@ -175,7 +188,7 @@ export default function NewAgentCreation() {
       setWorkflow(data.workflow);
       setIntegrations(data.integrations);
 
-      toast.success("AI output generated successfully");
+      toast.success("AI Workflow IR compiled successfully");
     } catch (err: any) {
       setWorkflow(null);
       setIntegrations([]);
@@ -209,13 +222,13 @@ export default function NewAgentCreation() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to create and compile agent");
+        throw new Error(errorData.detail || "Failed to compile and deploy agent");
       }
 
       const createdAgent = await res.json();
       setCreated(true);
       toast.success(
-        `Agent "${createdAgent.name}" compiled and deployed successfully! (ID: ${createdAgent.n8n_workflow_id || createdAgent.id})`
+        `Agent "${createdAgent.name}" compiled and deployed successfully to runtime!`
       );
     } catch (err: any) {
       toast.error(err.message || "Failed to create and deploy agent");
@@ -225,20 +238,21 @@ export default function NewAgentCreation() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen bg-background text-foreground text-left antialiased">
       {/* Precision ambient background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-primary/8 rounded-full blur-[140px]" />
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[750px] h-[320px] bg-primary/8 rounded-full blur-[150px]" />
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.025]"
           style={{
             backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-            backgroundSize: "40px 40px",
+            backgroundSize: "36px 36px",
           }}
         />
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
+      {/* Studio Header */}
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/80 backdrop-blur-2xl">
         <div className="container mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <Link
@@ -253,79 +267,84 @@ export default function NewAgentCreation() {
               <div className="flex size-6 items-center justify-center rounded-md bg-primary/10 border border-primary/30 text-primary">
                 <Bot className="size-3.5" />
               </div>
-              <span className="text-xs font-bold text-foreground">Agent Creator</span>
+              <span className="text-xs font-bold text-foreground">Agent Construction Studio</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="hidden sm:inline font-medium text-foreground">{displayName}</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{displayName}</span>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-5xl px-4 sm:px-6 pb-16 pt-6">
-        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {/* Main Studio Work Area */}
+      <main className="relative z-10 mx-auto w-full max-w-5xl px-4 sm:px-6 pb-20 pt-6">
+        {/* Title */}
+        <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-border/70 pb-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Create AI Agent
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+              Agent Construction <span className="gradient-text">Studio</span>
             </h1>
             <p className="text-xs text-muted-foreground">
-              Define domain objectives, compile multi-agent workflow, and inspect execution topology
+              Anchor industry domain intelligence, compose target intent, and verify the compiled execution graph.
             </p>
           </div>
+          <Badge variant="outline" className="font-mono text-[10px] text-primary border-primary/30 self-start sm:self-auto">
+            Compiler v2.4
+          </Badge>
         </div>
 
-        {/* Sequential Step Progress Bar */}
-        <div className="mb-6 rounded-xl border border-border bg-card p-3 sm:p-4">
-          <div className="flex items-center justify-between max-w-2xl mx-auto">
+        {/* Studio Step Progress Indicator */}
+        <div className="mb-6 rounded-2xl border border-border/80 bg-card p-3 sm:p-4 shadow-sm">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
             {[
-              { num: 1, label: "Select Domain" },
-              { num: 2, label: "Describe Agent" },
-              { num: 3, label: "Inspect & Deploy" },
+              { num: 1, label: "Domain Intelligence", desc: "Anchor Schema Rules" },
+              { num: 2, label: "Intent & Prompting", desc: "State Objective" },
+              { num: 3, label: "IR & Topology Review", desc: "Inspect & Deploy" },
             ].map((s, idx) => {
               const isDone = s.num < step;
               const isCurrent = s.num === step;
 
               return (
                 <div key={s.num} className="flex items-center gap-2 sm:gap-3 flex-1 last:flex-none">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <div
                       className={cn(
-                        "flex size-7 items-center justify-center rounded-lg text-xs font-bold transition-all",
+                        "flex size-8 items-center justify-center rounded-xl text-xs font-bold transition-all shrink-0",
                         isDone && "bg-secondary/15 border border-secondary/40 text-secondary",
-                        isCurrent && "bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_hsl(var(--primary)/0.3)]",
+                        isCurrent && "bg-primary text-primary-foreground font-extrabold shadow-[0_0_16px_hsl(var(--primary)/0.35)]",
                         !isDone && !isCurrent && "border border-border bg-muted/40 text-muted-foreground"
                       )}
                     >
-                      {isDone ? <Check className="size-3.5" /> : s.num}
+                      {isDone ? <Check className="size-4" /> : `0${s.num}`}
                     </div>
-                    <span
-                      className={cn(
-                        "text-xs font-medium hidden sm:inline",
-                        isCurrent ? "text-foreground font-bold" : "text-muted-foreground"
-                      )}
-                    >
-                      {s.label}
-                    </span>
+                    <div className="hidden sm:block">
+                      <p className={cn("text-xs font-bold", isCurrent ? "text-foreground" : "text-muted-foreground")}>
+                        {s.label}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono">{s.desc}</p>
+                    </div>
                   </div>
-                  {idx < 2 && <div className="h-px flex-1 bg-border mx-2 hidden sm:block" />}
+                  {idx < 2 && <div className="h-px flex-1 bg-border/80 mx-3 hidden sm:block" />}
                 </div>
               );
             })}
           </div>
         </div>
 
+        {/* Step Views */}
         <AnimatePresence mode="wait">
+          {/* STEP 1: DOMAIN SELECTION */}
           {step === 1 && (
             <motion.section key="step-1" {...stepMotion}>
-              <Card className="border-border bg-card">
-                <CardContent className="space-y-5 p-5 sm:p-6">
-                  <div className="flex items-center justify-between">
+              <Card className="border-border/80 bg-card rounded-2xl shadow-xl">
+                <CardContent className="space-y-6 p-5 sm:p-7">
+                  <div className="flex items-center justify-between border-b border-border/70 pb-4">
                     <div>
-                      <h2 className="text-base font-bold text-foreground">Select Industry Domain</h2>
+                      <h2 className="text-base font-bold text-foreground">Select Operational Domain</h2>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Anchors domain-specific knowledge, tools, and regulatory constraints
+                        Anchors domain-specific knowledge, tools, and regulatory policy boundaries
                       </p>
                     </div>
                     <Badge variant="outline" className="font-mono text-[10px] text-primary border-primary/30">
@@ -333,7 +352,7 @@ export default function NewAgentCreation() {
                     </Badge>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-3">
                     {domains.map((domain) => {
                       const Icon = domain.icon;
                       const isSelected = domain.id === selectedDomain;
@@ -344,22 +363,40 @@ export default function NewAgentCreation() {
                           type="button"
                           onClick={() => setSelectedDomain(domain.id)}
                           className={cn(
-                            "rounded-xl border p-4 text-left transition-all",
+                            "rounded-2xl border p-5 text-left transition-all duration-200 flex flex-col justify-between group",
                             isSelected
-                              ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.15)] ring-1 ring-primary"
-                              : "border-border bg-background/50 hover:border-border/80 hover:bg-card"
+                              ? "border-primary bg-primary/[0.07] shadow-[0_0_24px_hsl(var(--primary)/0.15)] ring-1 ring-primary"
+                              : "border-border/80 bg-background/40 hover:border-border hover:bg-card"
                           )}
                         >
-                          <div className="mb-3 flex items-center justify-between">
-                            <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-card">
-                              <Icon className="size-4 text-primary" />
+                          <div>
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className={cn(
+                                "flex size-10 items-center justify-center rounded-xl border transition-transform group-hover:scale-105",
+                                isSelected ? "border-primary/40 bg-primary/20 text-primary" : "border-border bg-card text-muted-foreground"
+                              )}>
+                                <Icon className="size-5" />
+                              </div>
+                              {isSelected ? (
+                                <CheckCircle2 className="size-5 text-primary" />
+                              ) : (
+                                <span className="font-mono text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded">
+                                  {domain.badge}
+                                </span>
+                              )}
                             </div>
-                            {isSelected && <CheckCircle2 className="size-4 text-primary" />}
+
+                            <h3 className="text-sm font-bold text-foreground mb-1.5">{domain.title}</h3>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {domain.description}
+                            </p>
                           </div>
-                          <h3 className="text-xs font-bold text-foreground">{domain.title}</h3>
-                          <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-                            {domain.description}
-                          </p>
+
+                          <div className="mt-5 pt-3 border-t border-border/60">
+                            <p className="text-[10px] font-mono text-emerald-400 truncate">
+                              ✓ {domain.guardrails}
+                            </p>
+                          </div>
                         </button>
                       );
                     })}
@@ -369,14 +406,15 @@ export default function NewAgentCreation() {
             </motion.section>
           )}
 
+          {/* STEP 2: INTENT & PROMPT COMPOSER */}
           {step === 2 && (
             <motion.section key="step-2" {...stepMotion}>
-              <div className="grid gap-5 lg:grid-cols-5">
-                <Card className="border-border bg-card lg:col-span-3">
-                  <CardContent className="space-y-4 p-5 sm:p-6 text-left">
-                    <div className="flex items-center justify-between">
+              <div className="grid gap-5 lg:grid-cols-12">
+                <Card className="border-border/80 bg-card rounded-2xl lg:col-span-7 shadow-xl">
+                  <CardContent className="space-y-5 p-5 sm:p-7">
+                    <div className="flex items-center justify-between border-b border-border/70 pb-4">
                       <div>
-                        <h2 className="text-base font-bold text-foreground">Describe Your Agent</h2>
+                        <h2 className="text-base font-bold text-foreground">Describe Agent Intent</h2>
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           State desired capabilities and tools in plain language
                         </p>
@@ -386,53 +424,71 @@ export default function NewAgentCreation() {
                       </Badge>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="agent-name" className="text-xs font-medium text-foreground">
-                        Agent Name
+                    <div className="space-y-2">
+                      <Label htmlFor="agent-name" className="text-xs font-semibold text-foreground">
+                        Agent Identifier & Name
                       </Label>
                       <Input
                         id="agent-name"
                         value={agentName}
                         onChange={(event) => setAgentName(event.target.value)}
-                        className="h-10 border-border bg-background/60 text-xs focus-visible:ring-primary"
-                        placeholder="e.g. Omni Ops Assistant"
+                        className="h-10 border-border/80 bg-background/50 text-xs focus-visible:ring-primary rounded-xl"
+                        placeholder="e.g. Operations Assistant"
                       />
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="agent-description" className="text-xs font-medium text-foreground">
-                        Agent Objective & Prompt
-                      </Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="agent-description" className="text-xs font-semibold text-foreground">
+                          Natural Language Objective & Prompts
+                        </Label>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          Domain: {activeDomain.title}
+                        </span>
+                      </div>
                       <Textarea
                         id="agent-description"
                         value={description}
                         onChange={(event) => setDescription(event.target.value)}
-                        className="min-h-[160px] border-border bg-background/60 text-xs leading-relaxed focus-visible:ring-primary"
-                        placeholder="Describe what the agent should accomplish..."
+                        className="min-h-[160px] border-border/80 bg-background/50 text-xs leading-relaxed focus-visible:ring-primary rounded-xl"
+                        placeholder="State what this agent should accomplish, what data sources to parse, and what tools to dispatch..."
                       />
-                      <p className="text-[11px] text-primary/90 font-medium">{activeDomain.hint}</p>
+                      <p className="text-[11px] font-mono text-primary flex items-center gap-1">
+                        <Sparkles className="size-3" />
+                        {activeDomain.hint}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card lg:col-span-2">
-                  <CardContent className="space-y-3 p-5 text-left">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="size-4 text-primary" />
+                {/* Blueprint Accelerator Panel */}
+                <Card className="border-border/80 bg-card rounded-2xl lg:col-span-5 shadow-xl">
+                  <CardContent className="space-y-3.5 p-5 sm:p-6">
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <Sparkles className="size-3.5" />
+                      </div>
                       <h3 className="text-xs font-bold text-foreground">Prompt Blueprints</h3>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Click a blueprint template to populate your prompt
+                      Load pre-calibrated domain templates with validated parameters:
                     </p>
+                    
                     <div className="space-y-2 pt-1">
                       {promptTemplates.map((template) => (
                         <button
                           key={template.title}
                           type="button"
-                          onClick={() => setDescription(template.prompt)}
-                          className="w-full rounded-lg border border-border bg-background/50 p-3 text-left transition-colors hover:border-primary/50 hover:bg-card"
+                          onClick={() => {
+                            setAgentName(template.title);
+                            setDescription(template.prompt);
+                            toast.success(`Loaded "${template.title}" template`);
+                          }}
+                          className="w-full rounded-xl border border-border/80 bg-background/40 p-3 text-left transition-all hover:border-primary/50 hover:bg-card group"
                         >
-                          <p className="text-xs font-bold text-foreground">{template.title}</p>
+                          <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                            {template.title}
+                          </p>
                           <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground leading-relaxed">
                             {template.prompt}
                           </p>
@@ -445,15 +501,16 @@ export default function NewAgentCreation() {
             </motion.section>
           )}
 
+          {/* STEP 3: WORKFLOW IR INSPECTION & DEPLOYMENT */}
           {step === 3 && (
             <motion.section key="step-3" {...stepMotion}>
-              <Card className="border-border bg-card">
-                <CardContent className="space-y-4 p-5 sm:p-6">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
+              <Card className="border-border/80 bg-card rounded-2xl shadow-xl">
+                <CardContent className="space-y-5 p-5 sm:p-7">
+                  <div className="flex items-center justify-between border-b border-border/70 pb-4">
                     <div>
                       <h2 className="text-base font-bold text-foreground">Inspect & Deploy Agent</h2>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Verify intermediate schema, node connections, and deploy to runtime
+                        Verify intermediate schema, node connections, and deploy to production runtime
                       </p>
                     </div>
                     <Badge variant="outline" className="font-mono text-[10px] text-secondary border-secondary/30">
@@ -472,10 +529,17 @@ export default function NewAgentCreation() {
           )}
         </AnimatePresence>
 
-        {/* Persistent Bottom Bar */}
-        <div className="mt-6 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-muted-foreground">
-            {created ? "Agent compiled and deployed successfully." : "Parameters saved in session state."}
+        {/* Studio Sticky Control Bar */}
+        <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/80 bg-card/90 p-4 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between shadow-xl">
+          <div className="text-xs text-muted-foreground font-mono">
+            {created ? (
+              <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="size-3.5" />
+                Workflow compiled and live in engine
+              </span>
+            ) : (
+              <span>State preserved in active session.</span>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -484,7 +548,7 @@ export default function NewAgentCreation() {
               size="sm"
               onClick={() => setStep((prev) => (prev === 3 ? 2 : 1))}
               disabled={step === 1 || isCreating || generating}
-              className="h-9 border-border bg-card text-xs text-foreground hover:bg-muted"
+              className="h-9 border-border/80 bg-background/50 text-xs font-medium text-foreground hover:bg-card rounded-lg"
             >
               Back
             </Button>
@@ -493,9 +557,10 @@ export default function NewAgentCreation() {
               <Button
                 size="sm"
                 onClick={() => setStep(2)}
-                className="h-9 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
+                className="h-9 gap-1.5 bg-primary px-5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg"
               >
-                Continue
+                <span>Continue</span>
+                <ArrowRight className="size-3.5" />
               </Button>
             )}
 
@@ -504,15 +569,18 @@ export default function NewAgentCreation() {
                 size="sm"
                 onClick={handleStepTwoContinue}
                 disabled={generating}
-                className="h-9 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary"
+                className="h-9 gap-1.5 bg-primary px-5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg"
               >
                 {generating ? (
                   <>
-                    <Loader2 className="mr-2 size-3.5 animate-spin" />
-                    Compiling Architecture…
+                    <Loader2 className="size-3.5 animate-spin" />
+                    <span>Compiling Graph…</span>
                   </>
                 ) : (
-                  "Compile Workflow"
+                  <>
+                    <Zap className="size-3.5" />
+                    <span>Compile Workflow</span>
+                  </>
                 )}
               </Button>
             )}
@@ -523,22 +591,25 @@ export default function NewAgentCreation() {
                 onClick={handleCreateAgent}
                 disabled={isCreating || created || generating || !workflow}
                 className={cn(
-                  "h-9 min-w-32 bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90",
+                  "h-9 min-w-36 gap-1.5 bg-primary px-5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 rounded-lg",
                   !created && !isCreating && "glow-primary"
                 )}
               >
                 {isCreating ? (
                   <>
-                    <Loader2 className="mr-2 size-3.5 animate-spin" />
-                    Deploying Runtime…
+                    <Loader2 className="size-3.5 animate-spin" />
+                    <span>Deploying Runtime…</span>
                   </>
                 ) : created ? (
                   <>
-                    <CheckCircle2 className="mr-2 size-3.5 text-secondary" />
-                    Deployed
+                    <CheckCircle2 className="size-3.5 text-secondary" />
+                    <span>Live in Engine</span>
                   </>
                 ) : (
-                  "Deploy Agent"
+                  <>
+                    <Rocket className="size-3.5" />
+                    <span>Deploy Agent</span>
+                  </>
                 )}
               </Button>
             )}

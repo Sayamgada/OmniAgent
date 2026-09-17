@@ -13,7 +13,7 @@ export default function DashboardLayout() {
   const location = useLocation();
 
   return (
-    <div className="relative flex min-h-screen bg-background text-foreground">
+    <div className="relative flex min-h-screen bg-background text-foreground antialiased">
       <AnimatedBackground />
 
       <DashboardSidebar
@@ -26,12 +26,14 @@ export default function DashboardLayout() {
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <DashboardTopNav onMenuClick={() => setMobileOpen(true)} />
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <AnimatePresence mode="wait">
-            <PageTransition key={location.pathname}>
-              <Outlet />
-            </PageTransition>
-          </AnimatePresence>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">
+            <AnimatePresence mode="wait">
+              <PageTransition key={location.pathname}>
+                <Outlet />
+              </PageTransition>
+            </AnimatePresence>
+          </div>
         </main>
       </div>
     </div>
