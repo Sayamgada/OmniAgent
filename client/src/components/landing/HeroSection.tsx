@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   CinematicAiNetworkCanvas,
   DOMAIN_DATA,
@@ -26,14 +26,14 @@ const HeroSection = () => {
     });
   }, [scrollYProgress]);
 
-  // Scroll-linked transforms for headline: smooth fade and upward drift
-  const headlineOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
-  const headlineY = useTransform(scrollYProgress, [0, 0.35], [0, -50]);
+  // Scroll-linked transforms: headline stays sharp during initial state, then gently fades out as convergence starts
+  const headlineOpacity = useTransform(scrollYProgress, [0, 0.40], [1, 0]);
+  const headlineY = useTransform(scrollYProgress, [0, 0.40], [0, -45]);
 
   return (
     <div
       ref={heroRef}
-      className="relative min-h-[175vh] w-full bg-[#06090F] select-none"
+      className="relative min-h-[185vh] w-full bg-[#06090F] select-none"
     >
       {/* Pinned Sticky Visual Viewport */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-between overflow-hidden pt-20 pb-8">
@@ -62,7 +62,7 @@ const HeroSection = () => {
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 2. MAIN VISUAL: CINEMATIC AI NETWORK CANVAS                   */}
+        {/* 2. MAIN VISUAL: CINEMATIC AI NETWORK & RADIAL LIGHT TRANSITION */}
         {/* ------------------------------------------------------------- */}
         <div className="absolute inset-0 z-10">
           <CinematicAiNetworkCanvas
@@ -73,7 +73,7 @@ const HeroSection = () => {
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 3. SIMPLIFIED HERO HEADLINE (NO PARAGRAPH OR BUTTONS)         */}
+        {/* 3. HERO HEADLINE (Fades cleanly before core expansion)       */}
         {/* ------------------------------------------------------------- */}
         <motion.div
           style={{ opacity: headlineOpacity, y: headlineY }}
@@ -111,7 +111,7 @@ const HeroSection = () => {
         </motion.div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 4. SEAMLESS SCROLL HINT (Fades out on scroll)                 */}
+        {/* 4. SCROLL INDICATOR                                          */}
         {/* ------------------------------------------------------------- */}
         <motion.div
           style={{ opacity: headlineOpacity }}
@@ -119,7 +119,7 @@ const HeroSection = () => {
         >
           <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground/70">
             <span className="size-1.5 rounded-full bg-primary/70 animate-pulse" />
-            <span>Scroll to initialize orchestration core</span>
+            <span>Scroll to ignite orchestration core</span>
             <ChevronDown className="size-3.5 text-primary animate-bounce ml-0.5" />
           </div>
         </motion.div>

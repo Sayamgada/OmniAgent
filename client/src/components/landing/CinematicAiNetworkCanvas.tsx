@@ -48,7 +48,7 @@ interface Node3D {
   id: string;
   label: string;
   subLabel?: string;
-  domain?: "education" | "finance" | "corporate" | "auxiliary" | "exit";
+  domain?: "education" | "finance" | "corporate" | "auxiliary";
   isCore?: boolean;
   isDomainHead?: boolean;
   x: number;
@@ -77,7 +77,7 @@ interface CinematicCanvasProps {
   className?: string;
 }
 
-// Smooth interpolation helper
+// Smooth cubic easing helper
 function smoothstep(min: number, max: number, value: number) {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
   return x * x * (3 - 2 * x);
@@ -96,7 +96,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   const timeRef = useRef<number>(0);
   const scrollRef = useRef<number>(0);
 
-  // Synchronize scroll progress into ref for 60fps render loop
   useEffect(() => {
     scrollRef.current = scrollProgress;
   }, [scrollProgress]);
@@ -112,7 +111,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       subLabel: "Orchestration Engine",
       isCore: true,
       x: 0,
-      y: 40, // Centered in the open visual space beneath the headline
+      y: 40,
       z: 0,
       radius: 18,
       color: "#00F2FE",
@@ -346,7 +345,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
     particlesRef.current = newParticles;
   }, []);
 
-  // Mouse move handler for subtle parallax
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -363,7 +361,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
     onHoverDomain(null);
   }, [onHoverDomain]);
 
-  // Hit testing for interactive nodes
   const handleCanvasMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
@@ -412,7 +409,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
     [onHoverDomain]
   );
 
-  // Main 60fps Canvas Render Loop with Cinematic Light Expansion Transition
+  // Main 60fps Canvas Render Loop with Core Radial Light Transformation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -448,26 +445,32 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       const mobileScaleMultiplier = isMobile ? 0.6 : isTablet ? 0.82 : 1.0;
 
       // -------------------------------------------------------------
-      // SCROLL STAGES & CINEMATIC TRANSITION VALUES
+      // SCROLL STAGES (Strictly Contrastive & Reversible)
+      // 0% - 20%: Hero normal dark state
+      // 20% - 40%: Activation (particles accelerate inward, core brightens)
+      // 40% - 60%: Convergence (network collapses into core)
+      // 60% - 75%: Energy release (core turns white-hot, intense bloom)
+      // 75% - 90%: Radial expansion (white light radiates to edges from core)
+      // 90% - 100%: Light world full reveal
       // -------------------------------------------------------------
       const scroll = Math.max(0, Math.min(1, scrollRef.current));
 
-      // 1. Convergence factor (nodes pull toward central core)
-      const convergence = smoothstep(0.12, 0.68, scroll);
+      // 1. Convergence factor (0 at scroll <= 0.20, 1 at scroll >= 0.60)
+      const convergence = smoothstep(0.20, 0.60, scroll);
 
-      // 2. Camera push-in & Core Scale
-      const cameraPushScale = 1 + smoothstep(0.25, 0.85, scroll) * 2.5;
+      // 2. Camera push-in toward core
+      const cameraPushScale = 1 + smoothstep(0.25, 0.75, scroll) * 1.8;
 
-      // 3. Core expansion & radial bloom factor
-      const coreExpandProgress = smoothstep(0.40, 0.88, scroll);
-      const coreRadiusScale = 1 + Math.pow(coreExpandProgress, 2.4) * 18;
+      // 3. Core Expansion Progress (starts at 0.60, reaches peak at 0.90)
+      const coreExpandProgress = smoothstep(0.60, 0.90, scroll);
+      const coreRadiusScale = 1 + Math.pow(coreExpandProgress, 2.6) * 35;
 
-      // 4. Viewport Light Bloom Illumination
-      const lightBloomAlpha = smoothstep(0.48, 0.92, scroll);
+      // 4. Viewport Radial Light Bloom (starts at 0.65, fills screen by 0.90)
+      const radialBloomProgress = smoothstep(0.65, 0.92, scroll);
 
       // Center of projection
       const centerX = width / 2;
-      const centerY = height * 0.54;
+      const centerY = height * 0.52;
       const focalLength = (isMobile ? 360 : 500) * cameraPushScale;
 
       // Calculate projected 3D positions with convergence interpolation
@@ -483,7 +486,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         let ny = node.y * mobileScaleMultiplier;
         let nz = node.z;
 
-        // Converge toward core position as scroll increases
+        // Inward convergence toward core
         if (!node.isCore) {
           nx = nx * (1 - convergence) + (coreNode.x * mobileScaleMultiplier) * convergence;
           ny = ny * (1 - convergence) + (coreNode.y * mobileScaleMultiplier) * convergence;
@@ -494,8 +497,8 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         const screenX = centerX + (nx + mouse.x * (1 - convergence * 0.8) * (1 + nz / 160)) * scale;
         const screenY = centerY + (ny + mouse.y * (1 - convergence * 0.8) * (1 + nz / 160)) * scale;
 
-        // Node opacity: peripheral nodes fade into the light as convergence completes
-        const alpha = node.isCore ? 1.0 : Math.max(0, 1 - convergence * 1.3);
+        // Peripheral nodes dissolve as they converge into the core
+        const alpha = node.isCore ? 1.0 : Math.max(0, 1 - convergence * 1.5);
 
         projectedMap.set(node.id, { screenX, screenY, scale, node, alpha });
       });
@@ -507,14 +510,14 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       // -------------------------------------------------------------
       // 1. DRAW ATMOSPHERIC AMBIENT GLOW (Originated FROM Core)
       // -------------------------------------------------------------
-      if (coreProj) {
-        const baseGlowRadius = (isMobile ? 220 : 380) * (1 + coreExpandProgress * 2.5);
-        const glowAlpha = 0.22 + coreExpandProgress * 0.5;
+      if (coreProj && radialBloomProgress < 0.98) {
+        const baseGlowRadius = (isMobile ? 220 : 380) * (1 + coreExpandProgress * 1.8);
+        const glowAlpha = 0.22 + smoothstep(0.2, 0.6, scroll) * 0.35;
 
         const radialGlow = ctx.createRadialGradient(cx, cy, 4, cx, cy, baseGlowRadius);
         radialGlow.addColorStop(0, `rgba(0, 242, 254, ${glowAlpha})`);
-        radialGlow.addColorStop(0.3, `rgba(14, 165, 233, ${glowAlpha * 0.6})`);
-        radialGlow.addColorStop(0.65, `rgba(45, 212, 191, ${glowAlpha * 0.2})`);
+        radialGlow.addColorStop(0.35, `rgba(14, 165, 233, ${glowAlpha * 0.6})`);
+        radialGlow.addColorStop(0.7, `rgba(45, 212, 191, ${glowAlpha * 0.2})`);
         radialGlow.addColorStop(1, "rgba(6, 9, 15, 0)");
 
         ctx.fillStyle = radialGlow;
@@ -522,9 +525,9 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         ctx.arc(cx, cy, baseGlowRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Concentric computational energy rings (fade out during expansion)
-        if (convergence < 0.8) {
-          const ringAlpha = (1 - convergence) * 0.05;
+        // Concentric computational energy rings
+        if (convergence < 0.75) {
+          const ringAlpha = (1 - convergence) * 0.06;
           ctx.save();
           for (let r = 90; r <= 460; r += 95) {
             ctx.beginPath();
@@ -549,7 +552,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       // -------------------------------------------------------------
       // 2. DRAW CONNECTING CIRCUIT / NEURAL PATHS
       // -------------------------------------------------------------
-      if (convergence < 0.95) {
+      if (convergence < 0.92) {
         nodes.forEach((source) => {
           const sProj = projectedMap.get(source.id);
           if (!sProj || sProj.alpha <= 0.01) return;
@@ -595,7 +598,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       // -------------------------------------------------------------
       // 3. DRAW TRAVELLING GLOWING PARTICLES
       // -------------------------------------------------------------
-      if (convergence < 0.9) {
+      if (convergence < 0.88) {
         const particles = particlesRef.current;
         particles.forEach((p) => {
           const sProj = projectedMap.get(p.sourceId);
@@ -608,12 +611,10 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           const speedMultiplier = 1 + scroll * 3.5;
           const currentSpeed = isBranchActive ? p.speed * 2.2 : p.speed * speedMultiplier;
 
-          if (scroll > 0.25) {
-            // Inward flow toward core
+          if (scroll > 0.20) {
             p.t -= currentSpeed;
             if (p.t < 0) p.t = 1;
           } else {
-            // Outward flow
             p.t += currentSpeed;
             if (p.t > 1) p.t = 0;
           }
@@ -633,7 +634,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
           const scale = (sProj.scale + tProj.scale) / 2;
           const radius = p.size * scale * (isBranchActive ? 1.4 : 1.0);
-          const pAlpha = Math.min(sProj.alpha, tProj.alpha) * (1 - smoothstep(0.65, 0.9, scroll));
+          const pAlpha = Math.min(sProj.alpha, tProj.alpha) * (1 - smoothstep(0.55, 0.85, scroll));
 
           if (pAlpha <= 0.01) return;
 
@@ -655,7 +656,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       // 4. DRAW NODES (Domain Heads & Sub-Nodes)
       // -------------------------------------------------------------
       nodes.forEach((node) => {
-        if (node.isCore) return; // Core drawn in dedicated layer
+        if (node.isCore) return;
 
         const proj = projectedMap.get(node.id);
         if (!proj || proj.alpha <= 0.01) return;
@@ -670,7 +671,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           const nodeRadius = node.radius * scale * (isHovered ? 1.35 : 1.0);
           const domainColor = node.color;
 
-          // Pulse ring if hovered
           if (isHovered) {
             const glowRing = (Math.sin(t * 4) * 0.15 + 1) * nodeRadius * 1.8;
             ctx.beginPath();
@@ -680,7 +680,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
             ctx.stroke();
           }
 
-          // Node body
           ctx.beginPath();
           ctx.arc(screenX, screenY, nodeRadius, 0, Math.PI * 2);
           ctx.fillStyle = isHovered ? domainColor : "#0A101D";
@@ -691,13 +690,11 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.fill();
           ctx.stroke();
 
-          // Inner bright beacon
           ctx.beginPath();
           ctx.arc(screenX, screenY, nodeRadius * 0.35, 0, Math.PI * 2);
           ctx.fillStyle = isHovered ? "#FFFFFF" : domainColor;
           ctx.fill();
 
-          // Domain Label (hidden during convergence)
           if (alpha > 0.5) {
             ctx.font = `700 ${Math.max(11 * scale, 10)}px system-ui, -apple-system, sans-serif`;
             ctx.fillStyle = isHovered ? "#FFFFFF" : "#E2E8F0";
@@ -707,7 +704,6 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
             ctx.fillText(node.label, screenX, screenY - nodeRadius - 8 * scale);
           }
         } else {
-          // Sub-nodes
           const subRadius = node.radius * scale * (isHovered ? 1.25 : 1.0);
 
           ctx.beginPath();
@@ -725,16 +721,16 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       });
 
       // -------------------------------------------------------------
-      // 5. DRAW EXPANDING OMNIAGENT AI CORE & RADIANT LIGHT TRANSITION
+      // 5. DRAW EXPANDING OMNIAGENT AI CORE
       // -------------------------------------------------------------
       if (coreProj) {
         ctx.save();
         const pulse = Math.sin(t * 2.2) * 0.08 + 1;
         const currentCoreRadius = coreProj.node.radius * coreProj.scale * pulse * coreRadiusScale;
 
-        // Outer rotating telemetry rings (fade out smoothly during massive expansion)
-        if (coreExpandProgress < 0.75) {
-          const ringAlpha = (1 - coreExpandProgress * 1.3) * 0.5;
+        // Telemetry rings fade out as core expands
+        if (coreExpandProgress < 0.65) {
+          const ringAlpha = (1 - coreExpandProgress * 1.5) * 0.5;
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(t * 0.4);
@@ -755,34 +751,34 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.restore();
         }
 
-        // Core radiant gradient sphere
+        // Core radiant sphere
         const coreGrad = ctx.createRadialGradient(
           cx,
           cy,
           0,
           cx,
           cy,
-          currentCoreRadius * (1.8 + coreExpandProgress * 4.0)
+          currentCoreRadius * (1.8 + coreExpandProgress * 3.5)
         );
         coreGrad.addColorStop(0, "#FFFFFF");
         coreGrad.addColorStop(0.18, "#E0F2FE");
         coreGrad.addColorStop(0.40, "#00F2FE");
-        coreGrad.addColorStop(0.70, `rgba(14, 165, 233, ${0.9 - coreExpandProgress * 0.3})`);
+        coreGrad.addColorStop(0.70, `rgba(14, 165, 233, ${0.9 - coreExpandProgress * 0.2})`);
         coreGrad.addColorStop(1, "rgba(14, 165, 233, 0)");
 
         ctx.beginPath();
-        ctx.arc(cx, cy, currentCoreRadius * (1.8 + coreExpandProgress * 4.0), 0, Math.PI * 2);
+        ctx.arc(cx, cy, currentCoreRadius * (1.8 + coreExpandProgress * 3.5), 0, Math.PI * 2);
         ctx.fillStyle = coreGrad;
         ctx.shadowColor = "#00F2FE";
-        ctx.shadowBlur = 28 + coreExpandProgress * 50;
+        ctx.shadowBlur = 28 + coreExpandProgress * 60;
         ctx.fill();
 
         // Central white-hot emitter
         ctx.beginPath();
-        ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreExpandProgress * 0.8), 0, Math.PI * 2);
+        ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreExpandProgress * 0.7), 0, Math.PI * 2);
         ctx.fillStyle = "#FFFFFF";
         ctx.shadowColor = "#FFFFFF";
-        ctx.shadowBlur = 14 + coreExpandProgress * 30;
+        ctx.shadowBlur = 14 + coreExpandProgress * 40;
         ctx.fill();
 
         // Core Label (fades out as convergence begins)
@@ -795,26 +791,49 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.fillText("OMNIAGENT AI CORE", cx, cy + currentCoreRadius * 2.6);
         }
 
-        // -------------------------------------------------------------
-        // 6. VIEWPORT LUMINOUS FIELD EXPANSION (Originating FROM Core)
-        // -------------------------------------------------------------
-        if (lightBloomAlpha > 0.01) {
-          const maxBloomRadius = Math.max(width, height) * 1.4;
-          const bloomGrad = ctx.createRadialGradient(
-            cx,
-            cy,
-            currentCoreRadius * 0.5,
-            cx,
-            cy,
-            maxBloomRadius
-          );
-          bloomGrad.addColorStop(0, `rgba(255, 255, 255, ${lightBloomAlpha * 0.95})`);
-          bloomGrad.addColorStop(0.25, `rgba(224, 242, 254, ${lightBloomAlpha * 0.85})`);
-          bloomGrad.addColorStop(0.55, `rgba(0, 242, 254, ${lightBloomAlpha * 0.65})`);
-          bloomGrad.addColorStop(0.85, `rgba(14, 165, 233, ${lightBloomAlpha * 0.35})`);
-          bloomGrad.addColorStop(1, `rgba(6, 9, 15, ${lightBloomAlpha * 0.1})`);
+        ctx.restore();
+      }
 
-          ctx.fillStyle = bloomGrad;
+      // -------------------------------------------------------------
+      // 6. VISUAL ENVIRONMENT TRANSFORMATION: RADIAL LIGHT EXPANSION
+      // Originates strictly from the central AI Core (cx, cy)
+      // Consumes the dark background radially with soft feathered falloff
+      // -------------------------------------------------------------
+      if (radialBloomProgress > 0.001) {
+        ctx.save();
+        const maxViewportDiagonal = Math.hypot(width, height) * 1.3;
+        const currentLightRadius = currentCoreRadius * 0.8 + radialBloomProgress * maxViewportDiagonal;
+
+        // Radial light expansion gradient from core
+        const radialLightGrad = ctx.createRadialGradient(
+          cx,
+          cy,
+          0,
+          cx,
+          cy,
+          currentLightRadius
+        );
+
+        // Intensity increases smoothly as light expands to edges
+        const coreWhiteAlpha = Math.min(1.0, radialBloomProgress * 1.15);
+        const paleCyanAlpha = Math.min(1.0, radialBloomProgress * 1.05);
+        const outerCyanAlpha = Math.min(0.95, radialBloomProgress * 0.85);
+
+        radialLightGrad.addColorStop(0, `rgba(255, 255, 255, ${coreWhiteAlpha})`);
+        radialLightGrad.addColorStop(0.35, `rgba(240, 249, 255, ${paleCyanAlpha})`);
+        radialLightGrad.addColorStop(0.70, `rgba(186, 230, 253, ${outerCyanAlpha * 0.8})`);
+        radialLightGrad.addColorStop(0.90, `rgba(56, 189, 248, ${outerCyanAlpha * 0.4})`);
+        radialLightGrad.addColorStop(1, "rgba(6, 9, 15, 0)");
+
+        ctx.fillStyle = radialLightGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, currentLightRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // When expansion completes (> 92%), fill whole viewport with pure light world background
+        if (radialBloomProgress > 0.90) {
+          const finalLightAlpha = smoothstep(0.90, 1.0, scroll);
+          ctx.fillStyle = `rgba(255, 255, 255, ${finalLightAlpha})`;
           ctx.fillRect(0, 0, width, height);
         }
 

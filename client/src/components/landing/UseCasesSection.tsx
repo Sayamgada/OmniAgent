@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -42,7 +42,7 @@ const domains: DomainInfo[] = [
     id: "corporate",
     label: "Corporate Operations",
     badge: "Enterprise Orchestration",
-    badgeStyle: "text-primary border-primary/30 bg-primary/10",
+    badgeStyle: "bg-sky-50 text-sky-700 border-sky-200",
     icon: Briefcase,
     tagline: "Cross-Functional Ops & Governance",
     description: "Automate cross-functional communication, scheduling logistics, SLA compliance checks, and executive report synthesis.",
@@ -59,7 +59,7 @@ const domains: DomainInfo[] = [
     id: "education",
     label: "Education & Research",
     badge: "Academic & Tutoring",
-    badgeStyle: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+    badgeStyle: "bg-purple-50 text-purple-700 border-purple-200",
     icon: GraduationCap,
     tagline: "Pedagogy & Curriculum Intelligence",
     description: "Personalized study curricula, step-by-step concept explanations, citation-backed fact validation, and adaptive quiz generation.",
@@ -76,7 +76,7 @@ const domains: DomainInfo[] = [
     id: "finance",
     label: "Financial Services",
     badge: "Financial Intelligence",
-    badgeStyle: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    badgeStyle: "bg-emerald-50 text-emerald-700 border-emerald-200",
     icon: Landmark,
     tagline: "Audit-Ready Numeric Intelligence",
     description: "Analyze periodic statements, detect transactional anomalies, reconcile itemized ledgers, and maintain audit compliance.",
@@ -98,7 +98,7 @@ const UseCasesSection = () => {
   const Icon = current.icon;
 
   return (
-    <section id="industries" className="py-24 border-t border-border/80 bg-background/50 relative">
+    <section id="industries" className="py-28 bg-slate-50 text-slate-900 border-t border-slate-200/80 relative">
       <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div
@@ -108,20 +108,20 @@ const UseCasesSection = () => {
           transition={{ duration: 0.5 }}
           className="text-center max-w-3xl mx-auto mb-14"
         >
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-0.5 text-xs font-mono font-medium text-primary mb-3">
-            <Cpu className="size-3" />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-mono font-semibold text-sky-700 mb-3 shadow-xs">
+            <Cpu className="size-3.5 text-sky-600" />
             <span>Domain Intelligence Studio</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground mb-4">
-            Specialized For <span className="gradient-text">Real Industry Workflows</span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4 leading-tight">
+            Specialized For <span className="bg-gradient-to-r from-sky-600 to-teal-600 bg-clip-text text-transparent">Real Industry Workflows</span>
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
             Generic AI models fail in production. OmniAgent embeds pre-calibrated domain intelligence, schema guardrails, and compliance rules tailored to your industry.
           </p>
         </motion.div>
 
         {/* Domain Navigation Ribbon */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 mb-10">
           {domains.map((d) => {
             const DIcon = d.icon;
             const isSelected = d.id === activeTab;
@@ -129,13 +129,13 @@ const UseCasesSection = () => {
               <button
                 key={d.id}
                 onClick={() => setActiveTab(d.id)}
-                className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-all shadow-xs ${
                   isSelected
-                    ? "bg-card border border-primary text-foreground shadow-[0_0_20px_hsl(var(--primary)/0.15)] ring-1 ring-primary/40"
-                    : "border border-border/80 bg-background/50 text-muted-foreground hover:text-foreground hover:bg-card"
+                    ? "bg-white border-2 border-sky-500 text-slate-900 shadow-md ring-2 ring-sky-500/10"
+                    : "border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-300"
                 }`}
               >
-                <div className={`flex size-6 items-center justify-center rounded-lg ${isSelected ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>
+                <div className={`flex size-6 items-center justify-center rounded-lg ${isSelected ? "bg-sky-50 text-sky-600" : "text-slate-400"}`}>
                   <DIcon className="size-3.5" />
                 </div>
                 <span>{d.label}</span>
@@ -152,27 +152,27 @@ const UseCasesSection = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3 }}
-            className="rounded-2xl border border-border/90 bg-card/90 p-6 sm:p-8 backdrop-blur-2xl max-w-6xl mx-auto shadow-xl"
+            className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 max-w-6xl mx-auto shadow-md"
           >
             {/* Top Domain Context Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-border/70 pb-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 pb-6 mb-8">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/30 text-primary">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-sky-50 border border-sky-200 text-sky-600">
                     <Icon className="size-5" />
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">{current.label}</h3>
-                  <span className={`px-2.5 py-0.5 rounded-full border text-xs font-mono font-medium ${current.badgeStyle}`}>
+                  <h3 className="text-xl font-bold text-slate-900">{current.label}</h3>
+                  <span className={`px-2.5 py-0.5 rounded-full border text-xs font-mono font-semibold ${current.badgeStyle}`}>
                     {current.badge}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                   {current.description}
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" className="h-9 gap-1.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
+                <Button size="sm" className="h-9 gap-1.5 bg-primary px-4 text-xs font-bold text-black hover:bg-primary/90 glow-primary rounded-lg shadow-sm" asChild>
                   <Link to="/new-agent">
                     <span>Create {current.label.split(" ")[0]} Agent</span>
                     <ArrowRight className="size-3.5" />
@@ -188,18 +188,18 @@ const UseCasesSection = () => {
                 return (
                   <div
                     key={uc.title}
-                    className="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between hover:border-primary/40 transition-colors"
+                    className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 flex flex-col justify-between hover:border-sky-400/80 transition-colors shadow-xs"
                   >
                     <div>
-                      <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 border border-primary/25 text-primary mb-3">
-                        <UcIcon className="size-4" />
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-sky-50 border border-sky-200/80 text-sky-600 mb-3">
+                        <UcIcon className="size-4.5" />
                       </div>
-                      <h4 className="font-bold text-xs text-foreground mb-1.5">{uc.title}</h4>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">{uc.desc}</p>
+                      <h4 className="font-bold text-sm text-slate-900 mb-1.5">{uc.title}</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed">{uc.desc}</p>
                     </div>
-                    <div className="mt-4 pt-2.5 border-t border-border/60 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                      <span className="text-primary font-medium">Use Case 0{i + 1}</span>
-                      <span className="text-emerald-400">Verified</span>
+                    <div className="mt-4 pt-3 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                      <span className="text-sky-600 font-semibold">Use Case 0{i + 1}</span>
+                      <span className="text-emerald-600 font-semibold">✓ Verified</span>
                     </div>
                   </div>
                 );
@@ -207,25 +207,25 @@ const UseCasesSection = () => {
             </div>
 
             {/* Bottom Pipeline & Guardrails Bar */}
-            <div className="grid lg:grid-cols-2 gap-4 border-t border-border/70 pt-6 text-xs">
-              <div className="rounded-xl border border-border/80 bg-background/40 p-4">
-                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-                  <ShieldCheck className="size-4 text-primary" />
+            <div className="grid lg:grid-cols-2 gap-4 border-t border-slate-100 pt-6 text-xs">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-center gap-2 text-slate-900 font-bold mb-2">
+                  <ShieldCheck className="size-4 text-sky-600" />
                   <span>Domain Guardrails & Compliance Policy</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   {current.guardrails}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-border/80 bg-background/40 p-4">
-                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-                  <Zap className="size-4 text-primary" />
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-center gap-2 text-slate-900 font-bold mb-2">
+                  <Zap className="size-4 text-sky-600" />
                   <span>Integrated Service Connectors</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {current.tools.map((t) => (
-                    <span key={t} className="rounded border border-border bg-card px-2 py-0.5 font-mono text-[10px] text-muted-foreground font-medium">
+                    <span key={t} className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-700 font-semibold shadow-xs">
                       {t}
                     </span>
                   ))}

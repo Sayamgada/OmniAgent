@@ -1,12 +1,13 @@
+import React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Bot, Cpu, Database, FileCode, Layers, Play, Rocket, ShieldCheck, Sparkles, Workflow, Zap } from "lucide-react";
+import { ArrowRight, Cpu, FileCode, Rocket, Sparkles, Workflow } from "lucide-react";
 
 const pipelineStages = [
   {
     step: "01",
     title: "Domain & Intent Ingestion",
     subtitle: "Natural Language to Structured Context",
-    desc: "You state an objective in plain language. OmniAgent anchors your domain guardrails (Corporate, Education, Finance) and parses target entities.",
+    desc: "State your objective in plain language. OmniAgent anchors your domain guardrails (Corporate, Education, Finance) and parses target entities.",
     icon: Sparkles,
     telemetry: "FAISS Vector Search · Cosine ≥ 0.75",
     tags: ["Intent Parsing", "Entity Extraction"],
@@ -41,7 +42,7 @@ const pipelineStages = [
 ];
 
 const HowItWorksSection = () => (
-  <section id="how-it-works" className="py-24 border-t border-border/80 bg-background/50 relative">
+  <section id="how-it-works" className="py-28 bg-slate-50 text-slate-900 border-t border-slate-200/80 relative">
     <div className="container mx-auto px-4 sm:px-6">
       {/* Header */}
       <motion.div
@@ -51,20 +52,20 @@ const HowItWorksSection = () => (
         transition={{ duration: 0.5 }}
         className="text-center max-w-3xl mx-auto mb-16"
       >
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-0.5 text-xs font-mono font-medium text-primary mb-3">
-          <Workflow className="size-3" />
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-mono font-semibold text-sky-700 mb-3 shadow-xs">
+          <Workflow className="size-3.5 text-sky-600" />
           <span>Execution Lifecycle</span>
         </div>
-        <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground mb-4">
-          How OmniAgent <span className="gradient-text">Compiles Workflows</span>
+        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4 leading-tight">
+          How OmniAgent <span className="bg-gradient-to-r from-sky-600 to-teal-600 bg-clip-text text-transparent">Compiles Workflows</span>
         </h2>
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
           From conversational prompt to deployed multi-agent execution pipeline in four verifiable stages.
         </p>
       </motion.div>
 
       {/* 4-Stage Connected Pipeline Visualizer */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
         {pipelineStages.map((stage, i) => {
           const Icon = stage.icon;
           return (
@@ -74,33 +75,33 @@ const HowItWorksSection = () => (
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.4 }}
-              className="relative rounded-2xl border border-border/80 bg-card/80 p-5 flex flex-col justify-between hover:border-primary/50 transition-all group"
+              className="relative rounded-2xl border border-slate-200/90 bg-white p-6 flex flex-col justify-between hover:border-sky-400/80 hover:shadow-lg transition-all group shadow-sm"
             >
               <div>
                 {/* Step Top Bar */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/25 text-primary group-hover:scale-105 transition-transform">
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-sky-50 border border-sky-200/80 text-sky-600 group-hover:scale-105 transition-transform">
                     <Icon className="size-5" />
                   </div>
-                  <span className="font-mono text-xs font-bold text-primary px-2 py-0.5 rounded-md border border-primary/25 bg-primary/10">
+                  <span className="font-mono text-xs font-bold text-sky-700 px-2.5 py-0.5 rounded-md border border-sky-200 bg-sky-50">
                     STAGE {stage.step}
                   </span>
                 </div>
 
-                <h3 className="text-sm font-bold text-foreground mb-1">{stage.title}</h3>
-                <p className="font-mono text-[11px] text-muted-foreground/90 mb-3">{stage.subtitle}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{stage.desc}</p>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">{stage.title}</h3>
+                <p className="font-mono text-[11px] text-slate-500 mb-3">{stage.subtitle}</p>
+                <p className="text-xs text-slate-600 leading-relaxed">{stage.desc}</p>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-border/60 space-y-2">
+              <div className="mt-5 pt-3.5 border-t border-slate-100 space-y-2">
                 <div className="flex flex-wrap gap-1">
                   {stage.tags.map((t) => (
-                    <span key={t} className="rounded bg-background/60 border border-border px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">
+                    <span key={t} className="rounded bg-slate-50 border border-slate-200 px-2 py-0.5 font-mono text-[9px] text-slate-600 font-medium">
                       {t}
                     </span>
                   ))}
                 </div>
-                <p className="font-mono text-[10px] text-emerald-400 truncate">
+                <p className="font-mono text-[10px] text-emerald-600 font-semibold truncate">
                   ✓ {stage.telemetry}
                 </p>
               </div>
