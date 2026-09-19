@@ -27,13 +27,13 @@ const HeroSection = () => {
   }, [scrollYProgress]);
 
   // Scroll-linked transforms: headline stays sharp during initial state, then gently fades out as convergence starts
-  const headlineOpacity = useTransform(scrollYProgress, [0, 0.40], [1, 0]);
-  const headlineY = useTransform(scrollYProgress, [0, 0.40], [0, -45]);
+  const headlineOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
+  const headlineY = useTransform(scrollYProgress, [0, 0.35], [0, -45]);
 
   return (
     <div
       ref={heroRef}
-      className="relative min-h-[185vh] w-full bg-[#06090F] select-none"
+      className="relative min-h-[260vh] w-full bg-[#06090F] select-none"
     >
       {/* Pinned Sticky Visual Viewport */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-between overflow-hidden pt-20 pb-8">

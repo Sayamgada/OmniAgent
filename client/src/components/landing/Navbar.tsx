@@ -36,8 +36,8 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
     }
 
     const handleScroll = () => {
-      // Pinned hero is ~180vh tall, transition completes around 1.35x window.innerHeight
-      const threshold = window.innerHeight * 1.35;
+      // Pinned hero is ~260vh tall, transition completes around 1.5x window.innerHeight
+      const threshold = window.innerHeight * 1.5;
       setIsLightMode(window.scrollY >= threshold);
     };
 

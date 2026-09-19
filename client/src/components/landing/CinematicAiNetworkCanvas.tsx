@@ -445,28 +445,27 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       const mobileScaleMultiplier = isMobile ? 0.6 : isTablet ? 0.82 : 1.0;
 
       // -------------------------------------------------------------
-      // SCROLL STAGES (Strictly Contrastive & Reversible)
-      // 0% - 20%: Hero normal dark state
-      // 20% - 40%: Activation (particles accelerate inward, core brightens)
-      // 40% - 60%: Convergence (network collapses into core)
-      // 60% - 75%: Energy release (core turns white-hot, intense bloom)
-      // 75% - 90%: Radial expansion (white light radiates to edges from core)
-      // 90% - 100%: Light world full reveal
+      // SCROLL STAGES (Strictly Contrastive, Continuous & Reversible)
+      // 0.00 - 0.20: Hero normal dark state (network & typography active)
+      // 0.20 - 0.45: Activation & Convergence (particles accelerate inward, network collapses into core)
+      // 0.45 - 0.60: Core Ignition (core turns white-hot, intense bloom, telemetry dissolves)
+      // 0.60 - 0.90: DEDICATED FULL-SCREEN RADIAL LIGHT EXPANSION (light radiates from core past all 4 corners)
+      // 0.90 - 1.00: Light world pure luminous hold -> seamless entry to next section
       // -------------------------------------------------------------
       const scroll = Math.max(0, Math.min(1, scrollRef.current));
 
-      // 1. Convergence factor (0 at scroll <= 0.20, 1 at scroll >= 0.60)
-      const convergence = smoothstep(0.20, 0.60, scroll);
+      // 1. Convergence factor (0 at scroll <= 0.20, 1 at scroll >= 0.50)
+      const convergence = smoothstep(0.20, 0.50, scroll);
 
       // 2. Camera push-in toward core
-      const cameraPushScale = 1 + smoothstep(0.25, 0.75, scroll) * 1.8;
+      const cameraPushScale = 1 + smoothstep(0.22, 0.65, scroll) * 1.6;
 
-      // 3. Core Expansion Progress (starts at 0.60, reaches peak at 0.90)
-      const coreExpandProgress = smoothstep(0.60, 0.90, scroll);
-      const coreRadiusScale = 1 + Math.pow(coreExpandProgress, 2.6) * 35;
+      // 3. Core Ignition/Brightening Progress (starts at 0.45, peaks at 0.65)
+      const coreIgnition = smoothstep(0.45, 0.65, scroll);
+      const coreRadiusScale = 1 + Math.pow(coreIgnition, 2.2) * 2.8;
 
-      // 4. Viewport Radial Light Bloom (starts at 0.65, fills screen by 0.90)
-      const radialBloomProgress = smoothstep(0.65, 0.92, scroll);
+      // 4. Viewport Radial Light Expansion (starts at 0.60, completes full screen by 0.90)
+      const radialExpandProgress = smoothstep(0.60, 0.90, scroll);
 
       // Center of projection
       const centerX = width / 2;
@@ -510,9 +509,9 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       // -------------------------------------------------------------
       // 1. DRAW ATMOSPHERIC AMBIENT GLOW (Originated FROM Core)
       // -------------------------------------------------------------
-      if (coreProj && radialBloomProgress < 0.98) {
-        const baseGlowRadius = (isMobile ? 220 : 380) * (1 + coreExpandProgress * 1.8);
-        const glowAlpha = 0.22 + smoothstep(0.2, 0.6, scroll) * 0.35;
+      if (coreProj && radialExpandProgress < 0.98) {
+        const baseGlowRadius = (isMobile ? 220 : 380) * (1 + coreIgnition * 1.4);
+        const glowAlpha = 0.22 + smoothstep(0.2, 0.55, scroll) * 0.35;
 
         const radialGlow = ctx.createRadialGradient(cx, cy, 4, cx, cy, baseGlowRadius);
         radialGlow.addColorStop(0, `rgba(0, 242, 254, ${glowAlpha})`);
@@ -634,7 +633,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
           const scale = (sProj.scale + tProj.scale) / 2;
           const radius = p.size * scale * (isBranchActive ? 1.4 : 1.0);
-          const pAlpha = Math.min(sProj.alpha, tProj.alpha) * (1 - smoothstep(0.55, 0.85, scroll));
+          const pAlpha = Math.min(sProj.alpha, tProj.alpha) * (1 - smoothstep(0.50, 0.75, scroll));
 
           if (pAlpha <= 0.01) return;
 
@@ -723,14 +722,15 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       // -------------------------------------------------------------
       // 5. DRAW EXPANDING OMNIAGENT AI CORE
       // -------------------------------------------------------------
+      let currentCoreRadius = 20;
       if (coreProj) {
         ctx.save();
         const pulse = Math.sin(t * 2.2) * 0.08 + 1;
-        const currentCoreRadius = coreProj.node.radius * coreProj.scale * pulse * coreRadiusScale;
+        currentCoreRadius = coreProj.node.radius * coreProj.scale * pulse * coreRadiusScale;
 
         // Telemetry rings fade out as core expands
-        if (coreExpandProgress < 0.65) {
-          const ringAlpha = (1 - coreExpandProgress * 1.5) * 0.5;
+        if (coreIgnition < 0.65) {
+          const ringAlpha = (1 - coreIgnition * 1.5) * 0.5;
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(t * 0.4);
@@ -758,27 +758,27 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           0,
           cx,
           cy,
-          currentCoreRadius * (1.8 + coreExpandProgress * 3.5)
+          currentCoreRadius * (1.8 + coreIgnition * 2.5)
         );
         coreGrad.addColorStop(0, "#FFFFFF");
         coreGrad.addColorStop(0.18, "#E0F2FE");
         coreGrad.addColorStop(0.40, "#00F2FE");
-        coreGrad.addColorStop(0.70, `rgba(14, 165, 233, ${0.9 - coreExpandProgress * 0.2})`);
+        coreGrad.addColorStop(0.70, `rgba(14, 165, 233, ${0.9 - coreIgnition * 0.2})`);
         coreGrad.addColorStop(1, "rgba(14, 165, 233, 0)");
 
         ctx.beginPath();
-        ctx.arc(cx, cy, currentCoreRadius * (1.8 + coreExpandProgress * 3.5), 0, Math.PI * 2);
+        ctx.arc(cx, cy, currentCoreRadius * (1.8 + coreIgnition * 2.5), 0, Math.PI * 2);
         ctx.fillStyle = coreGrad;
         ctx.shadowColor = "#00F2FE";
-        ctx.shadowBlur = 28 + coreExpandProgress * 60;
+        ctx.shadowBlur = 28 + coreIgnition * 50;
         ctx.fill();
 
         // Central white-hot emitter
         ctx.beginPath();
-        ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreExpandProgress * 0.7), 0, Math.PI * 2);
+        ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreIgnition * 0.5), 0, Math.PI * 2);
         ctx.fillStyle = "#FFFFFF";
         ctx.shadowColor = "#FFFFFF";
-        ctx.shadowBlur = 14 + coreExpandProgress * 40;
+        ctx.shadowBlur = 14 + coreIgnition * 35;
         ctx.fill();
 
         // Core Label (fades out as convergence begins)
@@ -795,45 +795,65 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       }
 
       // -------------------------------------------------------------
-      // 6. VISUAL ENVIRONMENT TRANSFORMATION: RADIAL LIGHT EXPANSION
+      // 6. VISUAL ENVIRONMENT TRANSFORMATION: CONTINUOUS RADIAL EXPANSION
       // Originates strictly from the central AI Core (cx, cy)
-      // Consumes the dark background radially with soft feathered falloff
+      // Continues expanding across and PAST all 4 viewport corners
       // -------------------------------------------------------------
-      if (radialBloomProgress > 0.001) {
+      if (radialExpandProgress > 0.001) {
         ctx.save();
-        const maxViewportDiagonal = Math.hypot(width, height) * 1.3;
-        const currentLightRadius = currentCoreRadius * 0.8 + radialBloomProgress * maxViewportDiagonal;
 
-        // Radial light expansion gradient from core
-        const radialLightGrad = ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          currentLightRadius
+        // Exact maximum distance to the farthest viewport corner from the core origin
+        const maxCornerDistance = Math.hypot(
+          Math.max(cx, width - cx),
+          Math.max(cy, height - cy)
         );
 
-        // Intensity increases smoothly as light expands to edges
-        const coreWhiteAlpha = Math.min(1.0, radialBloomProgress * 1.15);
-        const paleCyanAlpha = Math.min(1.0, radialBloomProgress * 1.05);
-        const outerCyanAlpha = Math.min(0.95, radialBloomProgress * 0.85);
+        // Calculate continuous expanding radii
+        // outerBloomRadius: outermost soft feathered cyan/white perimeter
+        const outerBloomRadius =
+          currentCoreRadius +
+          Math.pow(radialExpandProgress, 1.4) * (maxCornerDistance * 2.2);
 
-        radialLightGrad.addColorStop(0, `rgba(255, 255, 255, ${coreWhiteAlpha})`);
-        radialLightGrad.addColorStop(0.35, `rgba(240, 249, 255, ${paleCyanAlpha})`);
-        radialLightGrad.addColorStop(0.70, `rgba(186, 230, 253, ${outerCyanAlpha * 0.8})`);
-        radialLightGrad.addColorStop(0.90, `rgba(56, 189, 248, ${outerCyanAlpha * 0.4})`);
-        radialLightGrad.addColorStop(1, "rgba(6, 9, 15, 0)");
+        // solidWhiteRadius: 100% pure opaque white core region
+        // By progress >= 0.88, solidWhiteRadius surpasses maxCornerDistance,
+        // which physically ensures all 4 screen corners are 100% pure white.
+        const whiteCoreProgress = smoothstep(0.08, 0.90, radialExpandProgress);
+        const solidWhiteRadius = Math.pow(whiteCoreProgress, 1.8) * (maxCornerDistance * 1.35);
 
-        ctx.fillStyle = radialLightGrad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, currentLightRadius, 0, Math.PI * 2);
-        ctx.fill();
+        if (solidWhiteRadius < outerBloomRadius) {
+          // Radial transition gradient from solid white inner boundary to soft cyan feathered outer edge
+          const radialGrad = ctx.createRadialGradient(
+            cx,
+            cy,
+            solidWhiteRadius,
+            cx,
+            cy,
+            outerBloomRadius
+          );
 
-        // When expansion completes (> 92%), fill whole viewport with pure light world background
-        if (radialBloomProgress > 0.90) {
-          const finalLightAlpha = smoothstep(0.90, 1.0, scroll);
-          ctx.fillStyle = `rgba(255, 255, 255, ${finalLightAlpha})`;
+          radialGrad.addColorStop(0, `rgba(255, 255, 255, ${Math.min(1.0, 0.85 + radialExpandProgress * 0.15)})`);
+          radialGrad.addColorStop(0.25, `rgba(240, 249, 255, ${Math.min(1.0, 0.75 + radialExpandProgress * 0.25)})`);
+          radialGrad.addColorStop(0.55, `rgba(186, 230, 253, ${Math.min(0.95, 0.55 + radialExpandProgress * 0.4)})`);
+          radialGrad.addColorStop(0.80, `rgba(56, 189, 248, ${Math.min(0.85, 0.35 + radialExpandProgress * 0.5)})`);
+          radialGrad.addColorStop(1.0, "rgba(6, 9, 15, 0)");
+
+          ctx.fillStyle = radialGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, outerBloomRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Fill inner 100% solid white disc
+        if (solidWhiteRadius > 0) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, solidWhiteRadius, 0, Math.PI * 2);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
+        }
+
+        // Luminous hold for final stage (0.90 - 1.00)
+        if (radialExpandProgress >= 0.99 || solidWhiteRadius >= maxCornerDistance) {
+          ctx.fillStyle = "#FFFFFF";
           ctx.fillRect(0, 0, width, height);
         }
 
