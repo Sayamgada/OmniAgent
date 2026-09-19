@@ -103,14 +103,16 @@
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Smooth 300ms theme transition across visual surfaces without layout jank */
+  /* Coordinated 350ms global theme transition across all visual surfaces without layout reflows */
+  html,
   body,
   header,
   nav,
   section,
   footer,
   main,
-  div:not([style*="transform"]),
+  aside,
+  div,
   span,
   p,
   h1,
@@ -122,9 +124,12 @@
   a,
   button,
   input,
-  textarea {
-    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
-    transition-duration: 300ms;
+  textarea,
+  select,
+  svg,
+  path {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
+    transition-duration: 350ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 

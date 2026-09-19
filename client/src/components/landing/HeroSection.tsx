@@ -11,8 +11,14 @@ import { useSiteTheme } from "../../context/ThemeContext";
 const HeroSection = () => {
   const [activeDomain, setActiveDomain] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
-  const { heroTheme } = useSiteTheme();
+  const { heroTheme, themeProgress } = useSiteTheme();
   const isDarkHero = heroTheme === "dark";
+
+  // Interpolate hero background from #06090F (tp=0) to #F8FAFC (tp=1)
+  const heroBgR = Math.round(6 + (248 - 6) * themeProgress);
+  const heroBgG = Math.round(9 + (250 - 9) * themeProgress);
+  const heroBgB = Math.round(15 + (252 - 15) * themeProgress);
+  const heroBgColor = `rgb(${heroBgR}, ${heroBgG}, ${heroBgB})`;
 
   // Track scroll progress through the pinned transition container
   const { scrollYProgress } = useScroll({
@@ -36,9 +42,8 @@ const HeroSection = () => {
   return (
     <div
       ref={heroRef}
-      className={`relative min-h-[260vh] w-full select-none transition-colors duration-300 ${
-        isDarkHero ? "bg-[#06090F]" : "bg-[#F8FAFC]"
-      }`}
+      style={{ backgroundColor: heroBgColor }}
+      className="relative min-h-[260vh] w-full select-none"
     >
       {/* Pinned Sticky Visual Viewport */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-between overflow-hidden pt-20 pb-8">
@@ -47,19 +52,19 @@ const HeroSection = () => {
         {/* ------------------------------------------------------------- */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           <div
-            className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full blur-[190px] transition-colors duration-300 ${
+            className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full blur-[190px] transition-colors duration-350 ${
               isDarkHero ? "bg-primary/10" : "bg-sky-500/10"
             }`}
           />
           <div
-            className={`absolute bottom-10 right-1/4 w-[450px] h-[350px] rounded-full blur-[170px] transition-colors duration-300 ${
+            className={`absolute bottom-10 right-1/4 w-[450px] h-[350px] rounded-full blur-[170px] transition-colors duration-350 ${
               isDarkHero ? "bg-accent/6" : "bg-teal-500/8"
             }`}
           />
 
           {/* Deep Perspective Background Grid */}
           <div
-            className={`absolute inset-0 transition-opacity duration-300 ${
+            className={`absolute inset-0 transition-opacity duration-350 ${
               isDarkHero ? "opacity-[0.035]" : "opacity-[0.05]"
             }`}
             style={{
@@ -74,7 +79,7 @@ const HeroSection = () => {
 
           {/* Faint background watermark */}
           <div
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-black tracking-[0.2em] font-mono whitespace-nowrap leading-none transition-colors duration-300 ${
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-black tracking-[0.2em] font-mono whitespace-nowrap leading-none transition-colors duration-350 ${
               isDarkHero ? "text-white/[0.012]" : "text-slate-900/[0.02]"
             }`}
           >
@@ -91,6 +96,7 @@ const HeroSection = () => {
             onHoverDomain={setActiveDomain}
             scrollProgress={currentScrollProgress}
             heroTheme={heroTheme}
+            themeProgress={themeProgress}
           />
         </div>
 
@@ -106,7 +112,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium mb-4 shadow-sm backdrop-blur-md pointer-events-auto transition-colors duration-300 ${
+            className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium mb-4 shadow-sm backdrop-blur-md pointer-events-auto transition-colors duration-350 ${
               isDarkHero
                 ? "border-primary/35 bg-primary/10 text-primary"
                 : "border-sky-300 bg-sky-50 text-sky-700"
@@ -134,14 +140,14 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className={`text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto pointer-events-auto transition-colors duration-300 ${
+            className={`text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto pointer-events-auto transition-colors duration-350 ${
               isDarkHero ? "text-white" : "text-slate-900"
             }`}
           >
             Build AI Agents.
             <br />
             <span
-              className={`bg-clip-text text-transparent transition-colors duration-300 ${
+              className={`bg-clip-text text-transparent transition-colors duration-350 ${
                 isDarkHero
                   ? "bg-gradient-to-r from-white via-[#E0F2FE] to-[#38BDF8]"
                   : "bg-gradient-to-r from-slate-950 via-sky-800 to-sky-600"
@@ -160,7 +166,7 @@ const HeroSection = () => {
           className="container mx-auto px-4 sm:px-6 relative z-20 mt-auto flex items-center justify-center pointer-events-none"
         >
           <div
-            className={`flex items-center gap-2 text-[11px] font-mono transition-colors duration-300 ${
+            className={`flex items-center gap-2 text-[11px] font-mono transition-colors duration-350 ${
               isDarkHero ? "text-muted-foreground/70" : "text-slate-500"
             }`}
           >

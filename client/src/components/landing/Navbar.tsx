@@ -29,7 +29,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const { isLoggedIn } = useAuth();
-  const { siteTheme, heroTheme } = useSiteTheme();
+  const { siteTheme, heroTheme, themeProgress } = useSiteTheme();
 
   // Track scroll position to dynamically adapt navbar to active visual world
   useEffect(() => {
@@ -53,15 +53,20 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
   const currentNavTheme = isScrolledPastHero ? siteTheme : heroTheme;
   const isLightMode = currentNavTheme === "light";
 
+  // When inside Hero, calculate interpolated glass background from themeProgress
+  const heroNavBg = `rgba(${Math.round(6 + (255 - 6) * themeProgress)}, ${Math.round(9 + (255 - 9) * themeProgress)}, ${Math.round(15 + (255 - 15) * themeProgress)}, ${0.8 + 0.08 * themeProgress})`;
+  const heroNavBorder = `rgba(${Math.round(255 * (1 - themeProgress) + 226 * themeProgress)}, ${Math.round(255 * (1 - themeProgress) + 232 * themeProgress)}, ${Math.round(255 * (1 - themeProgress) + 240 * themeProgress)}, ${0.1 * (1 - themeProgress) + 0.8 * themeProgress})`;
+
   return (
     <motion.header
       initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4 }}
-      className={`fixed left-0 right-0 top-0 z-50 transition-colors duration-300 backdrop-blur-2xl ${
-        isLightMode
-          ? "border-b border-slate-200/90 bg-white/90 text-slate-900 shadow-sm"
-          : "border-b border-white/10 bg-[#06090F]/80 text-white"
+      style={!isScrolledPastHero ? { backgroundColor: heroNavBg, borderColor: heroNavBorder } : undefined}
+      className={`fixed left-0 right-0 top-0 z-50 transition-colors duration-350 backdrop-blur-2xl ${
+        isScrolledPastHero
+          ? "border-b border-border/80 bg-background/85 text-foreground shadow-xs"
+          : `border-b ${isLightMode ? "text-slate-900 shadow-sm" : "text-white"}`
       }`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">

@@ -96,11 +96,34 @@ function rgbaStr(rgb: [number, number, number], alpha: number): string {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha.toFixed(3)})`;
 }
 
+function getDomainRgb(domain: string | undefined, tp: number): [number, number, number] {
+  if (domain === "education") {
+    return lerpRgb([2, 132, 199], [56, 189, 248], tp);
+  }
+  if (domain === "finance") {
+    return lerpRgb([13, 148, 136], [45, 212, 191], tp);
+  }
+  if (domain === "corporate") {
+    return lerpRgb([3, 105, 161], [0, 242, 254], tp);
+  }
+  return lerpRgb([148, 163, 184], [100, 116, 139], tp);
+}
+
+interface CinematicCanvasProps {
+  activeDomain: string | null;
+  onHoverDomain: (domain: string | null) => void;
+  scrollProgress?: number;
+  heroTheme?: "dark" | "light";
+  themeProgress?: number; // 0.0 = Light Site / Dark Hero, 1.0 = Dark Site / Light Hero
+  className?: string;
+}
+
 export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   activeDomain,
   onHoverDomain,
   scrollProgress = 0,
   heroTheme = "dark",
+  themeProgress,
   className = "",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -110,7 +133,9 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   const timeRef = useRef<number>(0);
   const scrollRef = useRef<number>(0);
   const themeRef = useRef<"dark" | "light">(heroTheme);
-  const themeProgressRef = useRef<number>(heroTheme === "dark" ? 1.0 : 0.0);
+  const themeProgressRef = useRef<number>(
+    themeProgress !== undefined ? (1 - themeProgress) : (heroTheme === "dark" ? 1.0 : 0.0)
+  );
 
   useEffect(() => {
     scrollRef.current = scrollProgress;
@@ -119,6 +144,12 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   useEffect(() => {
     themeRef.current = heroTheme;
   }, [heroTheme]);
+
+  useEffect(() => {
+    if (themeProgress !== undefined) {
+      themeProgressRef.current = 1 - themeProgress;
+    }
+  }, [themeProgress]);
 
   // Network topology nodes
   const nodesRef = useRef<Node3D[]>([
@@ -611,25 +642,23 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
             const midY = (sProj.screenY + tProj.screenY) / 2 - 8 * (1 - convergence);
             ctx.quadraticCurveTo(midX, midY, tProj.screenX, tProj.screenY);
 
-            const nodeBaseColor = isDarkHero ? (tProj.node.color || "#00F2FE") : (tProj.node.domain === "education" ? "#0284C7" : tProj.node.domain === "finance" ? "#0D9488" : "#0369A1");
+            const domainRgb = getDomainRgb(tProj.node.domain, tp);
+            const nodeBaseColor = rgbaStr(domainRgb, 1.0);
 
             if (isBranchActive) {
               ctx.strokeStyle = nodeBaseColor;
               ctx.lineWidth = 2.4;
               ctx.shadowColor = nodeBaseColor;
-              ctx.shadowBlur = isDarkHero ? 12 : 6;
+              ctx.shadowBlur = 6 * (1 - tp) + 12 * tp;
             } else {
-              if (isDarkHero) {
-                ctx.strokeStyle =
-                  source.isCore && tProj.node.domain === "auxiliary"
-                    ? `rgba(100, 116, 139, ${0.16 * pathAlpha})`
-                    : `rgba(56, 189, 248, ${0.22 * pathAlpha})`;
-              } else {
-                ctx.strokeStyle =
-                  source.isCore && tProj.node.domain === "auxiliary"
-                    ? `rgba(148, 163, 184, ${0.28 * pathAlpha})`
-                    : `rgba(15, 23, 42, ${0.20 * pathAlpha})`;
-              }
+              const isAux = source.isCore && tProj.node.domain === "auxiliary";
+              const wireRgb = isAux
+                ? lerpRgb([148, 163, 184], [100, 116, 139], tp)
+                : lerpRgb([15, 23, 42], [56, 189, 248], tp);
+              const wireAlpha = isAux
+                ? (0.28 * (1 - tp) + 0.16 * tp) * pathAlpha
+                : (0.20 * (1 - tp) + 0.22 * tp) * pathAlpha;
+              ctx.strokeStyle = rgbaStr(wireRgb, wireAlpha);
               ctx.lineWidth = 1.2;
               ctx.shadowBlur = 0;
             }
@@ -683,13 +712,8 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
           if (pAlpha <= 0.01) return;
 
-          const particleColor = isDarkHero
-            ? p.color
-            : p.domain === "education"
-            ? "#0284C7"
-            : p.domain === "finance"
-            ? "#0D9488"
-            : "#0369A1";
+          const particleRgb = getDomainRgb(p.domain, tp);
+          const particleColor = rgbaStr(particleRgb, 1.0);
 
           ctx.save();
           ctx.beginPath();
@@ -698,7 +722,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.fillStyle = particleColor;
           ctx.globalAlpha = pAlpha;
           ctx.shadowColor = particleColor;
-          ctx.shadowBlur = isDarkHero ? 8 : 4;
+          ctx.shadowBlur = 4 * (1 - tp) + 8 * tp;
           ctx.fill();
 
           ctx.restore();
@@ -717,15 +741,8 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         const { screenX, screenY, scale, alpha } = proj;
         const isHovered = activeDomain && node.domain === activeDomain;
 
-        const nodeColor = isDarkHero
-          ? node.color
-          : node.domain === "education"
-          ? "#0284C7"
-          : node.domain === "finance"
-          ? "#0D9488"
-          : node.domain === "corporate"
-          ? "#0369A1"
-          : "#94A3B8";
+        const nodeRgb = getDomainRgb(node.domain, tp);
+        const nodeColor = rgbaStr(nodeRgb, 1.0);
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -743,39 +760,56 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
             ctx.stroke();
           }
 
+          const headFillRgb = isHovered
+            ? nodeRgb
+            : lerpRgb([255, 255, 255], [10, 16, 29], tp);
+
           ctx.beginPath();
           ctx.arc(screenX, screenY, nodeRadius, 0, Math.PI * 2);
-          ctx.fillStyle = isHovered ? domainColor : isDarkHero ? "#0A101D" : "#FFFFFF";
+          ctx.fillStyle = rgbaStr(headFillRgb, 1.0);
           ctx.strokeStyle = domainColor;
           ctx.lineWidth = isHovered ? 2.5 : 1.5;
           ctx.shadowColor = domainColor;
-          ctx.shadowBlur = isDarkHero ? (isHovered ? 18 : 8) : (isHovered ? 10 : 4);
+          ctx.shadowBlur = (isHovered ? 10 : 4) * (1 - tp) + (isHovered ? 18 : 8) * tp;
           ctx.fill();
           ctx.stroke();
 
+          const centerDiscRgb = isHovered
+            ? [255, 255, 255] as [number, number, number]
+            : nodeRgb;
           ctx.beginPath();
           ctx.arc(screenX, screenY, nodeRadius * 0.35, 0, Math.PI * 2);
-          ctx.fillStyle = isHovered ? "#FFFFFF" : domainColor;
+          ctx.fillStyle = rgbaStr(centerDiscRgb, 1.0);
           ctx.fill();
 
           if (alpha > 0.5) {
             ctx.font = `700 ${Math.max(11 * scale, 10)}px system-ui, -apple-system, sans-serif`;
-            ctx.fillStyle = isHovered ? (isDarkHero ? "#FFFFFF" : "#0F172A") : isDarkHero ? "#E2E8F0" : "#0F172A";
+            const textRgb = isHovered
+              ? lerpRgb([15, 23, 42], [255, 255, 255], tp)
+              : lerpRgb([15, 23, 42], [226, 232, 240], tp);
+            ctx.fillStyle = rgbaStr(textRgb, 1.0);
             ctx.textAlign = "center";
-            ctx.shadowColor = isDarkHero ? "rgba(0,0,0,0.9)" : "rgba(255,255,255,0.95)";
+            const textShadowRgb = lerpRgb([255, 255, 255], [0, 0, 0], tp);
+            ctx.shadowColor = rgbaStr(textShadowRgb, 0.9);
             ctx.shadowBlur = 5;
             ctx.fillText(node.label, screenX, screenY - nodeRadius - 8 * scale);
           }
         } else {
           const subRadius = node.radius * scale * (isHovered ? 1.25 : 1.0);
+          const subFillRgb = isHovered
+            ? nodeRgb
+            : lerpRgb([248, 250, 252], [13, 21, 38], tp);
+          const subStrokeRgb = isHovered
+            ? lerpRgb([15, 23, 42], [255, 255, 255], tp)
+            : nodeRgb;
 
           ctx.beginPath();
           ctx.arc(screenX, screenY, subRadius, 0, Math.PI * 2);
-          ctx.fillStyle = isHovered ? nodeColor : isDarkHero ? "#0D1526" : "#F8FAFC";
-          ctx.strokeStyle = isHovered ? (isDarkHero ? "#FFFFFF" : "#0F172A") : nodeColor;
+          ctx.fillStyle = rgbaStr(subFillRgb, 1.0);
+          ctx.strokeStyle = rgbaStr(subStrokeRgb, 1.0);
           ctx.lineWidth = isHovered ? 1.8 : 1.0;
           ctx.shadowColor = nodeColor;
-          ctx.shadowBlur = isDarkHero ? (isHovered ? 12 : 4) : 3;
+          ctx.shadowBlur = 3 * (1 - tp) + (isHovered ? 12 : 4) * tp;
           ctx.fill();
           ctx.stroke();
         }
@@ -794,9 +828,11 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
         // Telemetry rings fade out as core expands
         if (coreIgnition < 0.65) {
-          const ringAlpha = (1 - coreIgnition * 1.5) * (isDarkHero ? 0.5 : 0.65);
-          const ringColor1 = isDarkHero ? `rgba(0, 242, 254, ${ringAlpha})` : `rgba(2, 132, 199, ${ringAlpha})`;
-          const ringColor2 = isDarkHero ? `rgba(45, 212, 191, ${ringAlpha * 0.7})` : `rgba(13, 148, 136, ${ringAlpha * 0.7})`;
+          const ringAlpha = (1 - coreIgnition * 1.5) * (0.65 * (1 - tp) + 0.5 * tp);
+          const ringRgb1 = lerpRgb([2, 132, 199], [0, 242, 254], tp);
+          const ringRgb2 = lerpRgb([13, 148, 136], [45, 212, 191], tp);
+          const ringColor1 = rgbaStr(ringRgb1, ringAlpha);
+          const ringColor2 = rgbaStr(ringRgb2, ringAlpha * 0.7);
 
           ctx.save();
           ctx.translate(cx, cy);
@@ -851,19 +887,22 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
         // Central white-hot / dark-hot emitter
         const emitterRgb = lerpRgb([15, 23, 42], [255, 255, 255], tp);
+        const emitterShadowRgb = lerpRgb([2, 132, 199], [255, 255, 255], tp);
         ctx.beginPath();
         ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreIgnition * 0.5), 0, Math.PI * 2);
         ctx.fillStyle = rgbaStr(emitterRgb, 1.0);
-        ctx.shadowColor = isDarkHero ? "#FFFFFF" : "#0284C7";
+        ctx.shadowColor = rgbaStr(emitterShadowRgb, 1.0);
         ctx.shadowBlur = 14 + coreIgnition * 35;
         ctx.fill();
 
         // Core Label (fades out as convergence begins)
         if (convergence < 0.25) {
           ctx.font = `700 ${Math.max(10 * coreProj.scale, 9)}px 'JetBrains Mono', monospace`;
-          ctx.fillStyle = isDarkHero ? "#E0F2FE" : "#0F172A";
+          const coreLabelRgb = lerpRgb([15, 23, 42], [224, 242, 254], tp);
+          ctx.fillStyle = rgbaStr(coreLabelRgb, 1.0);
           ctx.textAlign = "center";
-          ctx.shadowColor = isDarkHero ? "rgba(0,0,0,0.9)" : "rgba(255,255,255,0.9)";
+          const coreLabelShadowRgb = lerpRgb([255, 255, 255], [0, 0, 0], tp);
+          ctx.shadowColor = rgbaStr(coreLabelShadowRgb, 0.9);
           ctx.shadowBlur = 5;
           ctx.fillText("OMNIAGENT AI CORE", cx, cy + currentCoreRadius * 2.6);
         }
@@ -903,21 +942,22 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
             outerBloomRadius
           );
 
-          if (isDarkHero) {
-            // Dark Hero -> Expands White Light to bridge into Light Site
-            radialGrad.addColorStop(0, `rgba(255, 255, 255, ${Math.min(1.0, 0.85 + radialExpandProgress * 0.15)})`);
-            radialGrad.addColorStop(0.25, `rgba(240, 249, 255, ${Math.min(1.0, 0.75 + radialExpandProgress * 0.25)})`);
-            radialGrad.addColorStop(0.55, `rgba(186, 230, 253, ${Math.min(0.95, 0.55 + radialExpandProgress * 0.4)})`);
-            radialGrad.addColorStop(0.80, `rgba(56, 189, 248, ${Math.min(0.85, 0.35 + radialExpandProgress * 0.5)})`);
-            radialGrad.addColorStop(1.0, "rgba(6, 9, 15, 0)");
-          } else {
-            // Light Hero -> Expands Deep Obsidian / Cobalt Energy to bridge into Dark Site
-            radialGrad.addColorStop(0, `rgba(6, 9, 15, ${Math.min(1.0, 0.9 + radialExpandProgress * 0.1)})`);
-            radialGrad.addColorStop(0.25, `rgba(13, 19, 31, ${Math.min(1.0, 0.85 + radialExpandProgress * 0.15)})`);
-            radialGrad.addColorStop(0.55, `rgba(15, 23, 42, ${Math.min(0.95, 0.75 + radialExpandProgress * 0.25)})`);
-            radialGrad.addColorStop(0.80, `rgba(14, 165, 233, ${Math.min(0.85, 0.45 + radialExpandProgress * 0.4)})`);
-            radialGrad.addColorStop(1.0, "rgba(248, 250, 252, 0)");
-          }
+          const stop0 = lerpRgb([6, 9, 15], [255, 255, 255], tp);
+          const stop1 = lerpRgb([13, 19, 31], [240, 249, 255], tp);
+          const stop2 = lerpRgb([15, 23, 42], [186, 230, 253], tp);
+          const stop3 = lerpRgb([14, 165, 233], [56, 189, 248], tp);
+          const stop4 = lerpRgb([248, 250, 252], [6, 9, 15], tp);
+
+          const a0 = (0.9 * (1 - tp) + 0.85 * tp) + radialExpandProgress * (0.1 * (1 - tp) + 0.15 * tp);
+          const a1 = (0.85 * (1 - tp) + 0.75 * tp) + radialExpandProgress * (0.15 * (1 - tp) + 0.25 * tp);
+          const a2 = (0.75 * (1 - tp) + 0.55 * tp) + radialExpandProgress * (0.25 * (1 - tp) + 0.4 * tp);
+          const a3 = (0.45 * (1 - tp) + 0.35 * tp) + radialExpandProgress * (0.4 * (1 - tp) + 0.5 * tp);
+
+          radialGrad.addColorStop(0, rgbaStr(stop0, Math.min(1.0, a0)));
+          radialGrad.addColorStop(0.25, rgbaStr(stop1, Math.min(1.0, a1)));
+          radialGrad.addColorStop(0.55, rgbaStr(stop2, Math.min(0.95, a2)));
+          radialGrad.addColorStop(0.80, rgbaStr(stop3, Math.min(0.85, a3)));
+          radialGrad.addColorStop(1.0, rgbaStr(stop4, 0));
 
           ctx.fillStyle = radialGrad;
           ctx.beginPath();
@@ -925,17 +965,19 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.fill();
         }
 
+        const solidColor = lerpRgb([6, 9, 15], [255, 255, 255], tp);
+
         // Fill inner solid disc
         if (solidCoreRadius > 0) {
           ctx.beginPath();
           ctx.arc(cx, cy, solidCoreRadius, 0, Math.PI * 2);
-          ctx.fillStyle = isDarkHero ? "#FFFFFF" : "#06090F";
+          ctx.fillStyle = rgbaStr(solidColor, 1.0);
           ctx.fill();
         }
 
         // Luminous hold for final stage (0.90 - 1.00)
         if (radialExpandProgress >= 0.99 || solidCoreRadius >= maxCornerDistance) {
-          ctx.fillStyle = isDarkHero ? "#FFFFFF" : "#06090F";
+          ctx.fillStyle = rgbaStr(solidColor, 1.0);
           ctx.fillRect(0, 0, width, height);
         }
 
