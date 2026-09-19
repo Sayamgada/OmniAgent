@@ -8,8 +8,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-CQS_D4vT.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Dw0MB0Bb.css">
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('omniagent-theme');
+          var theme = (saved === 'dark' || saved === 'light') 
+            ? saved 
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(theme);
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.setAttribute('data-hero-theme', theme === 'light' ? 'dark' : 'light');
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-e-r8_fgi.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DEZQpD-O.css">
   </head>
   <body class="bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
     <div id="root"></div>

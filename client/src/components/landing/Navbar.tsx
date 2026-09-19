@@ -5,6 +5,8 @@ import { Bot, Menu, X, ArrowRight, Zap } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
+import { useSiteTheme } from "../../context/ThemeContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 const landingLinks = [
   { label: "Overview", href: "#about" },
@@ -25,26 +27,31 @@ type NavbarProps = {
 
 const Navbar = ({ variant = "landing" }: NavbarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLightMode, setIsLightMode] = useState(false);
+  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const { isLoggedIn } = useAuth();
+  const { siteTheme, heroTheme } = useSiteTheme();
 
-  // Track scroll position to dynamically switch theme from Dark Hero to Light Application World
+  // Track scroll position to dynamically adapt navbar to active visual world
   useEffect(() => {
     if (variant !== "landing") {
-      setIsLightMode(false);
+      setIsScrolledPastHero(true);
       return;
     }
 
     const handleScroll = () => {
       // Pinned hero is ~260vh tall, transition completes around 1.5x window.innerHeight
       const threshold = window.innerHeight * 1.5;
-      setIsLightMode(window.scrollY >= threshold);
+      setIsScrolledPastHero(window.scrollY >= threshold);
     };
 
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [variant]);
+
+  // Current visual environment: In Hero -> heroTheme; In Site -> siteTheme
+  const currentNavTheme = isScrolledPastHero ? siteTheme : heroTheme;
+  const isLightMode = currentNavTheme === "light";
 
   return (
     <motion.header
@@ -118,6 +125,10 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
               >
                 <Link to="/sign-in">Sign In</Link>
               </Button>
+
+              {/* Theme Toggle (Exact placement: Sign In -> [THEME TOGGLE] -> Start Free) */}
+              <ThemeToggle />
+
               <Button
                 size="sm"
                 className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-black hover:bg-primary/90 glow-primary rounded-lg shadow-sm"
@@ -132,24 +143,30 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           )}
 
           {variant === "landing" && isLoggedIn && (
-            <Button
-              size="sm"
-              className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-black hover:bg-primary/90 glow-primary rounded-lg"
-              asChild
-            >
-              <Link to="/dashboard">
-                <Zap className="size-3.5" />
-                <span>Open Workspace</span>
-              </Link>
-            </Button>
+            <>
+              <ThemeToggle />
+              <Button
+                size="sm"
+                className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-black hover:bg-primary/90 glow-primary rounded-lg"
+                asChild
+              >
+                <Link to="/dashboard">
+                  <Zap className="size-3.5" />
+                  <span>Open Workspace</span>
+                </Link>
+              </Button>
+            </>
           )}
 
           {variant === "auth" && (
-            <Button size="sm" className="h-8.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
-              <Link to={isLoggedIn ? "/dashboard" : "/sign-up"}>
-                {isLoggedIn ? "Open Workspace" : "Get Started"}
-              </Link>
-            </Button>
+            <>
+              <ThemeToggle />
+              <Button size="sm" className="h-8.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
+                <Link to={isLoggedIn ? "/dashboard" : "/sign-up"}>
+                  {isLoggedIn ? "Open Workspace" : "Get Started"}
+                </Link>
+              </Button>
+            </>
           )}
         </div>
 
@@ -200,7 +217,13 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
                 </Link>
               ))}
 
-            <div className="mt-4 flex flex-col gap-2 border-t border-slate-200/50 pt-4">
+            {/* Mobile Theme Toggle Row */}
+            <div className="flex items-center justify-between py-3 border-t border-slate-200/40 mt-2">
+              <span className="text-xs font-medium text-muted-foreground">Appearance Theme</span>
+              <ThemeToggle variant="mobile" />
+            </div>
+
+            <div className="mt-2 flex flex-col gap-2 border-t border-slate-200/50 pt-3">
               {variant === "landing" && !isLoggedIn && (
                 <>
                   <Button variant="outline" className="w-full text-xs justify-center" asChild>

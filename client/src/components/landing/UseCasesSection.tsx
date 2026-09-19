@@ -42,7 +42,7 @@ const domains: DomainInfo[] = [
     id: "corporate",
     label: "Corporate Operations",
     badge: "Enterprise Orchestration",
-    badgeStyle: "bg-sky-50 text-sky-700 border-sky-200",
+    badgeStyle: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
     icon: Briefcase,
     tagline: "Cross-Functional Ops & Governance",
     description: "Automate cross-functional communication, scheduling logistics, SLA compliance checks, and executive report synthesis.",
@@ -59,7 +59,7 @@ const domains: DomainInfo[] = [
     id: "education",
     label: "Education & Research",
     badge: "Academic & Tutoring",
-    badgeStyle: "bg-purple-50 text-purple-700 border-purple-200",
+    badgeStyle: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
     icon: GraduationCap,
     tagline: "Pedagogy & Curriculum Intelligence",
     description: "Personalized study curricula, step-by-step concept explanations, citation-backed fact validation, and adaptive quiz generation.",
@@ -76,7 +76,7 @@ const domains: DomainInfo[] = [
     id: "finance",
     label: "Financial Services",
     badge: "Financial Intelligence",
-    badgeStyle: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    badgeStyle: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     icon: Landmark,
     tagline: "Audit-Ready Numeric Intelligence",
     description: "Analyze periodic statements, detect transactional anomalies, reconcile itemized ledgers, and maintain audit compliance.",
@@ -98,7 +98,7 @@ const UseCasesSection = () => {
   const Icon = current.icon;
 
   return (
-    <section id="industries" className="py-28 bg-slate-50 text-slate-900 border-t border-slate-200/80 relative">
+    <section id="industries" className="py-28 bg-background text-foreground border-t border-border relative">
       <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div
@@ -108,14 +108,14 @@ const UseCasesSection = () => {
           transition={{ duration: 0.5 }}
           className="text-center max-w-3xl mx-auto mb-14"
         >
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-mono font-semibold text-sky-700 mb-3 shadow-xs">
-            <Cpu className="size-3.5 text-sky-600" />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-mono font-semibold text-sky-600 dark:text-sky-400 mb-3 shadow-xs">
+            <Cpu className="size-3.5 text-sky-500" />
             <span>Domain Intelligence Studio</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4 leading-tight">
-            Specialized For <span className="bg-gradient-to-r from-sky-600 to-teal-600 bg-clip-text text-transparent">Real Industry Workflows</span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-4 leading-tight">
+            Specialized For <span className="bg-gradient-to-r from-sky-500 to-teal-500 bg-clip-text text-transparent">Real Industry Workflows</span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
             Generic AI models fail in production. OmniAgent embeds pre-calibrated domain intelligence, schema guardrails, and compliance rules tailored to your industry.
           </p>
         </motion.div>
@@ -131,11 +131,11 @@ const UseCasesSection = () => {
                 onClick={() => setActiveTab(d.id)}
                 className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-all shadow-xs ${
                   isSelected
-                    ? "bg-white border-2 border-sky-500 text-slate-900 shadow-md ring-2 ring-sky-500/10"
-                    : "border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-300"
+                    ? "bg-card border-2 border-sky-500 text-foreground shadow-md ring-2 ring-sky-500/10"
+                    : "border border-border bg-card/60 text-muted-foreground hover:text-foreground hover:border-border/80"
                 }`}
               >
-                <div className={`flex size-6 items-center justify-center rounded-lg ${isSelected ? "bg-sky-50 text-sky-600" : "text-slate-400"}`}>
+                <div className={`flex size-6 items-center justify-center rounded-lg ${isSelected ? "bg-sky-500/10 text-sky-500" : "text-muted-foreground"}`}>
                   <DIcon className="size-3.5" />
                 </div>
                 <span>{d.label}</span>
@@ -152,21 +152,21 @@ const UseCasesSection = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3 }}
-            className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 max-w-6xl mx-auto shadow-md"
+            className="rounded-2xl border border-border bg-card p-6 sm:p-8 max-w-6xl mx-auto shadow-md"
           >
             {/* Top Domain Context Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 pb-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-border/60 pb-6 mb-8">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-sky-50 border border-sky-200 text-sky-600">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-500">
                     <Icon className="size-5" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">{current.label}</h3>
+                  <h3 className="text-xl font-bold text-foreground">{current.label}</h3>
                   <span className={`px-2.5 py-0.5 rounded-full border text-xs font-mono font-semibold ${current.badgeStyle}`}>
                     {current.badge}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
                   {current.description}
                 </p>
               </div>
@@ -188,18 +188,18 @@ const UseCasesSection = () => {
                 return (
                   <div
                     key={uc.title}
-                    className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 flex flex-col justify-between hover:border-sky-400/80 transition-colors shadow-xs"
+                    className="rounded-xl border border-border bg-muted/20 p-5 flex flex-col justify-between hover:border-sky-500/60 transition-colors shadow-xs"
                   >
                     <div>
-                      <div className="flex size-9 items-center justify-center rounded-lg bg-sky-50 border border-sky-200/80 text-sky-600 mb-3">
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-500 mb-3">
                         <UcIcon className="size-4.5" />
                       </div>
-                      <h4 className="font-bold text-sm text-slate-900 mb-1.5">{uc.title}</h4>
-                      <p className="text-xs text-slate-600 leading-relaxed">{uc.desc}</p>
+                      <h4 className="font-bold text-sm text-foreground mb-1.5">{uc.title}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{uc.desc}</p>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono text-slate-500">
-                      <span className="text-sky-600 font-semibold">Use Case 0{i + 1}</span>
-                      <span className="text-emerald-600 font-semibold">✓ Verified</span>
+                    <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+                      <span className="text-sky-600 dark:text-sky-400 font-semibold">Use Case 0{i + 1}</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Verified</span>
                     </div>
                   </div>
                 );
@@ -207,25 +207,25 @@ const UseCasesSection = () => {
             </div>
 
             {/* Bottom Pipeline & Guardrails Bar */}
-            <div className="grid lg:grid-cols-2 gap-4 border-t border-slate-100 pt-6 text-xs">
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex items-center gap-2 text-slate-900 font-bold mb-2">
-                  <ShieldCheck className="size-4 text-sky-600" />
+            <div className="grid lg:grid-cols-2 gap-4 border-t border-border/60 pt-6 text-xs">
+              <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                  <ShieldCheck className="size-4 text-sky-500" />
                   <span>Domain Guardrails & Compliance Policy</span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   {current.guardrails}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex items-center gap-2 text-slate-900 font-bold mb-2">
-                  <Zap className="size-4 text-sky-600" />
+              <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                  <Zap className="size-4 text-sky-500" />
                   <span>Integrated Service Connectors</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {current.tools.map((t) => (
-                    <span key={t} className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-700 font-semibold shadow-xs">
+                    <span key={t} className="rounded border border-border bg-background px-2 py-0.5 font-mono text-[10px] text-foreground font-semibold shadow-xs">
                       {t}
                     </span>
                   ))}

@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Deep Obsidian & Technical Slate Theme */
+  :root,
+  .dark {
+    /* Dark Theme — Deep Obsidian & Technical Slate */
     --background: 224 45% 4%;         /* #06090F - Deep Obsidian */
-    --foreground: 210 40% 98%;         /* #F8FAFC - Pure Crisp White */
+    --foreground: 210 40% 98%;        /* #F8FAFC - Pure Crisp White */
 
     --card: 223 38% 8%;               /* #0D131F - Elevated Graphite Surface */
     --card-foreground: 210 40% 98%;
@@ -54,10 +55,11 @@
   }
 
   .light {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Light Theme — Architectural White & Clean Slate */
+    --background: 0 0% 100%;          /* #FFFFFF - Pure White */
+    --foreground: 222 47% 11%;        /* #0F172A - Deep Slate Typography */
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%;                /* #FFFFFF - Clean White Card */
     --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
@@ -69,13 +71,23 @@
     --secondary: 160 84% 39%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 35% 93%;
-    --muted-foreground: 215 16% 45%;
+    --muted: 210 40% 96%;             /* #F1F5F9 - Soft Gray Fill */
+    --muted-foreground: 215 16% 45%;   /* #64748B */
 
-    --border: 214 32% 88%;
+    --accent: 198 93% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 214 32% 88%;             /* #E2E8F0 */
     --input: 214 32% 88%;
+    --ring: 217 100% 50%;
+
+    --glow-primary: 0 0 24px hsl(217 100% 50% / 0.15);
+    --glow-primary-strong: 0 0 36px hsl(217 100% 50% / 0.25);
+    --glow-secondary: 0 0 24px hsl(160 84% 39% / 0.15);
+    --glow-accent: 0 0 24px hsl(198 93% 45% / 0.15);
 
     --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 47% 11%;
     --sidebar-accent: 210 40% 93%;
     --sidebar-border: 214 32% 88%;
   }
@@ -89,6 +101,31 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Smooth 300ms theme transition across visual surfaces without layout jank */
+  body,
+  header,
+  nav,
+  section,
+  footer,
+  main,
+  div:not([style*="transform"]),
+  span,
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  a,
+  button,
+  input,
+  textarea {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Accessible keyboard focus states */

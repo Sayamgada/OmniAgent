@@ -11,7 +11,7 @@ import CtaSection from "../components/landing/CtaSection";
 import Footer from "../components/landing/Footer";
 
 const Index = () => (
-  <div className="min-h-screen bg-white text-slate-900 selection:bg-sky-500/20 selection:text-slate-900">
+  <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-foreground transition-colors duration-300">
     <Navbar />
     <HeroSection />
     <WhatIsSection />

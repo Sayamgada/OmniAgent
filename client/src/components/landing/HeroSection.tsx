@@ -6,10 +6,13 @@ import {
   DOMAIN_DATA,
   type DomainInfo,
 } from "./CinematicAiNetworkCanvas";
+import { useSiteTheme } from "../../context/ThemeContext";
 
 const HeroSection = () => {
   const [activeDomain, setActiveDomain] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
+  const { heroTheme } = useSiteTheme();
+  const isDarkHero = heroTheme === "dark";
 
   // Track scroll progress through the pinned transition container
   const { scrollYProgress } = useScroll({
@@ -33,7 +36,9 @@ const HeroSection = () => {
   return (
     <div
       ref={heroRef}
-      className="relative min-h-[260vh] w-full bg-[#06090F] select-none"
+      className={`relative min-h-[260vh] w-full select-none transition-colors duration-300 ${
+        isDarkHero ? "bg-[#06090F]" : "bg-[#F8FAFC]"
+      }`}
     >
       {/* Pinned Sticky Visual Viewport */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-between overflow-hidden pt-20 pb-8">
@@ -41,14 +46,26 @@ const HeroSection = () => {
         {/* 1. ATMOSPHERE & BACKGROUND AMBIENT ILLUMINATION               */}
         {/* ------------------------------------------------------------- */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[190px]" />
-          <div className="absolute bottom-10 right-1/4 w-[450px] h-[350px] bg-accent/6 rounded-full blur-[170px]" />
+          <div
+            className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full blur-[190px] transition-colors duration-300 ${
+              isDarkHero ? "bg-primary/10" : "bg-sky-500/10"
+            }`}
+          />
+          <div
+            className={`absolute bottom-10 right-1/4 w-[450px] h-[350px] rounded-full blur-[170px] transition-colors duration-300 ${
+              isDarkHero ? "bg-accent/6" : "bg-teal-500/8"
+            }`}
+          />
 
           {/* Deep Perspective Background Grid */}
           <div
-            className="absolute inset-0 opacity-[0.035]"
+            className={`absolute inset-0 transition-opacity duration-300 ${
+              isDarkHero ? "opacity-[0.035]" : "opacity-[0.05]"
+            }`}
             style={{
-              backgroundImage: `linear-gradient(rgba(0, 242, 254, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 254, 0.4) 1px, transparent 1px)`,
+              backgroundImage: isDarkHero
+                ? `linear-gradient(rgba(0, 242, 254, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 254, 0.4) 1px, transparent 1px)`
+                : `linear-gradient(rgba(15, 23, 42, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.25) 1px, transparent 1px)`,
               backgroundSize: "52px 52px",
               maskImage: "radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%)",
               WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 40%, transparent 80%)",
@@ -56,7 +73,11 @@ const HeroSection = () => {
           />
 
           {/* Faint background watermark */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-black tracking-[0.2em] text-white/[0.012] font-mono whitespace-nowrap leading-none">
+          <div
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-black tracking-[0.2em] font-mono whitespace-nowrap leading-none transition-colors duration-300 ${
+              isDarkHero ? "text-white/[0.012]" : "text-slate-900/[0.02]"
+            }`}
+          >
             OMNIAGENT
           </div>
         </div>
@@ -69,6 +90,7 @@ const HeroSection = () => {
             activeDomain={activeDomain}
             onHoverDomain={setActiveDomain}
             scrollProgress={currentScrollProgress}
+            heroTheme={heroTheme}
           />
         </div>
 
@@ -84,11 +106,23 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 rounded-full border border-primary/35 bg-primary/10 px-3.5 py-1 text-xs font-medium text-primary mb-4 shadow-sm backdrop-blur-md pointer-events-auto"
+            className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium mb-4 shadow-sm backdrop-blur-md pointer-events-auto transition-colors duration-300 ${
+              isDarkHero
+                ? "border-primary/35 bg-primary/10 text-primary"
+                : "border-sky-300 bg-sky-50 text-sky-700"
+            }`}
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  isDarkHero ? "bg-primary" : "bg-sky-600"
+                }`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  isDarkHero ? "bg-primary" : "bg-sky-600"
+                }`}
+              />
             </span>
             <span className="font-mono font-semibold tracking-wide uppercase text-[11px]">
               ONE CORE · INFINITE SPECIALIZED AGENTS
@@ -100,11 +134,19 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto text-foreground pointer-events-auto"
+            className={`text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto pointer-events-auto transition-colors duration-300 ${
+              isDarkHero ? "text-white" : "text-slate-900"
+            }`}
           >
             Build AI Agents.
             <br />
-            <span className="bg-gradient-to-r from-white via-[#E0F2FE] to-[#38BDF8] bg-clip-text text-transparent">
+            <span
+              className={`bg-clip-text text-transparent transition-colors duration-300 ${
+                isDarkHero
+                  ? "bg-gradient-to-r from-white via-[#E0F2FE] to-[#38BDF8]"
+                  : "bg-gradient-to-r from-slate-950 via-sky-800 to-sky-600"
+              }`}
+            >
               Without the Complexity.
             </span>
           </motion.h1>
@@ -117,10 +159,22 @@ const HeroSection = () => {
           style={{ opacity: headlineOpacity }}
           className="container mx-auto px-4 sm:px-6 relative z-20 mt-auto flex items-center justify-center pointer-events-none"
         >
-          <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground/70">
-            <span className="size-1.5 rounded-full bg-primary/70 animate-pulse" />
+          <div
+            className={`flex items-center gap-2 text-[11px] font-mono transition-colors duration-300 ${
+              isDarkHero ? "text-muted-foreground/70" : "text-slate-500"
+            }`}
+          >
+            <span
+              className={`size-1.5 rounded-full animate-pulse ${
+                isDarkHero ? "bg-primary/70" : "bg-sky-600"
+              }`}
+            />
             <span>Scroll to ignite orchestration core</span>
-            <ChevronDown className="size-3.5 text-primary animate-bounce ml-0.5" />
+            <ChevronDown
+              className={`size-3.5 animate-bounce ml-0.5 ${
+                isDarkHero ? "text-primary" : "text-sky-600"
+              }`}
+            />
           </div>
         </motion.div>
       </div>
@@ -129,3 +183,4 @@ const HeroSection = () => {
 };
 
 export default HeroSection;
+
