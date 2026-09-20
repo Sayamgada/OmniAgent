@@ -1,26 +1,37 @@
 import React from "react";
 import Navbar from "../components/landing/Navbar";
 import HeroSection from "../components/landing/HeroSection";
-import WhatIsSection from "../components/landing/WhatIsSection";
-import HowItWorksSection from "../components/landing/HowItWorksSection";
-import FeaturesSection from "../components/landing/FeaturesSection";
-import UseCasesSection from "../components/landing/UseCasesSection";
-import WhyOmniAgentSection from "../components/landing/WhyOmniAgentSection";
-import TrustSection from "../components/landing/TrustSection";
+import { DescribeSection } from "../components/landing/DescribeSection";
+import { IdeaToExecutionSection } from "../components/landing/IdeaToExecutionSection";
+import { DomainAdaptSection } from "../components/landing/DomainAdaptSection";
+import { OutcomeSection } from "../components/landing/OutcomeSection";
 import CtaSection from "../components/landing/CtaSection";
 import Footer from "../components/landing/Footer";
 
-const Index = () => (
-  <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-foreground transition-colors duration-300">
+const Index: React.FC = () => (
+  <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-foreground transition-colors duration-350">
+    {/* Navigation */}
     <Navbar />
+
+    {/* 01 — HERO (Preserved untouched — 100vh-115vh AI Network + Scroll Transition) */}
     <HeroSection />
-    <WhatIsSection />
-    <HowItWorksSection />
-    <FeaturesSection />
-    <UseCasesSection />
-    <WhyOmniAgentSection />
-    <TrustSection />
+
+    {/* 02 — SECTION 1: "YOU DESCRIBE IT." (Flowing Transformation Stream Visual #1) */}
+    <DescribeSection />
+
+    {/* 03 — SECTION 2: "FROM AN IDEA TO SOMETHING THAT WORKS." (Effortless Flow Story) */}
+    <IdeaToExecutionSection />
+
+    {/* 04 — SECTION 3: "ONE INTELLIGENCE. MANY POSSIBILITIES." (Morphing Domain Visual #2) */}
+    <DomainAdaptSection />
+
+    {/* 05 — SECTION 4: "LESS ORCHESTRATION. MORE EXECUTION." (Outcome Typography & Value) */}
+    <OutcomeSection />
+
+    {/* 06 — FINAL CTA: "WHAT WILL YOU BUILD?" */}
     <CtaSection />
+
+    {/* 07 — FOOTER */}
     <Footer />
   </div>
 );

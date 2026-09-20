@@ -9,11 +9,10 @@ import { useSiteTheme } from "../../context/ThemeContext";
 import { ThemeToggle } from "./ThemeToggle";
 
 const landingLinks = [
-  { label: "Overview", href: "#about" },
-  { label: "Simulator", href: "#interactive-demo" },
-  { label: "Industry Studio", href: "#industries" },
-  { label: "Architecture", href: "#how-it-works" },
-  { label: "Capabilities", href: "#features" },
+  { label: "Intent", href: "#describe" },
+  { label: "Flow", href: "#execution" },
+  { label: "Possibilities", href: "#domains" },
+  { label: "Outcomes", href: "#outcomes" },
 ] as const;
 
 const authLinks = [

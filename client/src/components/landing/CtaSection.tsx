@@ -1,61 +1,80 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Terminal } from "lucide-react";
 import { Button } from "../../components/ui/button";
 
-const CtaSection = () => (
-  <section className="py-28 bg-background border-t border-border relative overflow-hidden text-foreground">
-    {/* Soft ambient gradient */}
-    <div className="absolute inset-0 pointer-events-none">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[350px] bg-sky-500/10 rounded-full blur-[160px]" />
+export const CtaSection: React.FC = () => (
+  <section className="relative py-32 px-4 sm:px-6 lg:px-8 bg-background border-t border-border/40 overflow-hidden text-foreground">
+    {/* Subtle core halo echo in background */}
+    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+      <div className="w-[600px] h-[600px] rounded-full bg-primary/10 blur-[140px]" />
+      <div className="absolute w-[400px] h-[400px] rounded-full border border-primary/20 opacity-30" />
+      <div className="absolute w-[260px] h-[260px] rounded-full border border-primary/25" />
     </div>
 
-    <div className="container mx-auto px-4 sm:px-6 relative z-10">
+    <div className="max-w-4xl mx-auto relative z-10 text-center">
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="relative max-w-4xl mx-auto text-center"
+        transition={{ duration: 0.6 }}
+        className="rounded-3xl border border-border/80 bg-card/85 backdrop-blur-xl p-8 sm:p-14 lg:p-16 shadow-2xl relative overflow-hidden"
       >
-        <div className="relative rounded-3xl border border-border bg-card p-8 sm:p-14 shadow-xl">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-mono font-semibold text-sky-600 dark:text-sky-400 mb-6 shadow-xs">
-            <Sparkles className="size-3.5 text-sky-500" />
-            <span>Launch Your AI Fleet Today</span>
-          </div>
+        {/* Subtle top light flare */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-4 leading-tight">
-            Ready to Build Your First <span className="bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent">Autonomous Agent?</span>
-          </h2>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-mono uppercase tracking-widest mb-6">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>GET STARTED IN SECONDS</span>
+        </div>
 
-          <p className="text-sm sm:text-base text-muted-foreground text-center max-w-xl mx-auto mb-8 leading-relaxed">
-            Design, compile, and deploy deterministic multi-agent workflows tailored to education, finance, and corporate operations in minutes.
-          </p>
+        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground mb-5 leading-tight">
+          What will you{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-cyan-400 to-teal-400">
+            build?
+          </span>
+        </h2>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
-            <Button
-              size="lg"
-              className="h-12 px-8 bg-primary text-xs sm:text-sm font-bold text-black hover:bg-primary/90 glow-primary rounded-xl transition-all shadow-sm"
-              asChild
-            >
-              <Link to="/sign-up">
-                <span>Start Building Free</span>
-                <ArrowRight className="ml-2 size-4" />
-              </Link>
-            </Button>
+        <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
+          Join thousands creating intelligent autonomous agents for education, finance, and business operations.
+        </p>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 px-7 text-xs sm:text-sm font-semibold border-border bg-background text-foreground hover:bg-muted/40 rounded-xl transition-all shadow-xs"
-              asChild
-            >
-              <Link to="/sign-in">
-                <span>Sign In to Workspace</span>
-              </Link>
-            </Button>
-          </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Button
+            size="lg"
+            className="h-12 px-8 bg-primary font-bold text-primary-foreground hover:bg-primary/90 rounded-xl transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 text-sm"
+            asChild
+          >
+            <Link to="/sign-up">
+              <span>Start Free</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-12 px-7 text-sm font-semibold border-border bg-background hover:bg-muted/40 rounded-xl transition-all"
+            asChild
+          >
+            <Link to="/sign-in" className="flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-muted-foreground" />
+              <span>Sign In to Workspace</span>
+            </Link>
+          </Button>
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-border/40 flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Free 14-day trial
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> No credit card required
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Setup in 2 minutes
+          </span>
         </div>
       </motion.div>
     </div>

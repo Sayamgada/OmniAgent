@@ -18,10 +18,10 @@ const Footer = () => (
 
         {/* Links */}
         <nav className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground font-medium" aria-label="Footer Navigation">
-          <a href="#about" className="hover:text-foreground transition-colors">Overview</a>
-          <a href="#industries" className="hover:text-foreground transition-colors">Industry Studio</a>
-          <a href="#how-it-works" className="hover:text-foreground transition-colors">Architecture</a>
-          <a href="#features" className="hover:text-foreground transition-colors">Capabilities</a>
+          <a href="#describe" className="hover:text-foreground transition-colors">Intent</a>
+          <a href="#execution" className="hover:text-foreground transition-colors">Flow</a>
+          <a href="#domains" className="hover:text-foreground transition-colors">Possibilities</a>
+          <a href="#outcomes" className="hover:text-foreground transition-colors">Outcomes</a>
         </nav>
 
         {/* Socials */}
