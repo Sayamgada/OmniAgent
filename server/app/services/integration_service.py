@@ -1,3 +1,5 @@
+# app/services/integration_service.py
+import json
 import uuid
 
 from sqlalchemy.orm import Session
@@ -9,11 +11,38 @@ from app.services import n8n_client
 
 PATTERN_LABELS = {1: "text_fields", 2: "oauth2", 3: "mcp_oauth", 4: "oauth2_extra"}
 
+# n8n's base OAuth2Api credential type carries its own internal mechanics
+# (grant type, token URLs, JWE/JWKS verification, request-signing options)
+# that credentials.json lists as visible "advanced settings" properties --
+# but n8n's public credential-creation API rejects them as "not allowed
+# additional property" regardless of value, confirmed independently on
+# gmailOAuth2 (tokenExpiredStatusCode, jwksUri) and notionMcpOAuth2Api
+# (jwksUri again). These are n8n-managed internals, never legitimate
+# service data -- excluded outright rather than guessed at per-field via
+# default-matching, which proved fragile (string-equality on a default URL
+# is an easy thing to break on a render/whitespace quirk).
+OAUTH2_MECHANIC_FIELDS = {
+    "grantType",
+    "authUrl",
+    "accessTokenUrl",
+    "authQueryParameters",
+    "sendAdditionalBodyProperties",
+    "additionalBodyProperties",
+    "ignoreSSLIssues",
+    "tokenExpiredStatusCode",
+    "jweEnabled",
+    "jwksUri",
+    "inlineJwks",
+}
+
 
 def _get_catalog_entry(service: str) -> dict:
     entry = INTEGRATION_CATALOG.get(service)
     if not entry:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Unknown service '{service}' — not in integration catalog")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"Unknown service '{service}' — not in integration catalog",
+        )
     return entry
 
 
@@ -34,11 +63,52 @@ def _get_option(service: str, option_id: str | None) -> dict:
     return opt
 
 
+def _coerce_value(field: dict, raw):
+    """
+    n8n's own credential schema validates real types (boolean, number) --
+    but every value arriving here from a form submission is a string
+    (and our registry's field defaults are strings too, for frontend
+    rendering -- see generate_registry.py's _stringify_default). Coerce
+    back to the type n8n actually expects before it ever reaches
+    n8n_client.create_credential, regardless of what the frontend sends.
+    """
+    t = field.get("type")
+
+    if not isinstance(raw, str):
+        return raw  # already the right shape (e.g. a real bool/number) -- leave it
+
+    stripped = raw.strip()
+
+    if t == "boolean":
+        return stripped.lower() in ("true", "1", "yes", "on")
+
+    if t == "number":
+        if stripped == "":
+            return None
+        try:
+            return int(stripped)
+        except ValueError:
+            return float(stripped)
+
+    if t == "json":
+        if stripped == "":
+            return None
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            # let n8n's own validation surface the real error rather than
+            # silently swallowing genuinely malformed input here
+            return raw
+
+    return raw  # string / options / password -- no coercion needed
+
+
 def _validate_text_fields(service: str, option: dict, values: dict) -> dict:
     """
     Checks the submitted values cover every required field the chosen auth_option defines,
-    and drops anything not in that option's field list (never forward arbitrary extra keys
-    to n8n). Returns the n8n-ready data payload (field name -> value, already camelCase).
+    drops anything not in that option's field list (never forward arbitrary extra keys
+    to n8n), and coerces each value to the type n8n's schema actually expects. Returns the
+    n8n-ready data payload (field name -> correctly-typed value).
     """
     if option["connection_pattern"] != 1:
         raise HTTPException(
@@ -47,7 +117,8 @@ def _validate_text_fields(service: str, option: dict, values: dict) -> dict:
             f"(pattern {option['connection_pattern']}); use the OAuth connect flow instead.",
         )
 
-    option_field_names = {f["name"] for f in option["fields"]}
+    fields_by_name = {f["name"]: f for f in option["fields"]}
+    option_field_names = set(fields_by_name)
     missing = option_field_names - values.keys()
     if missing:
         raise HTTPException(
@@ -55,11 +126,19 @@ def _validate_text_fields(service: str, option: dict, values: dict) -> dict:
             f"Missing required field(s) for '{service}' ({option['option_id']}): {sorted(missing)}",
         )
 
-    return {k: v for k, v in values.items() if k in option_field_names}
+    return {
+        k: _coerce_value(fields_by_name[k], v)
+        for k, v in values.items()
+        if k in option_field_names
+    }
 
 
 async def connect_text_fields(
-    db: Session, user_id: uuid.UUID, service: str, values: dict, option_id: str | None = None
+    db: Session,
+    user_id: uuid.UUID,
+    service: str,
+    values: dict,
+    option_id: str | None = None,
 ) -> Integration:
     entry = _get_catalog_entry(service)
     option = _get_option(service, option_id)
@@ -131,28 +210,35 @@ async def disconnect_integration(db: Session, user_id: uuid.UUID, service: str) 
 
 def list_integrations_with_status(db: Session, user_id: uuid.UUID) -> list[dict]:
     connected_rows = {
-        r.service: r for r in db.query(Integration).filter(Integration.user_id == user_id).all()
+        r.service: r
+        for r in db.query(Integration).filter(Integration.user_id == user_id).all()
     }
     out = []
     for service, entry in INTEGRATION_CATALOG.items():
         row = connected_rows.get(service)
-        out.append({
-            "service": entry["service"],
-            "display_name": entry["display_name"],
-            "category": entry["category"],
-            "default_option": entry["default_option"],
-            "auth_options": entry["auth_options"],
-            "connected": bool(row and row.is_active),
-            "configured": row is not None,
-            "connected_option": row.auth_option_id if row else None,
-        })
+        out.append(
+            {
+                "service": entry["service"],
+                "display_name": entry["display_name"],
+                "category": entry["category"],
+                "default_option": entry["default_option"],
+                "auth_options": entry["auth_options"],
+                "connected": bool(row and row.is_active),
+                "configured": row is not None,
+                "connected_option": row.auth_option_id if row else None,
+            }
+        )
     return out
 
 
-def check_required_integrations(db: Session, user_id: uuid.UUID, required: list[dict]) -> dict:
+def check_required_integrations(
+    db: Session, user_id: uuid.UUID, required: list[dict]
+) -> dict:
     connected_services = {
         r.service
-        for r in db.query(Integration).filter(Integration.user_id == user_id, Integration.is_active == True).all()
+        for r in db.query(Integration)
+        .filter(Integration.user_id == user_id, Integration.is_active == True)
+        .all()
     }
     statuses = []
     all_available = True
@@ -160,16 +246,19 @@ def check_required_integrations(db: Session, user_id: uuid.UUID, required: list[
         is_connected = req["service"] in connected_services
         if req.get("required", True) and not is_connected:
             all_available = False
-        statuses.append({
-            "service": req["service"],
-            "display_name": req.get("display_name"),
-            "required": req.get("required", True),
-            "connected": is_connected,
-        })
+        statuses.append(
+            {
+                "service": req["service"],
+                "display_name": req.get("display_name"),
+                "required": req.get("required", True),
+                "connected": is_connected,
+            }
+        )
     return {"integrations": statuses, "all_required_available": all_available}
 
 
 # ---------------- OAuth2 (pattern 2 / pattern 4) ----------------
+
 
 async def connect_oauth_init(
     db: Session,
@@ -196,18 +285,34 @@ async def connect_oauth_init(
             f"(pattern {option['connection_pattern']}); use /integrations/connect/text-fields instead.",
         )
 
+    fields_by_name = {f["name"]: f for f in option["fields"]}
+
     # only forward extra fields the catalog actually defines for this option (excluding
     # clientId/clientSecret, which are handled explicitly, not user-suppliable arbitrary keys)
-    known_extra_names = {f["name"] for f in option["fields"]}
-    unknown = set(extra_fields.keys()) - known_extra_names
+    unknown = set(extra_fields.keys()) - set(fields_by_name)
     if unknown:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"Unknown extra field(s) for '{service}' ({option['option_id']}): {sorted(unknown)}. "
-            f"Expected a subset of: {sorted(known_extra_names)}",
+            f"Expected a subset of: {sorted(fields_by_name)}",
         )
 
-    n8n_data = {"clientId": client_id, "clientSecret": client_secret, **extra_fields}
+    # Two layers of exclusion, both needed:
+    #  1. OAUTH2_MECHANIC_FIELDS -- n8n-internal OAuth2Api mechanics n8n's API
+    #     never accepts as data, regardless of value (hard blocklist).
+    #  2. unchanged-from-default -- genuinely service-specific optional fields
+    #     (e.g. enabledScopes) that the user left untouched; let n8n apply its
+    #     own default rather than re-sending the same value redundantly.
+    coerced_extra = {}
+    for k, raw in extra_fields.items():
+        if k in OAUTH2_MECHANIC_FIELDS:
+            continue
+        field = fields_by_name[k]
+        stripped = raw.strip() if isinstance(raw, str) else raw
+        if stripped == "" or stripped == field.get("default"):
+            continue  # unchanged from default -- let n8n apply its own
+        coerced_extra[k] = _coerce_value(field, raw)
+    n8n_data = {"clientId": client_id, "clientSecret": client_secret, **coerced_extra}
 
     existing = (
         db.query(Integration)
@@ -234,7 +339,9 @@ async def connect_oauth_init(
         existing.display_name = entry["display_name"]
         existing.connection_pattern = PATTERN_LABELS[option["connection_pattern"]]
         existing.oauth_pending = True
-        existing.is_active = False  # not truly connected until the status poll confirms it
+        existing.is_active = (
+            False  # not truly connected until the status poll confirms it
+        )
         db.commit()
         db.refresh(existing)
     else:
@@ -280,7 +387,9 @@ async def check_oauth_status(db: Session, user_id: uuid.UUID, service: str) -> d
         .first()
     )
     if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"'{service}' has no connection in progress")
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"'{service}' has no connection in progress"
+        )
 
     if not row.oauth_pending:
         return {"service": service, "connected": row.is_active, "pending": False}
@@ -292,4 +401,8 @@ async def check_oauth_status(db: Session, user_id: uuid.UUID, service: str) -> d
         db.commit()
         db.refresh(row)
 
-    return {"service": service, "connected": row.is_active, "pending": row.oauth_pending}
+    return {
+        "service": service,
+        "connected": row.is_active,
+        "pending": row.oauth_pending,
+    }

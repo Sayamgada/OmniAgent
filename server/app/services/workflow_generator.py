@@ -1,9 +1,11 @@
+# app/services/workflow_generator.py
 from functools import lru_cache
 
 from app.models.automation_preview_model import automation_preview_collection
 from app.services.llm_service import generate_workflow_from_prompt
 from app.core.n8n_operation_registry import (
     get_service_entry,
+    get_trigger_node,
     resolve_operation,
     resolve_http_method,
 )
@@ -41,27 +43,19 @@ def _build_service_whitelist() -> dict:
     """
     Builds the SERVICE whitelist directly from integration_catalog.py
     instead of a hand-maintained static list, so the prompt can never drift
-    out of sync with the actual credential catalog again - see the
-    workflow_generator/node_registry design notes for why the OLD static
-    89-entry whitelist was actively broken (52 of its 89 keys didn't match
-    ANY key in the current 386-service catalog - e.g. "linkedin" vs the
-    catalog's "linked_in", "postgresql" vs "postgres", "youtube" vs
-    "you_tube" - meaning steps using those services would silently fail to
-    match a real credential entry at check-time).
+    out of sync with the actual credential catalog again.
 
-    AI provider services (kind == "ai_subnode" in node_registry.json) are
+    AI provider services (kind == "ai_subnode" in generated_registry.json) are
     excluded except "groq" - these are Chat Model / Vector Store / Tool
     sub-nodes that can never be a standalone workflow step's service (see
-    node_registry.py's `kind` docstring); "groq" stays as the one
+    n8n_operation_registry.py's `kind` docstring); "groq" stays as the one
     hardcoded-supported AI provider per the existing RULE 3 convention.
 
     Cached for the process lifetime - INTEGRATION_CATALOG and
-    node_registry.json are both static data loaded at import time, not
+    generated_registry.json are both static data loaded at import time, not
     something that changes per-request.
 
-    Returns {"category name": [sorted service keys], ...} and, separately,
-    the flat set of every valid key (including the http/webhook fallbacks)
-    for use by _check_service().
+    Returns {"category name": [sorted service keys], ...}.
     """
     from app.core.n8n_operation_registry import get_kind  # local import avoids a hard
 
@@ -98,54 +92,7 @@ def _valid_service_keys() -> frozenset:
 
 
 CURRENT_SCHEMA_VERSION = 4
-# v2 -> v3: two additions to each workflow step. The five-key top-level
-# contract and _ALLOWED_OPERATIONS (the ten universal verbs) are UNCHANGED -
-# this only touches the shape inside preview_json.workflow[].
-#
-#   1. "target" - Groq now names the resource being acted on (e.g.
-#      "message", "draft", "page"), needed to disambiguate services that
-#      have more than one kind of object they can act on. See the new
-#      TARGET section in SYSTEM_INSTRUCTION below.
-#
-#   2. "n8n_operation" / "n8n_resolved" - populated deterministically by
-#      _enrich_with_real_operations() AFTER Groq returns, using
-#      node_registry.json - NOT written by Groq. This is what actually
-#      fixes "operations are hardcoded": the preview now shows the real,
-#      service-specific n8n operation for each step (e.g. "Post a message"
-#      for Slack, not the bare universal verb "send"), pulled from real
-#      n8n source, not invented.
-#
-# v3 -> v4: two further additions to each workflow step, both Groq-written
-# (unlike n8n_operation/n8n_resolved, which stay enrichment-only):
-#
-#   3. "depends_on" - a list of earlier step numbers whose OUTPUT this
-#      step's action needs at runtime (e.g. a "update sheet" step that
-#      writes the outcome of an earlier "read response" step). This is NOT
-#      sequencing - a step that merely runs after another but doesn't need
-#      its output uses []. This exists so the future compile-time
-#      parameter-fill UI can tell "this field should be wired to a
-#      previous step's output" apart from "this field needs a plain text
-#      value from the user" - see DEPENDS_ON section in SYSTEM_INSTRUCTION.
-#
-#   4. "condition" (optional, step-level, only present when a step's
-#      outcome forks the workflow) and "branch" (optional, only present on
-#      steps that only run under one outcome of an earlier step's
-#      condition) - together these let an approval/decision-style
-#      automation be represented as an actual fork instead of a flattened
-#      straight line. Absent on every step for non-branching automations -
-#      this is additive and does not disturb existing single-path
-#      workflows. See CONDITION / BRANCH section in SYSTEM_INSTRUCTION.
-#
-# A v3-cached Mongo document has neither of these keys, so the version bump
-# is required for the existing stale-cache regeneration check in
-# agent_router.py to actually fire on old cache entries.
 
-# The only keys the compiler/frontend/storage layer are allowed to see. Anything
-# else the model emits (task_summary, required_agents, a duplicate top-level
-# "workflow", etc.) is a prompt-compliance miss, not a real field, and must be
-# dropped before this data is stored or returned. response_format=json_object
-# only guarantees valid JSON syntax — it does not guarantee key conformance,
-# so this cannot be enforced by prompt wording alone.
 _ALLOWED_TOP_LEVEL_KEYS = {
     "schema_version",
     "automation_name",
@@ -156,9 +103,6 @@ _ALLOWED_TOP_LEVEL_KEYS = {
 
 _REQUIRED_TOP_LEVEL_KEYS = _ALLOWED_TOP_LEVEL_KEYS  # all five are mandatory
 
-# The ten universal operations from the prompt. Kept in code too so drift is
-# caught and logged rather than silently trusted, same rationale as the
-# top-level key check above.
 _ALLOWED_OPERATIONS = {
     "create",
     "read",
@@ -187,20 +131,6 @@ _APPROVAL_LANGUAGE_KEYWORDS = (
 
 
 def _check_approval_branching(automation_description: str, preview_json: dict) -> None:
-    """
-    Non-fatal compliance signal for the CRITICAL "approval/decision
-    automations must branch" rule in SYSTEM_INSTRUCTION. This does NOT fix
-    a miss - it only makes misses visible in logs instead of requiring a
-    human to manually re-read every generated JSON, same rationale as every
-    other _check_* function here.
-
-    Fires a warning when automation_description contains approval/decision
-    language (see _APPROVAL_LANGUAGE_KEYWORDS) but not a single step in the
-    generated workflow carries a "condition" key. Deliberately a crude
-    keyword match, not NLP - false positives (an automation that mentions
-    "accept" in an unrelated sense) are acceptable noise; the goal is a
-    hit-rate signal over many generations, not per-instance precision.
-    """
     if not isinstance(automation_description, str):
         return
     description_lower = automation_description.lower()
@@ -226,12 +156,6 @@ def _check_approval_branching(automation_description: str, preview_json: dict) -
 
 
 def _check_operations(preview_json: dict) -> None:
-    """
-    Logs (does not block on) any workflow step whose "operation" isn't one of
-    the ten universal verbs. Non-fatal: an odd operation value shouldn't 502
-    the whole request, but should be visible so drift can be tracked the same
-    way top-level key drift is tracked in _sanitize_workflow_output.
-    """
     steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
     for step in steps:
         op = step.get("operation") if isinstance(step, dict) else None
@@ -250,17 +174,6 @@ def _check_operations(preview_json: dict) -> None:
 
 
 def _check_service(step: dict) -> None:
-    """
-    Same non-fatal logging pattern as _check_operations/_check_target - logs
-    when a step's "service" isn't one of the values actually in
-    _valid_service_keys(). Doesn't block generation or touch preview_json;
-    this is the visibility mechanism for catching prompt drift now that the
-    whitelist is built from live catalog data instead of a static string -
-    if this fires often for a real, well-known service name, it likely
-    means the catalog itself is missing that entry (a data problem), not
-    that Groq is misbehaving (a prompt problem) - worth distinguishing when
-    triaging these logs.
-    """
     if not isinstance(step, dict):
         return
     service = step.get("service")
@@ -274,9 +187,9 @@ def _check_service(step: dict) -> None:
 
 def _check_target(step: dict) -> None:
     """
-    Same non-fatal logging pattern as _check_operations, for the new
-    "target" field. Doesn't touch preview_json - just visibility into
-    prompt quality, checked before _enrich_with_real_operations runs.
+    Uses list_resources() rather than reaching into the registry entry
+    directly, since resources now live nested under
+    entry["nodes"]["standalone"] rather than at the entry's top level.
     """
     if not isinstance(step, dict):
         return
@@ -284,10 +197,12 @@ def _check_target(step: dict) -> None:
     target = step.get("target")
     entry = get_service_entry(service) if service else None
     if not entry or entry.get("kind") != "action_node":
-        return  # http_only / ai_subnode / trigger_only_or_unparsed / unmapped - target isn't meaningful here
-    resources = entry.get("resources") or {}
+        return  # ai_subnode / trigger_only / flat_params_node / http_only / unmapped - target isn't meaningful here
+    from app.core.n8n_operation_registry import list_resources
+
+    resources = list_resources(service)
     if not resources:
-        return  # flat operation list (e.g. postgresql) - no target needed
+        return  # flat operation list (e.g. postgres) - no target needed
     if not target:
         print(
             f"[workflow_generator] Step {step.get('step')} for service '{service}' "
@@ -301,18 +216,6 @@ def _check_target(step: dict) -> None:
 
 
 def _check_ai_instructions(step: dict) -> None:
-    """
-    Same non-fatal logging pattern as _check_target/_check_operations, for
-    the new "instructions" field required on every "groq" step (see the
-    GROQ / AI STEPS - INSTRUCTIONS section of SYSTEM_INSTRUCTION). Doesn't
-    touch preview_json - just visibility into prompt quality.
-
-    The length threshold is a crude heuristic (same rationale as the
-    condition-key compliance check above: a cheap hit-rate signal, not
-    precision) - "generate" or "summarize the data" would both slip past
-    a bare non-empty check but are exactly the vague, un-groundable text
-    the SYSTEM_INSTRUCTION rule exists to prevent.
-    """
     if not isinstance(step, dict):
         return
     if step.get("service") != "groq":
@@ -336,21 +239,6 @@ def _check_ai_instructions(step: dict) -> None:
 
 
 def _check_depends_on(step: dict, all_steps: list) -> None:
-    """
-    Same non-fatal logging pattern as _check_target/_check_service, for the
-    new v4 "depends_on" field. Two things worth catching early, since a bad
-    depends_on value silently breaks the future compile-time "wire this
-    field to a previous step's output" UI rather than failing loudly:
-
-      1. A referenced step number that doesn't exist in this workflow at
-         all (Groq hallucinated a step number).
-      2. A referenced step number >= this step's own number (a forward or
-         self reference - "depends on" must point strictly backwards;
-         nothing can depend on a step that hasn't run yet).
-
-    Doesn't touch preview_json - visibility only, matching every other
-    _check_* function in this file.
-    """
     if not isinstance(step, dict):
         return
     this_step = step.get("step")
@@ -378,16 +266,6 @@ def _check_depends_on(step: dict, all_steps: list) -> None:
 
 
 def _check_parallel_depends_on(step: dict, all_steps: list) -> None:
-    """
-    Same non-fatal logging pattern as _check_depends_on. Flags the specific
-    failure mode confirmed live: a step depending on an earlier step that
-    uses the SAME service and operation (e.g. two independent "download a
-    file" reads chained together instead of left parallel - see the
-    DEPENDS_ON "specific trap" example in SYSTEM_INSTRUCTION). This isn't
-    proof of a mistake - two same-service steps can legitimately depend on
-    each other in rarer cases - but it's the exact structural shape the
-    confirmed bug had, so it's worth a human glance rather than silence.
-    """
     if not isinstance(step, dict):
         return
     this_step = step.get("step")
@@ -416,19 +294,6 @@ def _check_parallel_depends_on(step: dict, all_steps: list) -> None:
 
 
 def _check_condition_branch(step: dict, all_steps: list) -> None:
-    """
-    Same non-fatal logging pattern, for the new v4 "condition"/"branch"
-    keys. Checks:
-
-      1. "condition.branches", if present, is a non-empty list of strings.
-      2. "branch", if present on a step, matches one of the branch values
-         declared by SOME earlier step's "condition" - a step claiming to
-         run under a branch ("approved") that no earlier step's condition
-         ever declared is a dangling reference the compiler can't resolve
-         to an actual n8n IF/Switch output.
-
-    Doesn't touch preview_json - visibility only.
-    """
     if not isinstance(step, dict):
         return
     this_step = step.get("step")
@@ -468,37 +333,90 @@ def _check_condition_branch(step: dict, all_steps: list) -> None:
             )
 
 
+def _enrich_trigger(preview_json: dict) -> dict:
+    """
+    Validates preview_json["trigger"] against the real registry instead of trusting
+    Groq's free-text "type"/"service" pair as-is. Mirrors _enrich_with_real_operations'
+    additive pattern: never removes or renames what Groq wrote ("type"/"service"/
+    "description" stay exactly as generated), only adds:
+
+        "n8n_trigger_resolved": true | false
+        "n8n_trigger_node": {"type", "typeVersion"} | None
+
+    Three cases:
+      1. trigger.service is set and get_trigger_node() finds a real trigger node for
+         it (e.g. gmail -> gmailTrigger) -> resolved True, node attached. Expected
+         case for type in {Event, Email, Form Submission}.
+      2. trigger.service is set but that service has NO trigger node in the registry
+         at all -> resolved False, node None. A genuine compliance miss - the chosen
+         service literally cannot fire this trigger in n8n.
+      3. trigger.type is Manual/Schedule/Webhook/API Call, where "service" is
+         legitimately empty per SYSTEM_INSTRUCTION -> resolved True with a synthetic
+         reference to n8n's own generic trigger node for that type.
+    """
+    _GENERIC_TRIGGER_NODES = {
+        "Manual": {"type": "n8n-nodes-base.manualTrigger", "typeVersion": 1},
+        "Schedule": {"type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2},
+        "Webhook": {"type": "n8n-nodes-base.webhook", "typeVersion": 2},
+        "API Call": {"type": "n8n-nodes-base.webhook", "typeVersion": 2},
+    }
+
+    trigger = preview_json.get("trigger") if isinstance(preview_json, dict) else None
+    if not isinstance(trigger, dict):
+        return preview_json
+
+    trigger_type = trigger.get("type")
+    service = trigger.get("service") or None
+
+    if trigger_type in _GENERIC_TRIGGER_NODES and not service:
+        trigger["n8n_trigger_resolved"] = True
+        trigger["n8n_trigger_node"] = _GENERIC_TRIGGER_NODES[trigger_type]
+        return preview_json
+
+    if not service:
+        print(
+            f"[workflow_generator] trigger.type={trigger_type!r} requires a "
+            f"'service' per SYSTEM_INSTRUCTION but none was set."
+        )
+        trigger["n8n_trigger_resolved"] = False
+        trigger["n8n_trigger_node"] = None
+        return preview_json
+
+    node = get_trigger_node(service)
+    if node:
+        trigger["n8n_trigger_resolved"] = True
+        trigger["n8n_trigger_node"] = node
+    else:
+        print(
+            f"[workflow_generator] trigger.service '{service}' has no real n8n "
+            f"trigger node in the registry - trigger.type={trigger_type!r} cannot "
+            f"actually be fired by this service; needs review."
+        )
+        trigger["n8n_trigger_resolved"] = False
+        trigger["n8n_trigger_node"] = None
+
+    return preview_json
+
+
 def _enrich_with_real_operations(preview_json: dict) -> dict:
     """
     THE fix for hardcoded operations. Runs once per generation, right after
     Groq returns and before the preview is stored or returned. For every
-    step, looks up the real n8n resource/operation from node_registry.json
-    and attaches it - the Preview Screen should display THIS, not the raw
-    universal verb, so what the user approves is what will actually run.
+    step, looks up the real n8n resource/operation from generated_registry.json
+    and attaches it.
 
-    Adds two keys per step; never removes or renames the originals
-    ("operation" and "target" stay exactly as Groq produced them - they
-    remain the input here, and will remain the input to the future n8n
-    compiler too):
+    Adds two keys per step; never removes or renames the originals:
 
         "n8n_resolved": true | false
-        "n8n_operation": {"label", "value", "action", "description"} | null
+        "n8n_operation": {"label", "value", "action"} | null
 
-    When resolution fails (ambiguous/missing target, no keyword match, or
-    the service is http_only / ai_subnode / trigger_only_or_unparsed /
-    unmapped in the registry), n8n_operation stays null and n8n_resolved is
-    false - deliberately, not a bug. The Preview Screen is expected to show
-    those steps with a "needs review" badge rather than presenting an
-    unconfirmed operation as if it were resolved; a wrong silent guess here
-    is worse than an honest gap, since it looks correct in the preview and
-    only breaks later, at deploy time.
+    When resolution fails (ambiguous/missing target, no confident match, or
+    the service is ai_subnode / trigger_only / flat_params_node / http_only /
+    unmapped), n8n_operation stays null and n8n_resolved is false -
+    deliberately, not a bug. resolve_operation() itself never considers
+    another service's operations and never guesses on ambiguity (see
+    n8n_operation_registry.py's module docstring).
     """
-    # Known root/sub-node pairing for ai_subnode services, confirmed against
-    # n8n's own credentials docs (see conversation history for groq). Only
-    # groq is populated for now - the registry doesn't currently store a
-    # concrete n8n node type for its other 35 ai_subnode entries, so this
-    # deliberately does NOT guess a node type for those; they fall back to
-    # a "kind known, node type not yet mapped" shape instead of a wrong one.
     _AI_SUBNODE_CHAT_MODEL_TYPES = {
         "groq": "n8n-nodes-langchain.lmChatGroq",
     }
@@ -514,79 +432,51 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
         target = step.get("target") or None
 
         entry = get_service_entry(service) if service else None
+        kind = entry.get("kind") if entry else None
 
-        if entry and entry.get("kind") == "ai_subnode":
-            # NOT a failure - n8n_resolved stays False deliberately, since
-            # existing consumers (e.g. agent_router.py's "unresolved" list)
-            # already key off this boolean for review-flagging, and this
-            # patch is additive-only until that's confirmed safe to change.
-            # n8n_resolution_kind is the new, unambiguous signal: the
-            # compiler should check THIS field, not n8n_resolved, to tell
-            # "genuinely broken" apart from "correctly an AI sub-node."
+        if kind == "ai_subnode":
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
             step["n8n_resolution_kind"] = "ai_subnode"
             step["n8n_subnode"] = {
                 "root_node_type": _AI_AGENT_ROOT_NODE_TYPE,
                 "connection_type": _AI_LANGUAGE_MODEL_CONNECTION_TYPE,
-                "chat_model_node_type": _AI_SUBNODE_CHAT_MODEL_TYPES.get(
-                    service
-                ),  # None = not yet mapped for this provider
-                # Resolved: SYSTEM_INSTRUCTION now requires Groq to populate
-                # step["instructions"] directly on every groq step. The
-                # compiler reads that field verbatim as the AI Agent node's
-                # prompt/instructions text - no separate lookup needed.
+                "chat_model_node_type": _AI_SUBNODE_CHAT_MODEL_TYPES.get(service),
                 "agent_instructions_source": "step.instructions",
             }
             continue
 
-        if entry and entry.get("kind") == "generic_http":
-            # Same reasoning as ai_subnode: NOT a failure. n8n's HTTP Request
-            # node has no resource/operation menu at all (confirmed against
-            # n8n's own docs) - the universal verb maps to an HTTP method
-            # instead. n8n_resolved stays False for the same backward-
-            # compatibility reason as ai_subnode; n8n_resolution_kind is the
-            # unambiguous signal for the compiler.
+        if kind == "http_only":
             method = resolve_http_method(verb)
-            step["n8n_resolved"] = False
-            step["n8n_operation"] = None
-            step["n8n_resolution_kind"] = "generic_http"
-            step["n8n_http_node"] = {
-                "node_type": entry.get("node_type"),
-                "method": method,  # None if this verb has no sensible REST mapping - needs a human look
-            }
-            continue
-
-        if entry and entry.get("kind") == "http_only":
-            # A real, known third-party service (has a credential in
-            # integration_catalog.py) but no dedicated n8n node - reachable
-            # ONLY via a generic HTTP Request node, same mechanically as
-            # "generic_http", but kept as a distinct resolution_kind so the
-            # compiler knows this needs THIS service's own auth/base-URL
-            # details (from integration_catalog), not a truly generic call.
-            method = resolve_http_method(verb)
+            standalone = entry.get("nodes", {}).get("standalone", {})
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
             step["n8n_resolution_kind"] = "http_only"
             step["n8n_http_node"] = {
-                "node_type": "n8n-nodes-base.httpRequest",
-                "method": method,  # None if this verb has no sensible REST mapping - needs a human look
+                "node_type": standalone.get("type", "n8n-nodes-base.httpRequest"),
+                "typeVersion": standalone.get("typeVersion"),
+                "base_url": standalone.get("base_url"),
+                "method": method,
             }
             continue
 
-        if entry and entry.get("kind") == "trigger_only_or_unparsed":
-            # Deliberately NOT given an automatic compile path, unlike the
-            # three kinds above. This means the extractor found the node but
-            # got zero operations from it - either it's a genuine trigger-
-            # only node being used in a non-trigger step (a modeling problem
-            # worth a human's attention, not a data gap to patch around), or
-            # a legacy `name:'action'` property this version of the
-            # extractor doesn't parse (see node_registry.py's own docstring -
-            # FileMaker confirmed as one such case). Guessing which one
-            # without checking risks silently accepting a broken step.
+        if kind == "flat_params_node":
+            method = resolve_http_method(verb)
+            standalone = entry.get("nodes", {}).get("standalone", {})
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
-            step["n8n_resolution_kind"] = "trigger_only_or_unparsed"
+            step["n8n_resolution_kind"] = "flat_params_node"
+            step["n8n_http_node"] = {
+                "node_type": standalone.get("type"),
+                "typeVersion": standalone.get("typeVersion"),
+                "method": method,
+            }
+            continue
+
+        if kind == "trigger_only":
+            step["n8n_resolved"] = False
+            step["n8n_operation"] = None
+            step["n8n_resolution_kind"] = "trigger_only"
             continue
 
         if not entry:
@@ -595,13 +485,7 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
             step["n8n_resolution_kind"] = "unmapped"
             continue
 
-        if entry.get("kind") != "action_node":
-            # Should be unreachable now that ai_subnode / generic_http /
-            # http_only / trigger_only_or_unparsed are all handled above -
-            # kept as a safety net in case node_registry.json ever adds a
-            # new `kind` value this function hasn't been taught yet, so that
-            # case fails loudly as "unsupported_kind" instead of silently
-            # falling through to resolve_operation with a kind it can't use.
+        if kind != "action_node":
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
             step["n8n_resolution_kind"] = "unsupported_kind"
@@ -609,7 +493,7 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
 
         op = resolve_operation(service, verb, resource=target)
         step["n8n_resolved"] = op is not None
-        step["n8n_operation"] = op  # full dict or None - never a guessed partial value
+        step["n8n_operation"] = op
         step["n8n_resolution_kind"] = (
             "action_node" if op is not None else "no_operation_match"
         )
@@ -619,12 +503,10 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
 
 def _summarize_resolution(preview_json: dict) -> dict:
     """
-    Small aggregate the /agents/extract-workflow response can hand straight
-    to the frontend alongside integration status, so the Preview Screen
-    doesn't need to loop every step client-side to know whether to show a
-    "some steps need review" banner.
+    Now also reflects trigger resolution (see _enrich_trigger), not just
+    workflow steps.
 
-        {"total": 4, "resolved": 3, "unresolved_steps": [3]}
+        {"total": 4, "resolved": 3, "unresolved_steps": [3], "trigger_resolved": true}
     """
     steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
     unresolved = [
@@ -632,29 +514,19 @@ def _summarize_resolution(preview_json: dict) -> dict:
         for s in steps
         if isinstance(s, dict) and not s.get("n8n_resolved")
     ]
+    trigger = preview_json.get("trigger") if isinstance(preview_json, dict) else None
+    trigger_resolved = (
+        bool(trigger.get("n8n_trigger_resolved")) if isinstance(trigger, dict) else None
+    )
     return {
         "total": len(steps),
         "resolved": len(steps) - len(unresolved),
         "unresolved_steps": unresolved,
+        "trigger_resolved": trigger_resolved,
     }
 
 
 def _sanitize_workflow_output(raw: dict) -> dict:
-    """
-    Enforces the five-key output contract on a raw Groq response.
-
-    - Drops any key not in _ALLOWED_TOP_LEVEL_KEYS (extra fields the model
-      added despite being told not to).
-    - Forces schema_version to CURRENT_SCHEMA_VERSION if missing or wrong,
-      since a sanitized-but-unversioned document would otherwise look stale
-      forever under the Problem 8 cache check.
-    - Raises ValueError if a required key is missing entirely — this is a
-      generation failure, not something safe to silently patch over, since
-      there's no reliable way to reconstruct e.g. a missing preview_json.
-    - Runs _check_operations/_check_target (logging only) and then
-      _enrich_with_real_operations (mutates preview_json in place, adding
-      n8n_resolved/n8n_operation per step) before returning.
-    """
     if not isinstance(raw, dict):
         raise ValueError(f"Expected a JSON object from Groq, got {type(raw).__name__}")
 
@@ -667,8 +539,6 @@ def _sanitize_workflow_output(raw: dict) -> dict:
 
     dropped = raw.keys() - _ALLOWED_TOP_LEVEL_KEYS
     if dropped:
-        # Not fatal — just stripped. Logged so drift frequency can be tracked
-        # and the prompt/model choice revisited if this fires often.
         print(
             f"[workflow_generator] Stripped non-conforming keys from Groq output: {sorted(dropped)}"
         )
@@ -680,6 +550,7 @@ def _sanitize_workflow_output(raw: dict) -> dict:
         sanitized.get("automation_description", ""), sanitized.get("preview_json", {})
     )
     _enrich_with_real_operations(sanitized.get("preview_json", {}))
+    _enrich_trigger(sanitized.get("preview_json", {}))
     return sanitized
 
 
@@ -888,10 +759,13 @@ async def generate_groq_workflow(
         API Call
 
         "service" - the specific external service the trigger fires from, chosen from
-        the same service whitelist used for workflow steps (Rule 7). Required whenever
-        "type" is Event, Email, or Form Submission, since those can be backed by more
-        than one possible service (e.g. Email -> gmail vs outlook). For Manual, Schedule,
-        Webhook, or API Call, set "service" to an empty string.
+        the same service whitelist used for workflow steps (Rule 7), AND that service
+        must be one that genuinely has a trigger capability in n8n - do not pick a
+        service purely because it appears elsewhere in the workflow if it has no
+        trigger of its own. Required whenever "type" is Event, Email, or Form
+        Submission, since those can be backed by more than one possible service (e.g.
+        Email -> gmail vs outlook). For Manual, Schedule, Webhook, or API Call, set
+        "service" to an empty string - these are never service-backed.
 
         --------------------------------------------------
         7. workflow
@@ -950,7 +824,15 @@ async def generate_groq_workflow(
         - Attaching or storing a file -> "upload"
 
         Never invent an operation outside this list of ten, regardless of how
-        unusual the service or action is.
+        unusual the service or action is. This universal verb, together with
+        "target", is resolved deterministically against that service's OWN real
+        operation list after generation - never against another service's
+        operations, and never guessed when more than one of that service's real
+        operations could plausibly match (such steps are flagged for review
+        rather than silently assigned a possibly-wrong operation). Picking the
+        verb/target combination that most specifically and unambiguously
+        describes the action gives the resolver the best chance of a confident
+        match.
 
         TARGET
 
@@ -1212,10 +1094,6 @@ async def generate_groq_workflow(
         {context if context else "None"}
     """
 
-    # SYSTEM_INSTRUCTION is a plain (non-f) string because it contains literal
-    # { } in the JSON schema example - substituting the one dynamic piece via
-    # .replace() on a unique placeholder avoids having to escape every other
-    # brace in the string as an f-string would require.
     system_instruction = SYSTEM_INSTRUCTION.replace(
         "{SERVICE_WHITELIST}", _service_whitelist_text()
     )
@@ -1223,9 +1101,8 @@ async def generate_groq_workflow(
     print("Groq")
     raw_workflow = await generate_workflow_from_prompt(user_content, system_instruction)
     result = _sanitize_workflow_output(raw_workflow)
-    print("SANITIZED KEYS:", sorted(result.keys()))  # <-- add this
+    print("SANITIZED KEYS:", sorted(result.keys()))
     return result
-    return _sanitize_workflow_output(raw_workflow)
 
 
 async def fetch_mongo_workflow(

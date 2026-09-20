@@ -10,7 +10,8 @@ from app.core.config import settings
 from app.routers.agent_router import router as agent_router
 from app.routers.integration_router import router as integration_router
 from app.services.vectorstore import search_automations, printVectorStore
-from app.database import get_mongo_db
+from app.models.user import User                 # noqa: F401
+from app.models.integration import Integration 
 from fastapi import APIRouter, Depends
 from contextlib import asynccontextmanager
 Base.metadata.create_all(bind=engine)

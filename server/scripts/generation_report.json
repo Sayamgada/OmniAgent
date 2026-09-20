@@ -1,0 +1,20 @@
+{
+  "warnings": [
+    "Node 'n8n-nodes-base.formTrigger' only offers generic/abstract credentials (['httpBasicAuth']) -- excluded from service catalog",
+    "Node 'n8n-nodes-base.graphql' only offers generic/abstract credentials (['httpBasicAuth', 'httpCustomAuth', 'httpDigestAuth', 'httpHeaderAuth', 'httpQueryAuth', 'oAuth1Api', 'oAuth2Api']) -- excluded from service catalog",
+    "Node '@n8n/n8n-nodes-langchain.mcpTrigger' only offers generic/abstract credentials (['httpBearerAuth', 'httpHeaderAuth']) -- excluded from service catalog",
+    "Node '@n8n/n8n-nodes-langchain.chatTrigger' only offers generic/abstract credentials (['httpBasicAuth']) -- excluded from service catalog",
+    "Node 'n8n-nodes-base.graphqlTool' only offers generic/abstract credentials (['httpBasicAuth', 'httpCustomAuth', 'httpDigestAuth', 'httpHeaderAuth', 'httpQueryAuth', 'oAuth1Api', 'oAuth2Api']) -- excluded from service catalog"
+  ],
+  "stats": {
+    "total_nodes": 836,
+    "total_credentials": 518,
+    "abstract_credentials_excluded": 11,
+    "connectable_services": 426,
+    "multi_node_hub_services": 25,
+    "http_only_services": 119,
+    "generic_auth_types": 9,
+    "inline_auth_param_nodes": 4,
+    "credential_free_excluded_nodes": 118
+  }
+}

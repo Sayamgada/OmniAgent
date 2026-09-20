@@ -30,12 +30,20 @@ from app.core.config import settings
 
 class N8nClientError(Exception):
     def __init__(self, message: str, status_code: int | None = None, detail=None):
-        super().__init__(message)
+        # CHANGED: fold `detail` (n8n's actual response body -- the real
+        # validation error, e.g. which field/type it rejected) into the
+        # exception message itself. Previously detail was only reachable
+        # via e.detail, which nothing ever read, so it never showed up in
+        # logs or tracebacks -- every n8n rejection just read "failed (400)"
+        # with no way to tell why.
+        full_message = f"{message}: {detail}" if detail is not None else message
+        super().__init__(full_message)
         self.status_code = status_code
         self.detail = detail
 
 
 # ---------------- Public API (X-N8N-API-KEY) ----------------
+
 
 def _headers() -> dict:
     return {
@@ -57,7 +65,9 @@ async def create_credential(name: str, credential_type: str, data: dict) -> dict
     """
     payload = {"name": name, "type": credential_type, "data": data}
     async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.post(f"{_base_url()}/credentials", headers=_headers(), json=payload)
+        resp = await client.post(
+            f"{_base_url()}/credentials", headers=_headers(), json=payload
+        )
     if resp.status_code not in (200, 201):
         raise N8nClientError(
             f"n8n credential creation failed ({resp.status_code})",
@@ -69,7 +79,9 @@ async def create_credential(name: str, credential_type: str, data: dict) -> dict
 
 async def delete_credential(n8n_credential_id: str) -> None:
     async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.delete(f"{_base_url()}/credentials/{n8n_credential_id}", headers=_headers())
+        resp = await client.delete(
+            f"{_base_url()}/credentials/{n8n_credential_id}", headers=_headers()
+        )
     if resp.status_code not in (200, 204):
         raise N8nClientError(
             f"n8n credential deletion failed ({resp.status_code})",
@@ -80,7 +92,9 @@ async def delete_credential(n8n_credential_id: str) -> None:
 
 async def get_credential_schema(credential_type: str) -> dict:
     async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.get(f"{_base_url()}/credentials/schema/{credential_type}", headers=_headers())
+        resp = await client.get(
+            f"{_base_url()}/credentials/schema/{credential_type}", headers=_headers()
+        )
     if resp.status_code != 200:
         raise N8nClientError(
             f"n8n schema lookup failed ({resp.status_code})",
@@ -176,7 +190,9 @@ async def is_oauth_credential_connected(n8n_credential_id: str) -> bool:
     Reads data.data.oauthTokenData -- a boolean presence flag n8n returns in the masked
     ?includeData=true view. Never exposes the actual token.
     """
-    resp = await _internal_get(f"/rest/credentials/{n8n_credential_id}?includeData=true")
+    resp = await _internal_get(
+        f"/rest/credentials/{n8n_credential_id}?includeData=true"
+    )
     if resp.status_code != 200:
         raise N8nClientError(
             f"Failed to check credential OAuth status ({resp.status_code})",
