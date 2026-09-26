@@ -11,15 +11,15 @@ import uuid
 from typing import Any, Optional
 
 from .graph import build_connections
-from .interfaces import CredentialResolver, ParamProvider
-from .instantiate import instantiate_step
+from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
 from .layout import layout_positions
+from .param_schema import get_required_params
+from .resolve import resolve_all_steps
 from .models import (
     CompileReport,
     CompileResult,
     N8nConnection,
     N8nNode,
-    ResolvedNode,
     Step,
     UnresolvedStep,
     Overrides,
@@ -35,8 +35,8 @@ def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
             continue
         if ov.operation:
             step.operation = ov.operation
-        if ov.resource:
-            step.resource = ov.resource
+        if ov.target:
+            step.target = ov.target
 
 
 def compile(
@@ -51,31 +51,8 @@ def compile(
     _apply_overrides(steps, overrides)
 
     # Stage 2: instantiate every step against the real registry.
-    used_names: set[str] = set()
-
-    # A service counts as an "AI cluster head" once the AI Agent root node
-    # itself is built (Step 5). This vertical slice's fixtures have no AI
-    # cluster, so this stays empty -- deliberate, not an omission. It only
-    # affects whether instantiate_step() picks the `tool` node variant.
-    ai_head_services: set[str] = set()
-
-    resolved_by_step: dict[int, ResolvedNode] = {}
-    for step in steps:
-        resolved_by_step[step.step] = instantiate_step(
-            step, used_names, ai_head_services
-        )
-
-    for step in steps:
-        resolved = resolved_by_step[step.step]
-        if resolved.kind == "no_operation_match":
-            report.needs_user_input.append(
-                UnresolvedStep(
-                    step=step.step,
-                    service=step.service,
-                    reason="ambiguous or unresolvable operation — pick one",
-                    candidates=resolved.candidates,
-                )
-            )
+    resolved_by_step, resolve_report = resolve_all_steps(steps)
+    report.needs_user_input.extend(resolve_report.needs_user_input)
 
     if not report.is_deployable:
         return CompileResult(workflow_json=None, report=report)
@@ -87,10 +64,79 @@ def compile(
     for step in steps:
         resolved = resolved_by_step[step.step]
 
-        # No per-operation parameter schema exists in the registry (see
-        # interfaces.py's PlaceholderParamProvider docstring) -- field_defs
-        # is always [] until real collection reads nodes.json directly.
-        params = param_provider.get_params(step, resolved, [])
+        if resolved.kind == "agent_root":
+            # The Agent root's own params are fixed shape, not collected via
+            # the generic param_provider/field_defs flow (it has no
+            # resource/operation menu) -- source the prompt from
+            # step.instructions, which is now a real, server-validated,
+            # min-length-checked field (n8n_subnode.agent_instructions_source
+            # == "step.instructions"). Keep the empty-string fallback as a
+            # true edge case, per the realignment plan.
+            n8n_nodes.append(
+                N8nNode(
+                    id=str(uuid.uuid4()),
+                    name=resolved.name,
+                    type=resolved.node_type,
+                    typeVersion=resolved.type_version,
+                    position=positions.get(step.step, [0, 0]),
+                    parameters={
+                        "promptType": "define",
+                        "text": step.instructions or "",
+                    },
+                    credentials={},  # the Agent root itself has no credential
+                )
+            )
+
+            base_pos = positions.get(step.step, [0, 0])
+            for i, sub in enumerate(resolved.subnodes):
+                sub_creds: dict[str, Any] = {}
+                if sub.n8n_credential_type:
+                    cred = credential_resolver.resolve(user_id, sub.n8n_credential_type)
+                    if cred is None:
+                        report.warnings.append(
+                            f"step {step.step} ({step.service}) subnode "
+                            f"{sub.name!r}: no credential connected for "
+                            f"{sub.n8n_credential_type}; node will be created "
+                            "without one"
+                        )
+                    else:
+                        sub_creds[sub.n8n_credential_type] = cred
+
+                n8n_nodes.append(
+                    N8nNode(
+                        id=str(uuid.uuid4()),
+                        name=sub.name,
+                        type=sub.node_type,
+                        typeVersion=sub.type_version,
+                        # Simple offset beneath the Agent root -- layout.py
+                        # doesn't know about subnodes yet (realignment plan
+                        # flags this: "subnode_position in layout.py" still
+                        # to be added).
+                        position=[base_pos[0], base_pos[1] + 150 + i * 150],
+                        parameters={},  # model field is optional w/ a default
+                        credentials=sub_creds,
+                    )
+                )
+            continue
+
+        field_defs = []
+        if resolved.node_type is not None and resolved.type_version is not None:
+            field_defs = get_required_params(
+                resolved.node_type, resolved.type_version, step.target, step.operation
+            )
+
+        try:
+            params = param_provider.get_params(step, resolved, field_defs)
+        except MissingRequiredParam as e:
+            report.needs_user_input.append(
+                UnresolvedStep(
+                    step=e.step,
+                    service=e.service,
+                    reason=f"missing required parameter(s): {', '.join(e.field_names)}",
+                    candidates=[],
+                )
+            )
+            continue
 
         creds: dict[str, Any] = {}
         if resolved.n8n_credential_type:
@@ -114,6 +160,12 @@ def compile(
                 credentials=creds,
             )
         )
+
+    if not report.is_deployable:
+        # A step hit MissingRequiredParam mid-loop -- n8n_nodes is now
+        # incomplete and connections still reference the skipped node's
+        # name, so there's no safe partial workflow_json to return here.
+        return CompileResult(workflow_json=None, report=report)
 
     workflow_json = {
         "name": workflow_name,

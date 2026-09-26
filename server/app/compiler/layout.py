@@ -10,6 +10,17 @@ Deliberately NOT using dagre: it's a JS library and this backend is
 Python. n8n only needs an [x, y] pair per node, so a from-scratch layered
 layout in Python (topological layer = x, index-in-layer = y) covers the
 same need without a Node subprocess dependency.
+
+Post-realignment note: the primary AI path (a Groq/etc. step) now
+resolves as a top-level "agent_root" node, not "ai_subnode" — it sits in
+the ordinary main chain and gets a normal main_index position like any
+other step (matches compile.py, which reads positions[step.step] for the
+agent_root itself and offsets its chat-model subnode inline, since
+subnodes have no step number of their own to key a position by). The
+ai_subnode branch below is dead for that path now; it's kept only as a
+defensive fallback for the still-deferred multi_node_hub AI path
+(instantiate.py's _instantiate_multi_node_hub), which can still produce a
+bare top-level ai_subnode node wired via depends_on.
 """
 
 from __future__ import annotations

@@ -53,14 +53,35 @@ class StaticCredentialResolver(CredentialResolver):
 
 
 def _builtin_gmail_slice() -> list[Step]:
+    # Realigned against the real preview_json contract: the trigger is
+    # step 0 with n8n_resolution_kind/n8n_trigger_node set directly
+    # (mirrors what loader.py builds from preview_json["trigger"]), and
+    # step 2 carries operation/target + n8n_operation the way the server's
+    # own enrichment would, rather than free-text `action`.
     return [
-        Step(step=1, service="gmail", action="Watch for new email", is_trigger=True),
+        Step(
+            step=0,
+            service="gmail",
+            is_trigger=True,
+            depends_on=[],
+            n8n_resolution_kind="action_node",
+            n8n_trigger_node={
+                "type": "n8n-nodes-base.gmailTrigger",
+                "typeVersion": 1.4,
+            },
+        ),
         Step(
             step=2,
             service="gmail",
-            action="Send a message",
-            resource="message",
-            depends_on=[1],
+            operation="send",
+            target="message",
+            depends_on=[0],
+            n8n_resolution_kind="action_node",
+            n8n_operation={
+                "label": "Send",
+                "value": "send",
+                "action": "Send a message",
+            },
         ),
     ]
 
@@ -81,22 +102,14 @@ def main():
         "Omit to leave every node's credentials block empty.",
     )
     parser.add_argument("--name", default="Generated Workflow", help="Workflow name.")
-    parser.add_argument(
-        "--resource-hints",
-        default=None,
-        help='JSON dict of {"<step_number>": "<resource>"}, only needed when '
-        "using --preview and the loader can't infer a resource on its own "
-        "(see loader.py's docstring -- resource inference isn't decided yet).",
-    )
     args = parser.parse_args()
 
     if args.preview_path:
         with open(args.preview_path) as f:
             preview = json.load(f)
-        hints = {}
-        if args.resource_hints:
-            hints = {int(k): v for k, v in json.loads(args.resource_hints).items()}
-        steps = preview_to_steps(preview, resource_hints=hints)
+        # resource_hints is gone -- target already arrives resolved from
+        # Groq/server-side enrichment, nothing left to hint.
+        steps = preview_to_steps(preview)
     else:
         steps = _builtin_gmail_slice()
 

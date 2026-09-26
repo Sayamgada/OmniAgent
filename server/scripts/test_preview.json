@@ -103,9 +103,9 @@
         "n8n_operation": null,
         "n8n_resolution_kind": "ai_subnode",
         "n8n_subnode": {
-          "root_node_type": "n8n-nodes-langchain.agent",
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
           "connection_type": "ai_languageModel",
-          "chat_model_node_type": "n8n-nodes-langchain.lmChatGroq",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
           "agent_instructions_source": "step.instructions"
         }
       },

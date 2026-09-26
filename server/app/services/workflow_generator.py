@@ -418,9 +418,9 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
     n8n_operation_registry.py's module docstring).
     """
     _AI_SUBNODE_CHAT_MODEL_TYPES = {
-        "groq": "n8n-nodes-langchain.lmChatGroq",
+        "groq": "@n8n/n8n-nodes-langchain.lmChatGroq",
     }
-    _AI_AGENT_ROOT_NODE_TYPE = "n8n-nodes-langchain.agent"
+    _AI_AGENT_ROOT_NODE_TYPE = "@n8n/n8n-nodes-langchain.agent"
     _AI_LANGUAGE_MODEL_CONNECTION_TYPE = "ai_languageModel"
 
     steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
