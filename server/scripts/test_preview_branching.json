@@ -1,0 +1,212 @@
+{
+  "automation_name": "Combined Gmail and Slack Summary Email",
+  "automation_description": "The automation checks Gmail for new emails and Slack for new messages, combines their contents using AI, and sends a single summary email.",
+  "schema_version": 4,
+  "task_summary": "Checks Gmail and Slack for new messages, creates an AI‑generated summary, and emails it.",
+  "intent_type": "automation_preview",
+  "complexity": "medium",
+  "required_agents": [
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": ["Get many messages"]
+    },
+    {
+      "agent_name": "slack",
+      "role": "Workflow step",
+      "responsibilities": ["list"]
+    },
+    {
+      "agent_name": "groq",
+      "role": "Workflow step",
+      "responsibilities": ["generate"]
+    },
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": ["Send a message"]
+    }
+  ],
+  "workflow": [
+    {
+      "step": 1,
+      "description": "Get many messages",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Get many messages",
+      "input": "",
+      "output": "",
+      "operation": "list",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Get Many",
+        "value": "getAll",
+        "action": "Get many messages"
+      }
+    },
+    {
+      "step": 2,
+      "description": "list",
+      "agent": "slack",
+      "service": "slack",
+      "action": "list",
+      "input": "",
+      "output": "",
+      "operation": "list",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": false
+    },
+    {
+      "step": 3,
+      "description": "generate",
+      "agent": "groq",
+      "service": "groq",
+      "action": "generate",
+      "input": "",
+      "output": "",
+      "operation": "generate",
+      "target": "",
+      "parameters": {},
+      "depends_on": [1, 2],
+      "n8n_resolved": false
+    },
+    {
+      "step": 4,
+      "description": "Send a message",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Send a message",
+      "input": "",
+      "output": "",
+      "operation": "send",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [3],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Send",
+        "value": "send",
+        "action": "Send a message"
+      }
+    }
+  ],
+  "inputs_required": [],
+  "expected_outputs": [
+    "A single email containing the AI‑generated summary of new Gmail and Slack messages."
+  ],
+  "tools_required": [
+    "gmail",
+    "Gmail",
+    "slack",
+    "Slack",
+    "groq",
+    "AI Provider (Groq)"
+  ],
+  "constraints": [],
+  "trigger_type": "Manual",
+  "edge_cases": [],
+  "success_criteria": [
+    "A single email containing the AI‑generated summary of new Gmail and Slack messages."
+  ],
+  "required_integrations": [
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "slack",
+      "display_name": "Slack",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true,
+      "available": true
+    }
+  ],
+  "preview_json": {
+    "title": "Combined Gmail and Slack Summary Email",
+    "description": "Checks Gmail and Slack for new messages, creates an AI‑generated summary, and emails it.",
+    "trigger": {
+      "type": "Manual",
+      "service": "",
+      "description": "Manually start the automation",
+      "n8n_trigger_resolved": true,
+      "n8n_trigger_node": {
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1
+      }
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "gmail",
+        "operation": "list",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Get Many",
+          "value": "getAll",
+          "action": "Get many messages"
+        },
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 2,
+        "service": "slack",
+        "operation": "list",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [],
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "no_operation_match"
+      },
+      {
+        "step": 3,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [1, 2],
+        "instructions": "Analyze the new email messages retrieved in step 1 and the new Slack messages retrieved in step 2, extract the key points from each, and produce a concise combined summary suitable for an email body.",
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 4,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [3],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message"
+        },
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "A single email containing the AI‑generated summary of new Gmail and Slack messages."
+  }
+}

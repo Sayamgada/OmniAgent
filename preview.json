@@ -1,15 +1,20 @@
 {
-  "automation_name": "Student Query Auto-Response Assistant",
-  "automation_description": "Monitors incoming student emails, uses AI to categorize the query and draft a response, then emails the reply back to the student.",
+  "automation_name": "AI-Powered Employee Leave Request Processor",
+  "automation_description": "Monitors incoming leave request emails in Gmail, extracts request details with Groq, evaluates eligibility, and sends an approval or rejection notification via Gmail.",
   "schema_version": 4,
-  "task_summary": "Automatically processes incoming student queries from Gmail, generates an appropriate answer with AI, and sends the reply via email.",
+  "task_summary": "Automatically processes leave request emails, determines if they meet criteria, and notifies the employee of approval or rejection.",
   "intent_type": "automation_preview",
-  "complexity": "low",
+  "complexity": "high",
   "required_agents": [
     {
       "agent_name": "groq",
       "role": "Workflow step",
       "responsibilities": ["generate"]
+    },
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": ["Send a message"]
     },
     {
       "agent_name": "gmail",
@@ -30,6 +35,9 @@
       "target": "",
       "parameters": {},
       "depends_on": [],
+      "condition": {
+        "branches": ["approved", "rejected"]
+      },
       "n8n_resolved": false
     },
     {
@@ -44,6 +52,27 @@
       "target": "message",
       "parameters": {},
       "depends_on": [1],
+      "branch": "approved",
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Send",
+        "value": "send",
+        "action": "Send a message"
+      }
+    },
+    {
+      "step": 3,
+      "description": "Send a message",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Send a message",
+      "input": "",
+      "output": "",
+      "operation": "send",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [1],
+      "branch": "rejected",
       "n8n_resolved": true,
       "n8n_operation": {
         "label": "Send",
@@ -54,14 +83,14 @@
   ],
   "inputs_required": [],
   "expected_outputs": [
-    "The student receives an AI‑generated email response addressing their query."
+    "Employee receives an email notifying them of approval or rejection of their leave request."
   ],
   "tools_required": ["gmail", "Gmail", "groq", "AI Provider (Groq)"],
   "constraints": [],
-  "trigger_type": "Email",
+  "trigger_type": "Event",
   "edge_cases": [],
   "success_criteria": [
-    "The student receives an AI‑generated email response addressing their query."
+    "Employee receives an email notifying them of approval or rejection of their leave request."
   ],
   "required_integrations": [
     {
@@ -78,12 +107,12 @@
     }
   ],
   "preview_json": {
-    "title": "Student Query Auto-Response Assistant",
-    "description": "Automatically processes incoming student queries from Gmail, generates an appropriate answer with AI, and sends the reply via email.",
+    "title": "Employee Leave Request Processor",
+    "description": "Automatically processes leave request emails, determines if they meet criteria, and notifies the employee of approval or rejection.",
     "trigger": {
-      "type": "Email",
+      "type": "Event",
       "service": "gmail",
-      "description": "When a new email arrives in the monitored Gmail inbox",
+      "description": "New email received in Gmail",
       "n8n_trigger_resolved": true,
       "n8n_trigger_node": {
         "type": "n8n-nodes-base.gmailTrigger",
@@ -98,14 +127,17 @@
         "target": "",
         "parameters": {},
         "depends_on": [],
-        "instructions": "Analyze the email content received in the trigger, identify the student's query category, and draft a concise, helpful response using a friendly tone appropriate for a student.",
+        "instructions": "Extract the employee name, leave start date, leave end date, reason, and request type from the email content received in step 1. Then determine if the request meets the predefined criteria (e.g., sufficient leave balance, allowed request type, dates in the future). Return a JSON object with fields: name, start_date, end_date, reason, request_type, valid (true/false).",
+        "condition": {
+          "branches": ["approved", "rejected"]
+        },
         "n8n_resolved": false,
         "n8n_operation": null,
         "n8n_resolution_kind": "ai_subnode",
         "n8n_subnode": {
-          "root_node_type": "n8n-nodes-langchain.agent",
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
           "connection_type": "ai_languageModel",
-          "chat_model_node_type": "n8n-nodes-langchain.lmChatGroq",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
           "agent_instructions_source": "step.instructions"
         }
       },
@@ -116,6 +148,23 @@
         "target": "message",
         "parameters": {},
         "depends_on": [1],
+        "branch": "approved",
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message"
+        },
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 3,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [1],
+        "branch": "rejected",
         "n8n_resolved": true,
         "n8n_operation": {
           "label": "Send",
@@ -125,6 +174,6 @@
         "n8n_resolution_kind": "action_node"
       }
     ],
-    "output": "The student receives an AI‑generated email response addressing their query."
+    "output": "Employee receives an email notifying them of approval or rejection of their leave request."
   }
 }

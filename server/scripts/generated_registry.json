@@ -75733,5 +75733,39 @@
     "n8n-nodes-base.hackerNewsTool": [
       "username"
     ]
+  },
+  "_utility_nodes": {
+    "if": {
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    "switch": {
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    },
+    "merge": {
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    "set": {
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5
+    },
+    "code": {
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    "noOp": {
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1
+    },
+    "filter": {
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3
+    },
+    "wait": {
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1
+    }
   }
 }

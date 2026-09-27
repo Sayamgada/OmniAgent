@@ -71,8 +71,18 @@ def preview_to_steps(preview_json: dict[str, Any]) -> list[Step]:
         if isinstance(condition_raw, dict) and "branches" in condition_raw:
             from .models import ConditionBranch
 
+            # Real Groq output gives branches as plain label strings, e.g.
+            # {"branches": ["approved", "rejected"]} -- confirmed against
+            # an actual generated preview_json. There is no per-branch
+            # expression at this stage (real condition logic is still
+            # deferred, same as every other step's params); keep the dict
+            # shape ({"label": ..., "expression": ...}) accepted too in
+            # case a future prompt version or another code path emits it,
+            # rather than assuming only one shape is ever possible.
             condition = [
-                ConditionBranch(
+                ConditionBranch(label=b, expression="")
+                if isinstance(b, str)
+                else ConditionBranch(
                     label=b.get("label", ""), expression=b.get("expression", "")
                 )
                 for b in condition_raw.get("branches", [])

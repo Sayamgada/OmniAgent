@@ -33,19 +33,28 @@ def resolve_all_steps(
     report = CompileReport()
     used_names: set[str] = set()
 
-    # Step numbers that an AI step ITSELF depends_on -- i.e. steps the
-    # agent calls as a tool mid-reasoning. This is the opposite direction
-    # from "steps that depend on the AI step" (that's just the normal
-    # downstream main chain, e.g. "send the drafted reply" -- not a tool
-    # call). Confirmed as a real, previously-latent bug: the first typed
-    # version of this set checked the wrong direction and incorrectly
-    # resolved a plain downstream Gmail Send as the gmailHitlTool variant
-    # whenever it depended_on the AI step, which is the common case, not
-    # the exception.
+    # Step numbers that an AI step's OWN depends_on lists -- previously
+    # treated as "the agent calls this as a tool mid-reasoning" and
+    # resolved to the *Tool node variant (gmailHitlTool, slackHitlTool,
+    # etc.). DISABLED 2026-09-26: this can't distinguish that from the
+    # ordinary, confirmed-real case of an AI step needing 2+ upstream
+    # results before it runs (fan-in) -- depends_on membership alone means
+    # "needs this step's output first," nothing in the schema says WHY.
+    # Confirmed wrong against a real fan-in preview (Gmail list + Slack
+    # search -> Merge -> AI summarize -> Gmail send): both Gmail and Slack
+    # got silently resolved as their HITL tool variants ("Human review" /
+    # "Send and wait", with a dangling Tool* connector) instead of plain
+    # action nodes feeding the synthesized Merge node. There is no
+    # confirmed case yet of Groq's current prompt producing a genuine
+    # dynamic-tool-calling shape (the agent invoking a service mid-
+    # reasoning, as opposed to consuming already-gathered upstream data)
+    # -- same "unconfirmed reachable" status this codebase already gives
+    # multi_node_hub disambiguation elsewhere. Left as an always-empty set
+    # (not removed outright, and instantiate_step()'s ai_tool_steps
+    # parameter/tool-variant path stays intact) so this can be re-enabled
+    # the moment there's a real fixture AND a reliable signal to tell the
+    # two cases apart -- depends_on membership isn't that signal.
     ai_tool_steps: set[int] = set()
-    for s in steps:
-        if s.n8n_resolution_kind == "ai_subnode":
-            ai_tool_steps.update(s.depends_on)
 
     resolved_by_step: dict[int, ResolvedNode] = {}
     for step in steps:

@@ -95,8 +95,19 @@ from pathlib import Path
 IN_DIR = Path(__file__).resolve().parent
 NODES_PATH = IN_DIR / "nodes.json"
 CREDS_PATH = IN_DIR / "credentials.json"
-OUT_PATH = IN_DIR / "generated_registry.json"
-REPORT_PATH = IN_DIR / "generation_report.json"
+# NOTE: OUT_PATH/REPORT_PATH previously pointed at IN_DIR (scripts/) --
+# same directory as this script -- which meant every run silently wrote a
+# correct generated_registry.json that nothing ever read: the actual
+# consumer, app/core/n8n_operation_registry.py's _REGISTRY_PATH, has
+# always pointed at app/utils/generated_registry.json, a completely
+# separate file. Confirmed empirically (2026-09-26): app/utils/'s copy
+# sat at a stale mtime through multiple "successful" generator runs,
+# because those runs were writing to scripts/generated_registry.json the
+# whole time. Fixed by writing directly to the real consumer's path,
+# rather than adding a manual copy step someone will eventually forget.
+_APP_UTILS_DIR = IN_DIR.parent / "app" / "utils"
+OUT_PATH = _APP_UTILS_DIR / "generated_registry.json"
+REPORT_PATH = _APP_UTILS_DIR / "generation_report.json"
 
 # ---------------------------------------------------------------- loading
 
@@ -548,6 +559,63 @@ def node_entry(node):
     return entry
 
 
+# -------------------------------------------------------- utility/logic nodes
+#
+# If/Switch/Merge/Set/Code/NoOp/Filter/Wait have no credential at all (or,
+# for Wait, only conditional/generic ones -- httpBasicAuth/httpHeaderAuth/
+# jwtAuth, all genericAuth, so it already falls out of the main grouping
+# loop above as "every credential option is abstract"). That means none of
+# them can ever be reached via the node->credential join the rest of this
+# script is built on -- they need to be pulled out by literal node name
+# straight from the same deduped `nodes` list `main()` already has in
+# scope, reusing node_entry() for typeVersion selection rather than
+# re-deriving it a second way (confirmed node_entry()'s existing
+# list[-1]-on-a-list rule already lands on the same typeVersion a
+# defaultVersion-based lookup would, for all eight of these, since load()
+# has already deduped to the highest-version entry by the time node_entry()
+# runs). This list only changes if the compiler needs a new control-flow
+# node type -- rare, unlike SERVICE_REGISTRY/AI_PROVIDER_KEY_OVERRIDES.
+UTILITY_NODE_NAMES = [
+    "n8n-nodes-base.if",
+    "n8n-nodes-base.switch",
+    "n8n-nodes-base.merge",
+    "n8n-nodes-base.set",
+    "n8n-nodes-base.code",
+    "n8n-nodes-base.noOp",
+    "n8n-nodes-base.filter",
+    "n8n-nodes-base.wait",
+]
+
+
+def build_utility_nodes(nodes, report):
+    """{'if': {'type': 'n8n-nodes-base.if', 'typeVersion': 2.3}, ...} --
+    keyed by n8n's own short node name (node_short_key), NOT a snake_cased
+    service key, since graph.py looks these up by a literal control-flow
+    name it already knows ("merge", "switch", ...), not a derived one.
+    Deliberately just {type, typeVersion} per the plan's _utility_nodes
+    schema -- these nodes' real params (Switch's rules, Merge's
+    numberInputs, ...) are handled by the compiler's own param_schema.py
+    reading nodes.json directly at compile time, same as any other node;
+    this section only needs to answer "what node type/version do I
+    instantiate," which is all graph.py's synthesis steps need."""
+    by_name = {n["name"]: n for n in nodes}
+    section = {}
+    for full_name in UTILITY_NODE_NAMES:
+        node = by_name.get(full_name)
+        if not node:
+            report["warnings"].append(
+                f"Utility node '{full_name}' not found in nodes.json -- "
+                f"graph.py's synthesis for it will fail until this is resolved"
+            )
+            continue
+        entry = node_entry(node)
+        section[node_short_key(full_name)] = {
+            "type": entry["type"],
+            "typeVersion": entry["typeVersion"],
+        }
+    return section
+
+
 # ---------------------------------------------------------------- main build
 
 
@@ -786,6 +854,7 @@ def main():
     output = dict(sorted(registry.items()))
     output["_generic_auth_types"] = generic_section
     output["_inline_auth_params"] = {name: hits for name, hits in inline_only_nodes}
+    output["_utility_nodes"] = build_utility_nodes(nodes, report)
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
@@ -804,6 +873,7 @@ def main():
         "generic_auth_types": len(generic_section),
         "inline_auth_param_nodes": len(inline_only_nodes),
         "credential_free_excluded_nodes": len(credential_free_nodes),
+        "utility_nodes_found": len(output["_utility_nodes"]),
     }
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)

@@ -5,7 +5,7 @@ from app.compiler.param_form import build_param_form
 from app.compiler.compile import compile as do_compile
 from app.compiler.interfaces import PlaceholderParamProvider, DummyCredentialResolver
 
-preview_json = json.load(open("path/to/a/real/cached/preview.json"))
+preview_json = json.load(open("D:/Projects/OmniAgent/preview.json"))
 steps = preview_to_steps(preview_json)
 
 resolved, report = resolve_all_steps(steps)

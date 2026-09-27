@@ -136,6 +136,21 @@ def get_service_entry(service: str) -> dict | None:
     return reg.get(service)
 
 
+def get_utility_node(name: str) -> dict | None:
+    """
+    {"type": "n8n-nodes-base.if", "typeVersion": 2.3} for a credential-less
+    control-flow node graph.py needs to synthesize -- currently "if",
+    "switch", "merge", "set", "code", "noOp", "filter", "wait". Keyed by
+    n8n's own short node name, NOT a service key -- these never go through
+    get_service_entry()/get_kind(), since they have no credential and no
+    resource/operation menu in the sense the rest of this module resolves.
+    Returns None if `name` isn't in the registry's _utility_nodes section
+    (a typo, or generated_registry.json predates this section).
+    """
+    reg = _load_registry()
+    return reg.get("_utility_nodes", {}).get(name)
+
+
 def list_families(service: str) -> dict:
     """
     {} for a non-hub service. For a multi_node_hub service, the family-name

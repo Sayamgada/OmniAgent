@@ -70,7 +70,9 @@ class Step:
     step: int
     service: str
     operation: Optional[str] = None  # canonical verb, as Groq wrote it (e.g. "send")
-    target: Optional[str] = None  # resolved n8n resource, e.g. "message" (was `resource`)
+    target: Optional[str] = (
+        None  # resolved n8n resource, e.g. "message" (was `resource`)
+    )
     depends_on: list[int] = field(default_factory=list)
     condition: Optional[list[ConditionBranch]] = None
     branch: Optional[str] = None  # which branch label this step lives on, if any
@@ -81,7 +83,9 @@ class Step:
     n8n_resolution_kind: Optional[str] = None  # action_node/ai_subnode/http_only/...
     n8n_operation: Optional[dict[str, Any]] = None  # {"label","value","action"} | None
     n8n_subnode: Optional[dict[str, Any]] = None  # ai_subnode steps only
-    n8n_http_node: Optional[dict[str, Any]] = None  # http_only/flat_params_node steps only
+    n8n_http_node: Optional[dict[str, Any]] = (
+        None  # http_only/flat_params_node steps only
+    )
     n8n_trigger_node: Optional[dict[str, Any]] = None  # synthetic trigger step only
 
     raw: dict[str, Any] = field(
@@ -116,7 +120,22 @@ class ResolvedNode:
     ai_connection_type: Optional[str] = None  # e.g. "ai_languageModel", for ai_subnode
     candidates: list[dict[str, Any]] = field(default_factory=list)  # unresolved options
     name: Optional[str] = None  # unique display name, assigned in stage 2
-    subnodes: list["ResolvedNode"] = field(default_factory=list)  # e.g. agent_root's chat model
+    subnodes: list["ResolvedNode"] = field(
+        default_factory=list
+    )  # e.g. agent_root's chat model
+    fixed_params: dict[str, Any] = field(
+        default_factory=dict
+    )  # e.g. Merge's {"numberInputs": N} —
+    # structural params a node needs regardless of param_schema.py's normal
+    # per-operation field collection, same idea as agent_root's fixed
+    # promptType/text pair; set by whichever stage creates the node
+    # (graph.py, for synthesized utility nodes)
+    layout_hint: Literal["before_step", "after_step"] = "before_step"  # for a
+    # synthesized node (kind="utility"), which side of resolved_by_step[.step]'s
+    # position it belongs on — Merge sits upstream of the step it feeds
+    # ("before_step", .step = the target), Switch sits downstream of the
+    # step that carries the condition ("after_step", .step = its own
+    # source). Ignored for any normal (non-synthesized) node.
 
 
 # ---------------------------------------------------------------------------

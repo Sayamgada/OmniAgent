@@ -19,9 +19,20 @@ real connectable credential), and multi_node_hub (AWS, Cohere, ...) alike.
 Auth/credential connection is independent of whether a service has a
 dedicated node; that's n8n_operation_registry.py's concern, not this one.
 
-The two underscore-prefixed sections of the registry (_generic_auth_types,
-_inline_auth_params) are NOT services a user connects to directly, so
-they're excluded from INTEGRATION_CATALOG entirely.
+The underscore-prefixed sections of the registry (_generic_auth_types,
+_inline_auth_params, _utility_nodes) are NOT services a user connects to
+directly, so they're excluded from INTEGRATION_CATALOG entirely.
+_utility_nodes added 2026-09-26 alongside the utility-node module in
+generate_registry.py/n8n_operation_registry.py -- this exclusion set is the
+second, independent place (besides get_service_entry()'s single-key
+startswith("_") guard) that needed to know about it, confirmed the hard
+way: any code iterating INTEGRATION_CATALOG.items() (e.g.
+workflow_generator.py's _build_service_whitelist()) would otherwise treat
+_utility_nodes as a service entry and crash with KeyError('category') the
+moment it tried entry["category"] against {'if': {...}, 'switch': {...},
+...}. Any future underscore-prefixed registry section needs adding here
+too -- this is a full-iteration filter, not a single-key lookup, so the
+get_*() accessors' startswith("_") guards don't cover it.
 """
 
 import json
@@ -32,7 +43,7 @@ _REGISTRY_PATH = (
     Path(__file__).resolve().parent.parent / "utils" / "generated_registry.json"
 )
 
-_EXCLUDED_SECTIONS = {"_generic_auth_types", "_inline_auth_params"}
+_EXCLUDED_SECTIONS = {"_generic_auth_types", "_inline_auth_params", "_utility_nodes"}
 
 
 @lru_cache(maxsize=1)

@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 from .graph import build_connections
 from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
-from .layout import layout_positions
+from .layout import X_SPACING, Y_SPACING, layout_positions
 from .param_schema import get_required_params
 from .resolve import resolve_all_steps
 from .models import (
@@ -57,7 +57,7 @@ def compile(
     if not report.is_deployable:
         return CompileResult(workflow_json=None, report=report)
 
-    connections = build_connections(steps, resolved_by_step, report)
+    connections, synthesized_nodes = build_connections(steps, resolved_by_step, report)
     positions = layout_positions(steps, resolved_by_step)
 
     n8n_nodes: list[N8nNode] = []
@@ -160,6 +160,45 @@ def compile(
                 credentials=creds,
             )
         )
+
+    if report.is_deployable:
+        # Synthesized nodes (Merge, Switch) have no step of their own --
+        # graph.py stamps resolved.step with whichever real step anchors
+        # their position, and resolved.layout_hint says which side of it:
+        # Merge sits upstream of the step it feeds ("before_step"), Switch
+        # sits downstream of the step that carries the condition
+        # ("after_step") -- opposite offsets, so this can't be a single
+        # fixed sign. Stacks in the rare case more than one synthesized
+        # node anchors to the same step + side. Credentials={} always --
+        # none of these take a credential. Parameters come straight from
+        # fixed_params (e.g. Merge's {"numberInputs": N}, Switch's
+        # {"mode": "rules", "rules": {...}}), never the param_provider
+        # flow -- these are structural, not user-collected, fields.
+        slot_by_anchor: dict[tuple[int, str], int] = {}
+        for node in synthesized_nodes:
+            anchor_pos = positions.get(node.step, [0, 0])
+            slot_key = (node.step, node.layout_hint)
+            slot = slot_by_anchor.get(slot_key, 0)
+            slot_by_anchor[slot_key] = slot + 1
+            x_offset = (
+                -X_SPACING * 0.5
+                if node.layout_hint == "before_step"
+                else X_SPACING * 0.5
+            )
+            n8n_nodes.append(
+                N8nNode(
+                    id=str(uuid.uuid4()),
+                    name=node.name,
+                    type=node.node_type,
+                    typeVersion=node.type_version,
+                    position=[
+                        anchor_pos[0] + x_offset,
+                        anchor_pos[1] + slot * (Y_SPACING * 0.6),
+                    ],
+                    parameters=dict(node.fixed_params),
+                    credentials={},
+                )
+            )
 
     if not report.is_deployable:
         # A step hit MissingRequiredParam mid-loop -- n8n_nodes is now
