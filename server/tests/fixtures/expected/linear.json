@@ -1,0 +1,113 @@
+{
+  "connections": {
+    "Gmail OAuth2 API": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "groq (AI Agent)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API 2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "groq (Chat Model)": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "golden-linear",
+  "nodes": [
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API",
+      "parameters": {},
+      "position": [
+        0,
+        300
+      ],
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4
+    },
+    {
+      "id": "<id>",
+      "name": "groq (AI Agent)",
+      "parameters": {
+        "promptType": "define",
+        "text": "Analyze the email content received in the trigger, identify the student's query category, and draft a concise, helpful response using a friendly tone appropriate for a student."
+      },
+      "position": [
+        280,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "credentials": {
+        "groqApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-groqApi"
+        }
+      },
+      "id": "<id>",
+      "name": "groq (Chat Model)",
+      "parameters": {},
+      "position": [
+        280,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API 2",
+      "parameters": {
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "operation": "send",
+        "resource": "message",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER"
+      },
+      "position": [
+        560,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    }
+  ],
+  "settings": {}
+}

@@ -125,22 +125,45 @@ class MissingRequiredParam(Exception):
 
 
 class CredentialResolver(ABC):
-    """Resolves the n8n credential id/name a node should reference."""
+    """
+    Resolves the n8n credential a node should reference for a given step's
+    SERVICE (e.g. "gmail"), independent of which specific n8n_credential_type
+    instantiate.py assumed as the service's default when it resolved the
+    node. This split matters: a real user may have connected a service via
+    a DIFFERENT auth option than the default (e.g. Gmail via gmailOAuth2,
+    not the default googleApi) -- the resolver is the one place that knows
+    what's actually connected, so it must be free to report a different
+    type back than what was asked for. Callers key the compiled node's
+    `credentials` dict by the returned "type", never by the type they
+    passed in -- see compile.py.
+    """
 
     @abstractmethod
     def resolve(
-        self, user_id: str, n8n_credential_type: str
+        self, user_id: str, service: str, n8n_credential_type: str
     ) -> Optional[dict[str, str]]:
-        """Return {"id": ..., "name": ...} or None if not connected."""
+        """
+        Return {"id": ..., "name": ..., "type": ...} for whichever
+        credential the user has connected for `service` (regardless of
+        whether its type matches the `n8n_credential_type` instantiate.py
+        assumed), or None if the user has no active connection for this
+        service at all.
+        """
         ...
 
 
 class DummyCredentialResolver(CredentialResolver):
-    """Stage-3 stub. Always returns a fake id — used in tests until the
-    real Postgres-backed resolver (reading the integrations table's
-    stored n8n credential id) is wired in."""
+    """Stage-3 stub. Always returns a fake id under the SAME type it was
+    asked for (so existing placeholder/dev-mode tests, which assert on
+    resolved.n8n_credential_type as the credentials-dict key, keep
+    passing unchanged) — used until PostgresCredentialResolver is wired
+    in for real requests."""
 
     def resolve(
-        self, user_id: str, n8n_credential_type: str
+        self, user_id: str, service: str, n8n_credential_type: str
     ) -> Optional[dict[str, str]]:
-        return {"id": "DUMMY_CRED_ID", "name": f"dummy-{n8n_credential_type}"}
+        return {
+            "id": "DUMMY_CRED_ID",
+            "name": f"dummy-{n8n_credential_type}",
+            "type": n8n_credential_type,
+        }

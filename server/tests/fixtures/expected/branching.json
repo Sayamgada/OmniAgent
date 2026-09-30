@@ -1,0 +1,247 @@
+{
+  "connections": {
+    "Gmail OAuth2 API": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API 2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Gmail OAuth2 API 2": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch (step 2)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API 3",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API 4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "groq (AI Agent)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Switch (step 2)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "groq (Chat Model)": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "golden-branching",
+  "nodes": [
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API",
+      "parameters": {},
+      "position": [
+        0,
+        300
+      ],
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API 2",
+      "parameters": {
+        "operation": "getAll",
+        "resource": "message"
+      },
+      "position": [
+        280,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "<id>",
+      "name": "groq (AI Agent)",
+      "parameters": {
+        "promptType": "define",
+        "text": "Summarize the leave request email retrieved in step 1 and determine if it should be approved based on company policy. Output a JSON object with a field \"decision\" set to either \"approved\" or \"rejected\" and include a brief summary of the request."
+      },
+      "position": [
+        560,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "credentials": {
+        "groqApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-groqApi"
+        }
+      },
+      "id": "<id>",
+      "name": "groq (Chat Model)",
+      "parameters": {},
+      "position": [
+        560,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API 3",
+      "parameters": {
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "operation": "send",
+        "resource": "message",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER"
+      },
+      "position": [
+        840,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API 4",
+      "parameters": {
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "operation": "send",
+        "resource": "message",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER"
+      },
+      "position": [
+        1120,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "<id>",
+      "name": "Switch (step 2)",
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                }
+              },
+              "outputKey": "approved",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                }
+              },
+              "outputKey": "rejected",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        700.0,
+        300.0
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    }
+  ],
+  "settings": {}
+}

@@ -1,0 +1,130 @@
+{
+  "automation_name": "Student Query Auto-Response Assistant",
+  "automation_description": "Monitors incoming student emails, uses AI to categorize the query and draft a response, then emails the reply back to the student.",
+  "schema_version": 4,
+  "task_summary": "Automatically processes incoming student queries from Gmail, generates an appropriate answer with AI, and sends the reply via email.",
+  "intent_type": "automation_preview",
+  "complexity": "low",
+  "required_agents": [
+    {
+      "agent_name": "groq",
+      "role": "Workflow step",
+      "responsibilities": ["generate"]
+    },
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": ["Send a message"]
+    }
+  ],
+  "workflow": [
+    {
+      "step": 1,
+      "description": "generate",
+      "agent": "groq",
+      "service": "groq",
+      "action": "generate",
+      "input": "",
+      "output": "",
+      "operation": "generate",
+      "target": "",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": false
+    },
+    {
+      "step": 2,
+      "description": "Send a message",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Send a message",
+      "input": "",
+      "output": "",
+      "operation": "send",
+      "target": "message",
+      "parameters": {},
+      "depends_on": [1],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Send",
+        "value": "send",
+        "action": "Send a message"
+      }
+    }
+  ],
+  "inputs_required": [],
+  "expected_outputs": [
+    "The student receives an AI‑generated email response addressing their query."
+  ],
+  "tools_required": ["gmail", "Gmail", "groq", "AI Provider (Groq)"],
+  "constraints": [],
+  "trigger_type": "Email",
+  "edge_cases": [],
+  "success_criteria": [
+    "The student receives an AI‑generated email response addressing their query."
+  ],
+  "required_integrations": [
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true,
+      "available": true
+    }
+  ],
+  "preview_json": {
+    "title": "Student Query Auto-Response Assistant",
+    "description": "Automatically processes incoming student queries from Gmail, generates an appropriate answer with AI, and sends the reply via email.",
+    "trigger": {
+      "type": "Email",
+      "service": "gmail",
+      "description": "When a new email arrives in the monitored Gmail inbox",
+      "n8n_trigger_resolved": true,
+      "n8n_trigger_node": {
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1.4
+      }
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [],
+        "instructions": "Analyze the email content received in the trigger, identify the student's query category, and draft a concise, helpful response using a friendly tone appropriate for a student.",
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 2,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [1],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message"
+        },
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "The student receives an AI‑generated email response addressing their query."
+  }
+}

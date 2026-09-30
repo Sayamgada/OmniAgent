@@ -90,6 +90,59 @@ async def delete_credential(n8n_credential_id: str) -> None:
         )
 
 
+async def create_workflow(workflow_json: dict) -> dict:
+    """
+    Creates a workflow in n8n via the public API, from exactly the shape
+    compile() produces (name/nodes/connections/settings). Confirmed
+    empirically against a real compiled Trigger->AI Agent->Switch->2x
+    Gmail Send workflow: n8n accepts the compiler's output VERBATIM, no
+    reshaping needed -- it fills in its own per-node defaults (filters,
+    pollTimes, a default chat-model `model`, Switch's `options.version`,
+    etc.) on save. Returns n8n's full workflow object; callers need at
+    least the "id" field to activate it and to store the Agent bridge row.
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            f"{_base_url()}/workflows", headers=_headers(), json=workflow_json
+        )
+    if resp.status_code not in (200, 201):
+        raise N8nClientError(
+            f"n8n workflow creation failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+    return resp.json()
+
+
+async def activate_workflow(n8n_workflow_id: str) -> dict:
+    """
+    Activates a workflow that already exists in n8n. Confirmed empirically:
+    a workflow with no trigger/webhook/polling node is REJECTED with
+    "Workflow cannot be activated because it has no trigger node. At least
+    one trigger, webhook, or polling node is required." -- callers must
+    expect activate_workflow() to legitimately fail even when
+    create_workflow() succeeded (e.g. every branch of compile() somehow
+    produced a workflow with no real trigger -- shouldn't happen given
+    loader.py always emits a synthetic trigger step, but this is not this
+    function's place to assume that holds). The caller decides what to do
+    with a workflow that exists in n8n but never activated -- see
+    agent_router.py's create-workflow endpoint, which keeps the Agent row
+    with status="created" and records the error rather than losing track
+    of the n8n workflow id.
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            f"{_base_url()}/workflows/{n8n_workflow_id}/activate", headers=_headers()
+        )
+    if resp.status_code not in (200, 201):
+        raise N8nClientError(
+            f"n8n workflow activation failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+    return resp.json()
+
+
 async def get_credential_schema(credential_type: str) -> dict:
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(

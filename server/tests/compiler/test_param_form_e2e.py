@@ -14,13 +14,30 @@ from app.compiler.models import Step
 
 def _gmail_slice_steps():
     return [
-        Step(step=1, service="gmail", action="Watch for new email", is_trigger=True),
+        # Step 0 is the synthetic trigger step (see loader.py); it carries the
+        # server-side n8n_trigger_node from workflow_generator._enrich_trigger.
         Step(
-            step=2,
+            step=0,
             service="gmail",
-            action="Send a message",
-            resource="message",
-            depends_on=[1],
+            is_trigger=True,
+            n8n_resolution_kind="action_node",  # what loader.py stamps when the trigger resolved
+            n8n_trigger_node={"type": "n8n-nodes-base.gmailTrigger", "typeVersion": 1},
+        ),
+        # Real steps start at 1. `operation` is the canonical verb Groq emits,
+        # `target` the resolved n8n resource, and n8n_resolution_kind /
+        # n8n_operation are what _enrich_with_real_operations stamps on.
+        Step(
+            step=1,
+            service="gmail",
+            operation="send",
+            target="message",
+            depends_on=[0],
+            n8n_resolution_kind="action_node",
+            n8n_operation={
+                "label": "Send",
+                "value": "send",
+                "action": "Send a message",
+            },
         ),
     ]
 
@@ -35,7 +52,7 @@ def test_param_form_lists_gmail_send_fields_only():
     assert len(result.forms) == 1  # trigger contributes no form
 
     form = result.forms[0]
-    assert form.step == 2
+    assert form.step == 1
     assert form.service == "gmail"
     field_names = {f.name for f in form.fields}
     assert field_names == {"sendTo", "subject", "emailType", "message"}
@@ -55,7 +72,7 @@ def test_compile_blocks_when_required_params_missing():
     assert not result.report.is_deployable
     assert result.workflow_json is None
     unresolved = result.report.needs_user_input[0]
-    assert unresolved.step == 2
+    assert unresolved.step == 1
     assert "sendTo" in unresolved.reason
     assert "subject" in unresolved.reason
     assert "message" in unresolved.reason
@@ -68,7 +85,7 @@ def test_compile_blocks_when_required_params_missing():
 def test_compile_succeeds_with_real_supplied_params():
     steps = _gmail_slice_steps()
     supplied = {
-        2: {
+        1: {
             "sendTo": "someone@example.com",
             "subject": "Hello from OmniAgent",
             "message": "This is a real message body.",

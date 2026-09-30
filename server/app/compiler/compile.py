@@ -10,6 +10,8 @@ from __future__ import annotations
 import uuid
 from typing import Any, Optional
 
+from app.core.n8n_operation_registry import resolve_operation
+
 from .graph import build_connections
 from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
 from .layout import X_SPACING, Y_SPACING, layout_positions
@@ -27,6 +29,19 @@ from .models import (
 
 
 def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
+    """
+    A StepOverride exists specifically to let the caller resolve an
+    ambiguous/no_operation_match step (see resolve.py's needs_user_input
+    -> candidates) by picking one real operation. Rewriting step.operation/
+    step.target ALONE does nothing on its own -- instantiate_step() branches
+    on step.n8n_resolution_kind (the server-side-enrichment field), not on
+    step.operation, so a no_operation_match step stays no_operation_match
+    no matter what free text operation/target now say. This resolves the
+    override against the same real registry resolve_operation() every
+    other action_node step goes through, and stamps n8n_resolution_kind/
+    n8n_operation so the rest of the pipeline treats it exactly like a
+    step the server resolved correctly in the first place.
+    """
     if not overrides:
         return
     for step in steps:
@@ -37,6 +52,22 @@ def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
             step.operation = ov.operation
         if ov.target:
             step.target = ov.target
+
+        if step.is_trigger:
+            continue  # overrides don't apply to the synthetic trigger step
+
+        resolved_op = resolve_operation(
+            step.service, step.operation, resource=step.target
+        )
+        if resolved_op is not None:
+            step.n8n_resolution_kind = "action_node"
+            step.n8n_operation = resolved_op
+        # If it still doesn't resolve (e.g. the override itself is
+        # ambiguous, or names an operation that doesn't exist for this
+        # resource), leave n8n_resolution_kind untouched -- resolve.py
+        # will correctly re-report it as needs_user_input with the real
+        # candidate list, same as an unresolved step that was never
+        # overridden at all.
 
 
 def compile(
@@ -91,7 +122,9 @@ def compile(
             for i, sub in enumerate(resolved.subnodes):
                 sub_creds: dict[str, Any] = {}
                 if sub.n8n_credential_type:
-                    cred = credential_resolver.resolve(user_id, sub.n8n_credential_type)
+                    cred = credential_resolver.resolve(
+                        user_id, step.service, sub.n8n_credential_type
+                    )
                     if cred is None:
                         report.warnings.append(
                             f"step {step.step} ({step.service}) subnode "
@@ -100,7 +133,16 @@ def compile(
                             "without one"
                         )
                     else:
-                        sub_creds[sub.n8n_credential_type] = cred
+                        # Key by the credential's REAL type (the resolver
+                        # may report a different type than what was asked
+                        # for -- e.g. the user connected via OAuth2 while
+                        # instantiate.py assumed the service's default,
+                        # non-OAuth option). Falls back to the requested
+                        # type only if an older resolver doesn't return one.
+                        cred_type = cred.get("type", sub.n8n_credential_type)
+                        sub_creds[cred_type] = {
+                            k: v for k, v in cred.items() if k != "type"
+                        }
 
                 n8n_nodes.append(
                     N8nNode(
@@ -140,14 +182,20 @@ def compile(
 
         creds: dict[str, Any] = {}
         if resolved.n8n_credential_type:
-            cred = credential_resolver.resolve(user_id, resolved.n8n_credential_type)
+            cred = credential_resolver.resolve(
+                user_id, step.service, resolved.n8n_credential_type
+            )
             if cred is None:
                 report.warnings.append(
                     f"step {step.step} ({step.service}): no credential connected for "
                     f"{resolved.n8n_credential_type}; node will be created without one"
                 )
             else:
-                creds[resolved.n8n_credential_type] = cred
+                # See the agent-subnode branch above for why this keys by
+                # the credential's REAL reported type, not the type that
+                # was asked for.
+                cred_type = cred.get("type", resolved.n8n_credential_type)
+                creds[cred_type] = {k: v for k, v in cred.items() if k != "type"}
 
         n8n_nodes.append(
             N8nNode(
@@ -243,3 +291,4 @@ def _connections_to_n8n_shape(connections: list[N8nConnection]) -> dict[str, Any
             {"node": c.target_name, "type": c.target_input, "index": c.target_index}
         )
     return result
+

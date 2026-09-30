@@ -1,0 +1,199 @@
+{
+  "connections": {
+    "Gmail OAuth2 API": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge into step 3",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge into step 3": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Slack API": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge into step 3",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Slack API",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "groq (AI Agent)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API 2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "groq (Chat Model)": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "golden-fanin",
+  "nodes": [
+    {
+      "id": "<id>",
+      "name": "Trigger",
+      "parameters": {},
+      "position": [
+        0,
+        300
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API",
+      "parameters": {
+        "operation": "getAll",
+        "resource": "message"
+      },
+      "position": [
+        280,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "credentials": {
+        "slackApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-slackApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Slack API",
+      "parameters": {
+        "operation": "search",
+        "query": "PLACEHOLDER",
+        "resource": "message"
+      },
+      "position": [
+        560,
+        300
+      ],
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7
+    },
+    {
+      "id": "<id>",
+      "name": "groq (AI Agent)",
+      "parameters": {
+        "promptType": "define",
+        "text": "Analyze the new email messages retrieved in step 1 and the new Slack messages retrieved in step 2, extract the key points from each, and produce a concise combined summary suitable for an email body."
+      },
+      "position": [
+        840,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "credentials": {
+        "groqApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-groqApi"
+        }
+      },
+      "id": "<id>",
+      "name": "groq (Chat Model)",
+      "parameters": {},
+      "position": [
+        840,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API 2",
+      "parameters": {
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "operation": "send",
+        "resource": "message",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER"
+      },
+      "position": [
+        1120,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "<id>",
+      "name": "Merge into step 3",
+      "parameters": {
+        "numberInputs": 2
+      },
+      "position": [
+        700.0,
+        300.0
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    }
+  ],
+  "settings": {}
+}
