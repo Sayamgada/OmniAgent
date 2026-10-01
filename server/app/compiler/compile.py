@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 from app.core.n8n_operation_registry import resolve_operation
 
-from .graph import build_connections
+from .graph import aggregate_node_name, build_connections
 from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
 from .layout import X_SPACING, Y_SPACING, layout_positions
 from .param_schema import get_required_params
@@ -26,6 +26,27 @@ from .models import (
     UnresolvedStep,
     Overrides,
 )
+
+# ---------------------------------------------------------------------------
+# Agent prompt data-injection (Stage 3.1). UNVALIDATED against live n8n until
+# the hand-built check is done: n8n evaluates {{ }} only when the parameter
+# value starts with "=". Edit ONLY these constants if the check says otherwise.
+# ---------------------------------------------------------------------------
+PROMPT_DATA_CAP = 8000  # chars of upstream JSON; pick empirically (Groq token limits)
+_EXPR_PREFIX = "="
+_EXPR_AFTER_AGGREGATE = (
+    "{{ JSON.stringify($json.data).slice(0, " + str(PROMPT_DATA_CAP) + ") }}"
+)
+_EXPR_TRIGGER_ONLY = (
+    "{{ JSON.stringify($json).slice(0, " + str(PROMPT_DATA_CAP) + ") }}"
+)
+
+
+def build_agent_prompt(instructions: str, has_aggregate: bool) -> str:
+    """Instructions + an n8n expression injecting upstream data. Caveat: a
+    literal '{{' inside `instructions` would be evaluated by n8n."""
+    data_expr = _EXPR_AFTER_AGGREGATE if has_aggregate else _EXPR_TRIGGER_ONLY
+    return f"{_EXPR_PREFIX}{instructions or ''}\n\nInput data:\n{data_expr}"
 
 
 def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
@@ -112,7 +133,13 @@ def compile(
                     position=positions.get(step.step, [0, 0]),
                     parameters={
                         "promptType": "define",
-                        "text": step.instructions or "",
+                        "text": build_agent_prompt(
+                            step.instructions,
+                            any(
+                                n.name == aggregate_node_name(step.step)
+                                for n in synthesized_nodes
+                            ),
+                        ),
                     },
                     credentials={},  # the Agent root itself has no credential
                 )
@@ -291,4 +318,3 @@ def _connections_to_n8n_shape(connections: list[N8nConnection]) -> dict[str, Any
             {"node": c.target_name, "type": c.target_input, "index": c.target_index}
         )
     return result
-

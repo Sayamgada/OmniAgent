@@ -1,5 +1,16 @@
 {
   "connections": {
+    "Aggregate (step 2)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Gmail OAuth2 API": {
       "main": [
         [
@@ -16,7 +27,7 @@
         [
           {
             "index": 0,
-            "node": "groq (AI Agent)",
+            "node": "Aggregate (step 2)",
             "type": "main"
           }
         ]
@@ -107,7 +118,7 @@
       "name": "groq (AI Agent)",
       "parameters": {
         "promptType": "define",
-        "text": "Summarize the leave request email retrieved in step 1 and determine if it should be approved based on company policy. Output a JSON object with a field \"decision\" set to either \"approved\" or \"rejected\" and include a brief summary of the request."
+        "text": "=Summarize the leave request email retrieved in step 1 and determine if it should be approved based on company policy. Output a JSON object with a field \"decision\" set to either \"approved\" or \"rejected\" and include a brief summary of the request.\n\nInput data:\n{{ JSON.stringify($json.data).slice(0, 8000) }}"
       },
       "position": [
         560,
@@ -241,6 +252,20 @@
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
+    },
+    {
+      "id": "<id>",
+      "name": "Aggregate (step 2)",
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "data"
+      },
+      "position": [
+        420.0,
+        300.0
+      ],
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1
     }
   ],
   "settings": {}

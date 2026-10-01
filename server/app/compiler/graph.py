@@ -62,6 +62,67 @@ from __future__ import annotations
 from ..core.n8n_operation_registry import get_utility_node
 from .models import CompileReport, N8nConnection, ResolvedNode, Step
 
+# ---------------------------------------------------------------------------
+# Aggregate synthesis (Stage 3.2). UNVALIDATED against live n8n until the
+# hand-built Trigger -> Code -> Aggregate -> AI Agent check is done -- if the
+# exported node differs, edit ONLY this constant.
+# ---------------------------------------------------------------------------
+AGGREGATE_FIXED_PARAMS: dict = {
+    "aggregate": "aggregateAllItemData",
+    "destinationFieldName": "data",
+}
+
+
+def aggregate_node_name(step_num: int) -> str:
+    """Single source of truth for the synthesized Aggregate's name, so
+    compile.py can detect it by name without a second predicate."""
+    return f"Aggregate (step {step_num})"
+
+
+def agent_needs_aggregate(
+    step: Step,
+    by_step: dict[int, Step],
+    resolved_by_step: dict[int, ResolvedNode],
+) -> bool:
+    """True when an agent_root step has at least one real (non-trigger,
+    non-subnode) upstream dependency. Trigger-only agents stay per-item.
+    Uniform on purpose: Aggregate output is always {data: [...]}, even for
+    one item, so the prompt expression has exactly one shape."""
+    resolved = resolved_by_step[step.step]
+    if resolved.kind != "agent_root":
+        return False
+    for d in step.depends_on:
+        dep_step = by_step.get(d)
+        dep_resolved = resolved_by_step.get(d)
+        if dep_step is None or dep_resolved is None:
+            continue
+        if dep_step.is_trigger or dep_resolved.kind == "ai_subnode":
+            continue
+        return True
+    return False
+
+
+def _synthesize_aggregate(step: Step, report: CompileReport) -> ResolvedNode | None:
+    util = get_utility_node("aggregate")
+    if util is None:
+        report.warnings.append(
+            f"step {step.step} ({step.service}) is an AI step with upstream "
+            "data but the registry has no 'aggregate' utility node entry -- "
+            "add n8n-nodes-base.aggregate to UTILITY_NODE_NAMES in "
+            "scripts/generate_registry.py and regenerate. The agent will run "
+            "once per item instead."
+        )
+        return None
+    return ResolvedNode(
+        step=step.step,
+        kind="utility",
+        node_type=util["type"],
+        type_version=util["typeVersion"],
+        name=aggregate_node_name(step.step),
+        fixed_params=dict(AGGREGATE_FIXED_PARAMS),
+        layout_hint="before_step",
+    )
+
 
 def _synthesize_merge(
     step: Step, incoming_count: int, report: CompileReport
@@ -214,6 +275,26 @@ def build_connections(
             # here anyway: it has no main connections either way.
             continue
 
+        # Aggregate sits between the step's inbound wiring and the agent;
+        # every inbound connection below targets entry_name instead of
+        # resolved.name. Subnode wiring above still targets the agent itself.
+        entry_name = resolved.name
+        if agent_needs_aggregate(step, by_step, resolved_by_step):
+            agg = _synthesize_aggregate(step, report)
+            if agg is not None:
+                synthesized.append(agg)
+                connections.append(
+                    N8nConnection(
+                        source_name=agg.name,
+                        source_output="main",
+                        source_index=0,
+                        target_name=resolved.name,
+                        target_input="main",
+                        target_index=0,
+                    )
+                )
+                entry_name = agg.name
+
         incoming_nums = [d for d in step.depends_on if by_step.get(d) is not None]
         normal_deps: list[tuple[int, ResolvedNode]] = []
         branch_routed = False
@@ -236,7 +317,7 @@ def build_connections(
                             source_name=switch_node.name,
                             source_output="main",
                             source_index=idx,
-                            target_name=resolved.name,
+                            target_name=entry_name,
                             target_input="main",
                             target_index=0,
                         )
@@ -289,7 +370,7 @@ def build_connections(
                         source_name=merge_node.name,
                         source_output="main",
                         source_index=0,
-                        target_name=resolved.name,
+                        target_name=entry_name,
                         target_input="main",
                         target_index=0,
                     )
@@ -304,7 +385,7 @@ def build_connections(
                     source_name=dep.name,
                     source_output="main",
                     source_index=0,
-                    target_name=resolved.name,
+                    target_name=entry_name,
                     target_input="main",
                     target_index=0,
                 )

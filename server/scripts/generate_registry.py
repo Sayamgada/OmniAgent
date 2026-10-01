@@ -584,6 +584,7 @@ UTILITY_NODE_NAMES = [
     "n8n-nodes-base.noOp",
     "n8n-nodes-base.filter",
     "n8n-nodes-base.wait",
+    "n8n-nodes-base.aggregate",
 ]
 
 

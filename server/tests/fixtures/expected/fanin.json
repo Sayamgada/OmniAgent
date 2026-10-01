@@ -1,5 +1,16 @@
 {
   "connections": {
+    "Aggregate (step 3)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "groq (AI Agent)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Gmail OAuth2 API": {
       "main": [
         [
@@ -16,7 +27,7 @@
         [
           {
             "index": 0,
-            "node": "groq (AI Agent)",
+            "node": "Aggregate (step 3)",
             "type": "main"
           }
         ]
@@ -131,7 +142,7 @@
       "name": "groq (AI Agent)",
       "parameters": {
         "promptType": "define",
-        "text": "Analyze the new email messages retrieved in step 1 and the new Slack messages retrieved in step 2, extract the key points from each, and produce a concise combined summary suitable for an email body."
+        "text": "=Analyze the new email messages retrieved in step 1 and the new Slack messages retrieved in step 2, extract the key points from each, and produce a concise combined summary suitable for an email body.\n\nInput data:\n{{ JSON.stringify($json.data).slice(0, 8000) }}"
       },
       "position": [
         840,
@@ -183,13 +194,27 @@
     },
     {
       "id": "<id>",
+      "name": "Aggregate (step 3)",
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "data"
+      },
+      "position": [
+        700.0,
+        300.0
+      ],
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1
+    },
+    {
+      "id": "<id>",
       "name": "Merge into step 3",
       "parameters": {
         "numberInputs": 2
       },
       "position": [
         700.0,
-        300.0
+        408.0
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2

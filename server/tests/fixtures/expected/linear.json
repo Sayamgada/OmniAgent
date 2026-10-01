@@ -58,7 +58,7 @@
       "name": "groq (AI Agent)",
       "parameters": {
         "promptType": "define",
-        "text": "Analyze the email content received in the trigger, identify the student's query category, and draft a concise, helpful response using a friendly tone appropriate for a student."
+        "text": "=Analyze the email content received in the trigger, identify the student's query category, and draft a concise, helpful response using a friendly tone appropriate for a student.\n\nInput data:\n{{ JSON.stringify($json).slice(0, 8000) }}"
       },
       "position": [
         280,

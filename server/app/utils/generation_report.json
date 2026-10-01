@@ -16,6 +16,6 @@
     "generic_auth_types": 9,
     "inline_auth_param_nodes": 4,
     "credential_free_excluded_nodes": 118,
-    "utility_nodes_found": 8
+    "utility_nodes_found": 9
   }
 }
