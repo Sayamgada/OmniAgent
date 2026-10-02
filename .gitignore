@@ -1,3 +1,5 @@
 server/.env
 .env    
 commands.txt
+__pycache__/
+*.pyc

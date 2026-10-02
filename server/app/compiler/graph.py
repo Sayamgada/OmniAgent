@@ -102,6 +102,76 @@ def agent_needs_aggregate(
     return False
 
 
+# ---------------------------------------------------------------------------
+# Switch routing (Stage 3.3). UNVALIDATED against live n8n until a real
+# branching workflow is executed -- edit ONLY these constants/helpers if the
+# live check says otherwise.
+# ---------------------------------------------------------------------------
+ROUTING_TOKEN_FMT = "DECISION: [{label}]"
+AI_ROUTING_LEFT_VALUE = "={{ $json.output }}"  # AI Agent's text output field
+
+
+def routing_token(label: str) -> str:
+    """The marker an AI step is told to emit, and the Switch matches."""
+    return ROUTING_TOKEN_FMT.format(label=label)
+
+
+def _as_n8n_expression(expr: str) -> str:
+    e = expr.strip()
+    if e.startswith("="):
+        return e
+    if e.startswith("{{"):
+        return "=" + e
+    return "={{ " + e + " }}"
+
+
+def _rule(label: str, left: str, operator: dict, right=None, case_sensitive=True,
+          type_validation="loose") -> dict:
+    cond: dict = {"leftValue": left, "operator": operator}
+    if right is not None:
+        cond["rightValue"] = right
+    return {
+        "conditions": {
+            "options": {
+                "caseSensitive": case_sensitive,
+                "leftValue": "",
+                "typeValidation": type_validation,
+            },
+            "conditions": [cond],
+            "combinator": "and",
+        },
+        "renameOutput": True,
+        "outputKey": label,
+    }
+
+
+def _switch_rule(branch, source_is_agent: bool, step: Step, report: CompileReport) -> dict:
+    """One Switch rule per branch. Priority: explicit expression (boolean
+    rule) > AI-routing marker (when the branching step is an agent) >
+    placeholder + warning."""
+    if branch.expression and branch.expression.strip():
+        return _rule(
+            branch.label,
+            _as_n8n_expression(branch.expression),
+            {"type": "boolean", "operation": "true", "singleValue": True},
+        )
+    if source_is_agent:
+        return _rule(
+            branch.label,
+            AI_ROUTING_LEFT_VALUE,
+            {"type": "string", "operation": "contains"},
+            right=routing_token(branch.label),
+            case_sensitive=False,
+        )
+    report.warnings.append(
+        f"step {step.step} ({step.service}) branch {branch.label!r}: no condition "
+        "expression and the branching step isn't an AI step -- using a "
+        "placeholder condition (always matches, so routing falls to the "
+        "first branch)."
+    )
+    return _placeholder_switch_rule(branch.label)
+
+
 def _synthesize_aggregate(step: Step, report: CompileReport) -> ResolvedNode | None:
     util = get_utility_node("aggregate")
     if util is None:
@@ -179,7 +249,9 @@ def _placeholder_switch_rule(label: str) -> dict:
     }
 
 
-def _synthesize_switch(step: Step, report: CompileReport) -> ResolvedNode | None:
+def _synthesize_switch(
+    step: Step, report: CompileReport, source_is_agent: bool = False
+) -> ResolvedNode | None:
     """Builds the Switch ResolvedNode for a step carrying `condition`, or
     None (+ a warning) if the registry has no 'switch' utility node yet.
     One synthesized Switch per branching step; output index = the
@@ -206,7 +278,8 @@ def _synthesize_switch(step: Step, report: CompileReport) -> ResolvedNode | None
             "mode": "rules",
             "rules": {
                 "values": [
-                    _placeholder_switch_rule(branch.label) for branch in step.condition
+                    _switch_rule(branch, source_is_agent, step, report)
+                    for branch in step.condition
                 ]
             },
         },
@@ -232,7 +305,9 @@ def build_connections(
         if not step.condition:
             continue
         resolved = resolved_by_step[step.step]
-        switch_node = _synthesize_switch(step, report)
+        switch_node = _synthesize_switch(
+            step, report, source_is_agent=(resolved.kind == "agent_root")
+        )
         if switch_node is None:
             continue
         switch_by_step[step.step] = switch_node

@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 from app.core.n8n_operation_registry import resolve_operation
 
-from .graph import aggregate_node_name, build_connections
+from .graph import aggregate_node_name, build_connections, routing_token
 from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
 from .layout import X_SPACING, Y_SPACING, layout_positions
 from .param_schema import get_required_params
@@ -42,11 +42,24 @@ _EXPR_TRIGGER_ONLY = (
 )
 
 
-def build_agent_prompt(instructions: str, has_aggregate: bool) -> str:
+def build_agent_prompt(
+    instructions: str,
+    has_aggregate: bool,
+    routing_labels: Optional[list[str]] = None,
+) -> str:
     """Instructions + an n8n expression injecting upstream data. Caveat: a
     literal '{{' inside `instructions` would be evaluated by n8n."""
     data_expr = _EXPR_AFTER_AGGREGATE if has_aggregate else _EXPR_TRIGGER_ONLY
-    return f"{_EXPR_PREFIX}{instructions or ''}\n\nInput data:\n{data_expr}"
+    routing = ""
+    if routing_labels:
+        markers = ", ".join(routing_token(l) for l in routing_labels)
+        routing = (
+            "\n\nRouting rule: end your reply with one final line containing "
+            f"exactly one of these markers, matching your decision: {markers}"
+        )
+    return (
+        f"{_EXPR_PREFIX}{instructions or ''}{routing}" f"\n\nInput data:\n{data_expr}"
+    )
 
 
 def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
@@ -138,6 +151,11 @@ def compile(
                             any(
                                 n.name == aggregate_node_name(step.step)
                                 for n in synthesized_nodes
+                            ),
+                            (
+                                [b.label for b in step.condition]
+                                if step.condition
+                                else None
                             ),
                         ),
                     },

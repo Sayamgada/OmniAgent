@@ -38,7 +38,7 @@ from app.compiler.models import Step
 class NoCredentialResolver(CredentialResolver):
     """Omits the credentials block entirely -- for manual-assign-in-UI imports."""
 
-    def resolve(self, user_id: str, n8n_credential_type: str):
+    def resolve(self, user_id: str, service: str, n8n_credential_type: str):
         return None
 
 
@@ -48,7 +48,7 @@ class StaticCredentialResolver(CredentialResolver):
     def __init__(self, creds: dict):
         self._creds = creds
 
-    def resolve(self, user_id: str, n8n_credential_type: str):
+    def resolve(self, user_id: str, service: str, n8n_credential_type: str):
         return self._creds.get(n8n_credential_type)
 
 
@@ -102,10 +102,16 @@ def main():
         "Omit to leave every node's credentials block empty.",
     )
     parser.add_argument("--name", default="Generated Workflow", help="Workflow name.")
+    parser.add_argument(
+        "--out",
+        default=None,
+        help="Write the JSON to this file as UTF-8 (recommended on Windows "
+        "PowerShell, where '>' redirection writes UTF-16).",
+    )
     args = parser.parse_args()
 
     if args.preview_path:
-        with open(args.preview_path) as f:
+        with open(args.preview_path, encoding="utf-8-sig") as f:
             preview = json.load(f)
         # resource_hints is gone -- target already arrives resolved from
         # Groq/server-side enrichment, nothing left to hint.
@@ -114,7 +120,7 @@ def main():
         steps = _builtin_gmail_slice()
 
     if args.creds:
-        with open(args.creds) as f:
+        with open(args.creds, encoding="utf-8-sig") as f:
             resolver = StaticCredentialResolver(json.load(f))
     else:
         resolver = NoCredentialResolver()
@@ -138,7 +144,12 @@ def main():
     for w in result.report.warnings:
         print(f"WARNING: {w}", file=sys.stderr)
 
-    print(json.dumps(result.workflow_json, indent=2))
+    out = json.dumps(result.workflow_json, indent=2)
+    if args.out:
+        Path(args.out).write_text(out, encoding="utf-8")
+        print(f"wrote {args.out}", file=sys.stderr)
+    else:
+        print(out)
 
 
 if __name__ == "__main__":
