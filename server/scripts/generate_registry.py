@@ -466,6 +466,58 @@ def all_credential_names_on_node(node):
     return [c["name"] for c in (node.get("credentials") or [])]
 
 
+def node_role(node):
+    """'tool' | 'trigger' | 'standalone' -- which slot this node fills in a
+    one-product service entry. Same suffix/classification rule main() uses
+    to slot nodes into nodes_section, factored out so auth_options can
+    record which role(s) each credential type applies to."""
+    short = node_short_key(node["name"])
+    if short.endswith("Tool"):
+        return "tool"
+    if short.endswith("Trigger") or classify_node_kind(node) == "trigger_only":
+        return "trigger"
+    return "standalone"
+
+
+def split_borrowed_nodes(primary_cred, group_nodes):
+    """
+    A group is every node sharing one primary credential. Normally that is
+    one product (gmail + gmailTrigger + gmailTool) or a genuine multi-product
+    hub (aws: awsS3, awsSqs, ...). But a credential is sometimes ALSO the
+    primary of an unrelated node that merely reads through it -- e.g.
+    googleSheetsOAuth2Api is also evaluationTrigger's primary credential.
+    That single stray node makes a one-product group look like a
+    multi-product hub, which switches the service key to the credential
+    name and (before this) made it collide with the product's own trigger
+    group.
+
+    Rule (deliberately narrow, so real hubs are untouched): the credential's
+    own name (suffix-stripped, e.g. 'googleSheets') identifies its OWNER
+    product. If EXACTLY ONE product family in the group contains that name
+    and the group is otherwise a mixed one, the non-owner nodes are
+    'borrowers' and are excluded from this service's identity. Real hubs
+    are unaffected because every member of them contains the credential
+    root (aws -> awsS3/awsSqs; openAi -> openAi/lmChatOpenAi/embeddingsOpenAi),
+    so nothing is classified as a borrower.
+
+    Returns (kept_nodes, excluded_nodes).
+    """
+    root = re.sub(r"(OAuth2Api|OAuth2|OAuth1Api|Api)$", "", primary_cred).lower()
+    if not root:
+        return group_nodes, []
+    base_of = [base_product_name(node_short_key(n["name"])) for n in group_nodes]
+    if same_product_family(set(base_of)):
+        return group_nodes, []  # already a single product - nothing to split
+    owners = [n for n, b in zip(group_nodes, base_of) if root in b.lower()]
+    foreign = [n for n, b in zip(group_nodes, base_of) if root not in b.lower()]
+    if not owners or not foreign:
+        return group_nodes, []
+    owner_bases = {base_product_name(node_short_key(n["name"])) for n in owners}
+    if not same_product_family(owner_bases):
+        return group_nodes, []  # several owner products -> a real hub, leave it
+    return owners, foreign
+
+
 AUTH_LIKE_PARAM = re.compile(
     r"(password|apikey|api_key|token|secret|username|accesskey)", re.I
 )
@@ -623,7 +675,12 @@ def build_utility_nodes(nodes, report):
 def main():
     nodes, creds = load()
     creds_by_name = index_creds(creds)
-    report = {"warnings": [], "stats": {}}
+    report = {
+        "warnings": [],
+        "stats": {},
+        "merged_services": [],
+        "borrowed_credential_nodes": [],
+    }
 
     # 1. abstract / generic classification
     genericAuth_names = {c["name"] for c in creds if c.get("genericAuth")}
@@ -684,26 +741,88 @@ def main():
     registry = {}
     cred_cache = {}
 
+    # 3b. MERGE GROUPS THAT ARE THE SAME PRODUCT.
+    # Groups are keyed by PRIMARY CREDENTIAL, but one product can have nodes
+    # whose primary credentials differ -- e.g. Google Sheets' action node
+    # uses googleSheetsOAuth2Api while its trigger node uses
+    # googleSheetsTriggerOAuth2Api; HubSpot, Airtable, Facebook etc. follow
+    # the same pattern. Those become two groups that derive the SAME
+    # service key, and `registry[service_key] = ...` below used to silently
+    # overwrite one with the other (the later group won). Whichever was
+    # overwritten simply vanished, which is how an action-capable service
+    # ended up classified "trigger_only". Fix: groups that resolve to the
+    # same product service key are merged into ONE service; every
+    # credential type any of its nodes accepts becomes an auth_option.
+    def _group_identity(primary_cred, group_nodes):
+        base_names = {base_product_name(node_short_key(n["name"])) for n in group_nodes}
+        is_true_hub = not same_product_family(base_names)
+        if is_true_hub:
+            return snake_case(primary_cred), True
+        return snake_case(sorted(base_names)[0]), False
+
+    parts_by_key = {}
     for primary_cred, group_nodes in groups.items():
-        cred = creds_by_name.get(primary_cred)
-        if not cred:
+        if primary_cred not in creds_by_name:
             report["warnings"].append(
                 f"Primary credential '{primary_cred}' referenced by a node but missing from credentials.json"
             )
             continue
+        group_nodes, borrowed = split_borrowed_nodes(primary_cred, group_nodes)
+        if borrowed:
+            report["borrowed_credential_nodes"].append(
+                {
+                    "credential": primary_cred,
+                    "kept": [node_short_key(n["name"]) for n in group_nodes],
+                    "excluded": [node_short_key(n["name"]) for n in borrowed],
+                }
+            )
+        key, hub = _group_identity(primary_cred, group_nodes)
+        parts_by_key.setdefault(key, []).append((primary_cred, group_nodes, hub))
 
-        # is this a true multi-product hub, or just action+trigger+tool
-        # variants of ONE product sharing a credential? Compare base
-        # product names (Trigger/Tool suffix stripped) across the group.
-        base_names = {base_product_name(node_short_key(n["name"])) for n in group_nodes}
-        is_true_hub = not same_product_family(base_names)
+    resolved_groups = []  # (primary_cred, group_nodes, service_key, is_true_hub)
+    for key, parts in parts_by_key.items():
+        if len(parts) == 1:
+            pc, gn, hub = parts[0]
+            resolved_groups.append((pc, gn, key, hub))
+            continue
+        if any(hub for _, _, hub in parts):
+            # a multi-product hub colliding with another group is not
+            # something a node merge can resolve safely -- surface it
+            # loudly instead of silently dropping one side.
+            report["warnings"].append(
+                f"Service key '{key}' is produced by {len(parts)} credential "
+                f"groups including a multi-node hub "
+                f"({[pc for pc, _, _ in parts]}) -- NOT merged; the last one wins. "
+                f"Resolve manually."
+            )
+            for pc, gn, hub in parts:
+                resolved_groups.append((pc, gn, key, hub))
+            continue
+        merged_nodes = [n for _, gn, _ in parts for n in gn]
+        # lead credential = the one on the group holding a real
+        # action/standalone node, so the service's PRIMARY option is the
+        # credential its action node uses (trigger/tool-only groups are
+        # appended as further options below).
+        lead = next(
+            (
+                pc
+                for pc, gn, _ in parts
+                if any(node_role(n) == "standalone" for n in gn)
+            ),
+            parts[0][0],
+        )
+        resolved_groups.append((lead, merged_nodes, key, False))
+        report["merged_services"].append(
+            {
+                "service": key,
+                "credential_groups_merged": [pc for pc, _, _ in parts],
+                "lead_credential": lead,
+            }
+        )
 
-        if is_true_hub:
-            service_key = snake_case(primary_cred)
-        else:
-            # normal case: key off the product's own short node name, e.g.
-            # "gmail" (from n8n-nodes-base.gmail / gmailTrigger / gmailTool)
-            service_key = snake_case(sorted(base_names)[0])
+    for primary_cred, group_nodes, service_key, is_true_hub in resolved_groups:
+        cred = creds_by_name[primary_cred]
+
         display_name = cred.get("displayName") or service_key.replace("_", " ").title()
 
         # secondary credentials actually used by these nodes (excluding primary, excluding abstract)
@@ -731,6 +850,13 @@ def main():
                     "auth_type": {1: "api_key", 2: "oauth2", 4: "oauth2_extra"}[
                         pattern
                     ],
+                    "applies_to": sorted(
+                        {
+                            node_role(n)
+                            for n in group_nodes
+                            if cn in all_credential_names_on_node(n)
+                        }
+                    ),
                     "fields": build_fields(eff),
                     "oauth": build_oauth_block(eff) if pattern in (2, 4) else None,
                 }
@@ -875,7 +1001,14 @@ def main():
         "inline_auth_param_nodes": len(inline_only_nodes),
         "credential_free_excluded_nodes": len(credential_free_nodes),
         "utility_nodes_found": len(output["_utility_nodes"]),
+        "merged_services": len(report["merged_services"]),
+        "borrowed_credential_groups": len(report["borrowed_credential_nodes"]),
     }
+    # ground-truth list of services that STILL have only a trigger node after
+    # merging -- these are genuinely trigger-only in n8n, not collisions.
+    report["trigger_only_services"] = sorted(
+        k for k, v in registry.items() if v["kind"] == "trigger_only"
+    )
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
 

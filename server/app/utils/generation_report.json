@@ -16,6 +16,76 @@
     "generic_auth_types": 9,
     "inline_auth_param_nodes": 4,
     "credential_free_excluded_nodes": 118,
-    "utility_nodes_found": 9
-  }
+    "utility_nodes_found": 9,
+    "merged_services": 4,
+    "borrowed_credential_groups": 1
+  },
+  "merged_services": [
+    {
+      "service": "airtable",
+      "credential_groups_merged": [
+        "airtableTokenApi",
+        "airtableApi"
+      ],
+      "lead_credential": "airtableTokenApi"
+    },
+    {
+      "service": "google_sheets",
+      "credential_groups_merged": [
+        "googleSheetsOAuth2Api",
+        "googleSheetsTriggerOAuth2Api"
+      ],
+      "lead_credential": "googleSheetsOAuth2Api"
+    },
+    {
+      "service": "hubspot",
+      "credential_groups_merged": [
+        "hubspotApi",
+        "hubspotDeveloperApi"
+      ],
+      "lead_credential": "hubspotApi"
+    },
+    {
+      "service": "whats_app",
+      "credential_groups_merged": [
+        "whatsAppTriggerApi",
+        "whatsAppApi"
+      ],
+      "lead_credential": "whatsAppApi"
+    }
+  ],
+  "borrowed_credential_nodes": [
+    {
+      "credential": "googleSheetsOAuth2Api",
+      "kept": [
+        "googleSheets",
+        "googleSheetsTool"
+      ],
+      "excluded": [
+        "evaluationTrigger"
+      ]
+    }
+  ],
+  "trigger_only_services": [
+    "acuity_scheduling",
+    "bitbucket",
+    "cal",
+    "calendly",
+    "email_read_imap",
+    "eventbrite",
+    "facebook",
+    "facebook_lead_ads",
+    "figma",
+    "form_io",
+    "formstack",
+    "gumroad",
+    "jot_form",
+    "microsoft_agent365",
+    "postmark",
+    "survey_monkey",
+    "toggl",
+    "typeform",
+    "workable",
+    "wufoo"
+  ]
 }

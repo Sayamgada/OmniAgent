@@ -11,6 +11,10 @@
         "n8n_credential_type": "actionNetworkApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -327,6 +331,11 @@
         "n8n_credential_type": "activeCampaignApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiUrl",
@@ -934,6 +943,9 @@
         "n8n_credential_type": "acuitySchedulingApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "userId",
@@ -958,6 +970,9 @@
         "n8n_credential_type": "acuitySchedulingOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -1060,6 +1075,10 @@
         "n8n_credential_type": "adaloApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -1111,6 +1130,11 @@
         "n8n_credential_type": "affinityApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -1343,6 +1367,10 @@
         "n8n_credential_type": "agileCrmApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "email",
@@ -1559,16 +1587,41 @@
   },
   "airtable": {
     "service": "airtable",
-    "display_name": "Airtable API",
+    "display_name": "Airtable Personal Access Token API",
     "category": "Productivity",
     "default_option": "primary",
     "auth_options": [
       {
         "option_id": "primary",
+        "label": "Airtable Personal Access Token API",
+        "n8n_credential_type": "airtableTokenApi",
+        "connection_pattern": 1,
+        "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
+        "fields": [
+          {
+            "name": "accessToken",
+            "display_name": "Access Token",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          }
+        ],
+        "oauth": null
+      },
+      {
+        "option_id": "airtable_api",
         "label": "Airtable API",
         "n8n_credential_type": "airtableApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -1586,6 +1639,11 @@
         "n8n_credential_type": "airtableOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -1666,27 +1724,118 @@
           "authQueryParameters": "",
           "authentication": "header"
         }
-      },
-      {
-        "option_id": "airtable_personal_access_token_api",
-        "label": "Airtable Personal Access Token API",
-        "n8n_credential_type": "airtableTokenApi",
-        "connection_pattern": 1,
-        "auth_type": "api_key",
-        "fields": [
-          {
-            "name": "accessToken",
-            "display_name": "Access Token",
-            "type": "string",
-            "secret": true,
-            "default": ""
-          }
-        ],
-        "oauth": null
       }
     ],
-    "kind": "trigger_only",
+    "kind": "action_node",
     "nodes": {
+      "standalone": {
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.2,
+        "resources": {
+          "base": "Base",
+          "record": "Record"
+        },
+        "operationsByResource": {
+          "record": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a record"
+            },
+            {
+              "label": "Create or Update",
+              "value": "upsert",
+              "action": "Create or update a record"
+            },
+            {
+              "label": "Delete",
+              "value": "deleteRecord",
+              "action": "Delete a record"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a record"
+            },
+            {
+              "label": "Search",
+              "value": "search",
+              "action": "Search records"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update record"
+            }
+          ],
+          "base": [
+            {
+              "label": "Get Many",
+              "value": "getMany",
+              "action": "Get many bases"
+            },
+            {
+              "label": "Get Schema",
+              "value": "getSchema",
+              "action": "Get base schema"
+            }
+          ]
+        }
+      },
+      "tool": {
+        "type": "n8n-nodes-base.airtableTool",
+        "typeVersion": 2.2,
+        "resources": {
+          "base": "Base",
+          "record": "Record"
+        },
+        "operationsByResource": {
+          "record": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a record"
+            },
+            {
+              "label": "Create or Update",
+              "value": "upsert",
+              "action": "Create or update a record"
+            },
+            {
+              "label": "Delete",
+              "value": "deleteRecord",
+              "action": "Delete a record"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a record"
+            },
+            {
+              "label": "Search",
+              "value": "search",
+              "action": "Search records"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update record"
+            }
+          ],
+          "base": [
+            {
+              "label": "Get Many",
+              "value": "getMany",
+              "action": "Get many bases"
+            },
+            {
+              "label": "Get Schema",
+              "value": "getSchema",
+              "action": "Get base schema"
+            }
+          ]
+        }
+      },
       "trigger": {
         "type": "n8n-nodes-base.airtableTrigger",
         "typeVersion": 1
@@ -1837,6 +1986,10 @@
         "n8n_credential_type": "airtopApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -2289,6 +2442,10 @@
         "n8n_credential_type": "alibabaCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -2715,6 +2872,11 @@
         "n8n_credential_type": "amqp",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "hostname",
@@ -2783,6 +2945,10 @@
         "n8n_credential_type": "anthropicApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -2994,6 +3160,10 @@
         "n8n_credential_type": "apiTemplateIoApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -3218,6 +3388,11 @@
         "n8n_credential_type": "asanaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -3235,6 +3410,11 @@
         "n8n_credential_type": "asanaOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -3788,6 +3968,11 @@
         "n8n_credential_type": "autopilotApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -4102,6 +4287,11 @@
         "n8n_credential_type": "aws",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "region",
@@ -4217,6 +4407,11 @@
         "n8n_credential_type": "awsAssumeRole",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "region",
@@ -5252,6 +5447,9 @@
         "n8n_credential_type": "microsoftAzureCosmosDbSharedKeyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "account",
@@ -5358,6 +5556,9 @@
         "n8n_credential_type": "azureOpenAiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -5396,6 +5597,9 @@
         "n8n_credential_type": "azureEntraCognitiveServicesOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -5541,6 +5745,9 @@
         "n8n_credential_type": "azureStorageSharedKeyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "account",
@@ -5565,6 +5772,9 @@
         "n8n_credential_type": "azureStorageOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -5773,6 +5983,10 @@
         "n8n_credential_type": "bambooHrApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "subdomain",
@@ -5998,6 +6212,9 @@
         "n8n_credential_type": "bannerbearApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -6060,6 +6277,10 @@
         "n8n_credential_type": "baserowApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -6091,6 +6312,10 @@
         "n8n_credential_type": "baserowTokenApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -6228,6 +6453,10 @@
         "n8n_credential_type": "beeminderApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authToken",
@@ -6245,6 +6474,10 @@
         "n8n_credential_type": "beeminderOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -6563,6 +6796,9 @@
         "n8n_credential_type": "bitbucketApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "username",
@@ -6587,6 +6823,9 @@
         "n8n_credential_type": "bitbucketAccessTokenApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "email",
@@ -6631,6 +6870,10 @@
         "n8n_credential_type": "bitlyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -6648,6 +6891,10 @@
         "n8n_credential_type": "bitlyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -6930,6 +7177,10 @@
         "n8n_credential_type": "bitwardenApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "clientId",
@@ -7209,6 +7460,10 @@
         "n8n_credential_type": "boxOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -7404,6 +7659,10 @@
         "n8n_credential_type": "brandfetchApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -7643,6 +7902,10 @@
         "n8n_credential_type": "bubbleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -7903,6 +8166,9 @@
         "n8n_credential_type": "calApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -7942,6 +8208,9 @@
         "n8n_credential_type": "calendlyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -8237,6 +8506,10 @@
         "n8n_credential_type": "chargebeeApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accountName",
@@ -8356,6 +8629,9 @@
         "n8n_credential_type": "chatHubVectorStorePGVectorApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "host",
@@ -8500,6 +8776,9 @@
         "n8n_credential_type": "chatHubVectorStorePineconeApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -8546,6 +8825,9 @@
         "n8n_credential_type": "chatHubVectorStoreQdrantApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -8592,6 +8874,10 @@
         "n8n_credential_type": "circleCiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -8774,6 +9060,11 @@
         "n8n_credential_type": "ciscoWebexOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -9014,6 +9305,9 @@
         "n8n_credential_type": "citrixAdcApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "url",
@@ -9095,6 +9389,10 @@
         "n8n_credential_type": "clearbitApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -9181,6 +9479,11 @@
         "n8n_credential_type": "clickUpApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -9198,6 +9501,11 @@
         "n8n_credential_type": "clickUpOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -10102,6 +10410,11 @@
         "n8n_credential_type": "clockifyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -10574,6 +10887,10 @@
         "n8n_credential_type": "cloudflareApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -10664,6 +10981,10 @@
         "n8n_credential_type": "cockpitApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -10783,6 +11104,10 @@
         "n8n_credential_type": "codaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -11031,6 +11356,9 @@
         "n8n_credential_type": "cohereApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -11213,6 +11541,9 @@
         "n8n_credential_type": "confluenceCloudOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -11435,6 +11766,10 @@
         "n8n_credential_type": "contentfulApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "spaceId",
@@ -11620,6 +11955,11 @@
         "n8n_credential_type": "convertKitApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiSecret",
@@ -11848,6 +12188,11 @@
         "n8n_credential_type": "copperApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -12280,6 +12625,9 @@
         "n8n_credential_type": "cortexApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "cortexApiKey",
@@ -12352,6 +12700,10 @@
         "n8n_credential_type": "crateDb",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -12498,6 +12850,10 @@
         "n8n_credential_type": "crypto",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "hmacSecret",
@@ -12758,6 +13114,11 @@
         "n8n_credential_type": "currentsApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -13074,6 +13435,11 @@
         "n8n_credential_type": "customerIoApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "trackingApiKey",
@@ -13396,6 +13762,10 @@
         "n8n_credential_type": "databricksApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -13420,6 +13790,10 @@
         "n8n_credential_type": "databricksOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "grantType",
@@ -14033,6 +14407,10 @@
         "n8n_credential_type": "deepLApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -14100,6 +14478,10 @@
         "n8n_credential_type": "demioApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -14244,6 +14626,10 @@
         "n8n_credential_type": "dhlApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -14304,6 +14690,10 @@
         "n8n_credential_type": "discordBotApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "botToken",
@@ -14335,6 +14725,10 @@
         "n8n_credential_type": "discordOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -14450,6 +14844,10 @@
         "n8n_credential_type": "discordWebhookApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "webhookUri",
@@ -14589,6 +14987,10 @@
         "n8n_credential_type": "discourseApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -14837,6 +15239,9 @@
         "n8n_credential_type": "disqusApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -14896,6 +15301,10 @@
         "n8n_credential_type": "driftApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -14913,6 +15322,10 @@
         "n8n_credential_type": "driftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -15083,6 +15496,10 @@
         "n8n_credential_type": "dropboxApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -15107,6 +15524,10 @@
         "n8n_credential_type": "dropboxOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -15356,6 +15777,10 @@
         "n8n_credential_type": "dropcontactApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -15559,6 +15984,10 @@
         "n8n_credential_type": "egoiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -15603,6 +16032,10 @@
         "n8n_credential_type": "elasticSecurityApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -15839,6 +16272,10 @@
         "n8n_credential_type": "elasticsearchApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "username",
@@ -16006,6 +16443,9 @@
         "n8n_credential_type": "imap",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "user",
@@ -16073,6 +16513,10 @@
         "n8n_credential_type": "smtp",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "user",
@@ -16168,6 +16612,11 @@
         "n8n_credential_type": "emeliaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -16318,6 +16767,10 @@
         "n8n_credential_type": "erpNextApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -16453,6 +16906,9 @@
         "n8n_credential_type": "eventbriteApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -16470,6 +16926,9 @@
         "n8n_credential_type": "eventbriteOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -16738,6 +17197,9 @@
         "n8n_credential_type": "facebookGraphAppApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -16762,6 +17224,9 @@
         "n8n_credential_type": "facebookGraphAppOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -16885,6 +17350,10 @@
         "n8n_credential_type": "facebookGraphApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -16902,6 +17371,10 @@
         "n8n_credential_type": "facebookGraphApiOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -17022,6 +17495,9 @@
         "n8n_credential_type": "facebookLeadAdsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -17256,6 +17732,9 @@
         "n8n_credential_type": "figmaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -17273,6 +17752,9 @@
         "n8n_credential_type": "figmaOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -17396,6 +17878,10 @@
         "n8n_credential_type": "fileMaker",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -17696,6 +18182,10 @@
         "n8n_credential_type": "flowApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "organizationId",
@@ -17903,6 +18393,9 @@
         "n8n_credential_type": "formIoApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "environment",
@@ -17956,6 +18449,9 @@
         "n8n_credential_type": "formstackApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -17973,6 +18469,9 @@
         "n8n_credential_type": "formstackOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -18102,6 +18601,10 @@
         "n8n_credential_type": "freshdeskApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -18265,6 +18768,10 @@
         "n8n_credential_type": "freshserviceApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -19126,6 +19633,10 @@
         "n8n_credential_type": "freshworksCrmApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -19545,6 +20056,9 @@
         "n8n_credential_type": "ftp",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "host",
@@ -19583,6 +20097,9 @@
         "n8n_credential_type": "sftp",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "host",
@@ -19677,6 +20194,10 @@
         "n8n_credential_type": "gSuiteAdminOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -20003,6 +20524,10 @@
         "n8n_credential_type": "googlePalmApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -20260,6 +20785,11 @@
         "n8n_credential_type": "getResponseApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -20277,6 +20807,11 @@
         "n8n_credential_type": "getResponseOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -20451,6 +20986,10 @@
         "n8n_credential_type": "ghostContentApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -20475,6 +21014,10 @@
         "n8n_credential_type": "ghostAdminApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -20602,6 +21145,10 @@
         "n8n_credential_type": "gitPassword",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "username",
@@ -20931,6 +21478,11 @@
         "n8n_credential_type": "githubApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "server",
@@ -20962,6 +21514,11 @@
         "n8n_credential_type": "githubAppApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "server",
@@ -21000,6 +21557,11 @@
         "n8n_credential_type": "githubOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -21669,6 +22231,11 @@
         "n8n_credential_type": "gitlabApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "server",
@@ -21693,6 +22260,11 @@
         "n8n_credential_type": "gitlabOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -22028,6 +22600,11 @@
         "n8n_credential_type": "gmailOAuth2",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -22129,6 +22706,11 @@
         "n8n_credential_type": "googleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "region",
@@ -22357,6 +22939,10 @@
         "n8n_credential_type": "goToWebinarOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -22727,6 +23313,10 @@
         "n8n_credential_type": "gongApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -22758,6 +23348,10 @@
         "n8n_credential_type": "gongOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -22931,6 +23525,10 @@
         "n8n_credential_type": "googleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "region",
@@ -22990,6 +23588,10 @@
         "n8n_credential_type": "googleBooksOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -23091,6 +23693,10 @@
         "n8n_credential_type": "googleChatOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -23192,6 +23798,10 @@
         "n8n_credential_type": "googleDocsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -23293,6 +23903,9 @@
         "n8n_credential_type": "googleSheetsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -23394,6 +24007,10 @@
         "n8n_credential_type": "googleSlidesOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -23495,6 +24112,10 @@
         "n8n_credential_type": "googleTranslateOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -24081,6 +24702,10 @@
         "n8n_credential_type": "googleAdsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -24242,6 +24867,10 @@
         "n8n_credential_type": "googleAnalyticsOAuth2",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -24402,6 +25031,10 @@
         "n8n_credential_type": "googleBigQueryOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -24503,6 +25136,10 @@
         "n8n_credential_type": "googleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "region",
@@ -24615,6 +25252,11 @@
         "n8n_credential_type": "googleBusinessProfileOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -24849,6 +25491,11 @@
         "n8n_credential_type": "googleCalendarOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -25053,6 +25700,10 @@
         "n8n_credential_type": "googleCloudNaturalLanguageOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -25197,6 +25848,10 @@
         "n8n_credential_type": "googleCloudStorageOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -25298,6 +25953,10 @@
         "n8n_credential_type": "googleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "region",
@@ -25496,6 +26155,10 @@
         "n8n_credential_type": "googleContactsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -25680,6 +26343,11 @@
         "n8n_credential_type": "googleDriveOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -25781,6 +26449,11 @@
         "n8n_credential_type": "googleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "region",
@@ -26065,6 +26738,10 @@
         "n8n_credential_type": "googleFirebaseCloudFirestoreOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -26166,6 +26843,10 @@
         "n8n_credential_type": "googleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "region",
@@ -26334,6 +27015,10 @@
         "n8n_credential_type": "googleFirebaseRealtimeDatabaseOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -26515,6 +27200,10 @@
         "n8n_credential_type": "googlePerspectiveOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -26639,16 +27328,188 @@
   },
   "google_sheets": {
     "service": "google_sheets",
-    "display_name": "Google Sheets Trigger OAuth2 API",
+    "display_name": "Google Sheets OAuth2 API",
     "category": "Documents",
     "default_option": "google_service_account_api",
     "auth_options": [
       {
         "option_id": "primary",
+        "label": "Google Sheets OAuth2 API",
+        "n8n_credential_type": "googleSheetsOAuth2Api",
+        "connection_pattern": 4,
+        "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
+        "fields": [
+          {
+            "name": "serverUrl",
+            "display_name": "Server URL",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "clientId",
+            "display_name": "Client ID",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "clientSecret",
+            "display_name": "Client Secret",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          },
+          {
+            "name": "sendAdditionalBodyProperties",
+            "display_name": "Send Additional Body Properties",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "additionalBodyProperties",
+            "display_name": "Additional Body Properties",
+            "type": "json",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "ignoreSSLIssues",
+            "display_name": "Ignore SSL Issues (Insecure)",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "tokenExpiredStatusCode",
+            "display_name": "Token Expired Status Code",
+            "type": "number",
+            "secret": false,
+            "default": "401"
+          },
+          {
+            "name": "jweEnabled",
+            "display_name": "Encrypted Tokens (JWE)",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "jwksUri",
+            "display_name": "JWKS URI",
+            "type": "string",
+            "secret": false,
+            "default": "http://localhost:5678/rest/.well-known/jwks.json"
+          },
+          {
+            "name": "inlineJwks",
+            "display_name": "Inline JWKS in Client Registration",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "customScopes",
+            "display_name": "Custom Scopes",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "enabledScopes",
+            "display_name": "Enabled Scopes",
+            "type": "string",
+            "secret": false,
+            "default": "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata"
+          }
+        ],
+        "oauth": {
+          "grantType": "authorizationCode",
+          "authUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+          "accessTokenUrl": "https://oauth2.googleapis.com/token",
+          "scope": "={{$self[\"customScopes\"] ? $self[\"enabledScopes\"] : \"https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata\"}}",
+          "authQueryParameters": "access_type=offline&prompt=consent",
+          "authentication": "body"
+        }
+      },
+      {
+        "option_id": "google_service_account_api",
+        "label": "Google Service Account API",
+        "n8n_credential_type": "googleApi",
+        "connection_pattern": 1,
+        "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
+        "fields": [
+          {
+            "name": "region",
+            "display_name": "Region",
+            "type": "options",
+            "secret": false,
+            "default": "global"
+          },
+          {
+            "name": "email",
+            "display_name": "Service Account Email",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "privateKey",
+            "display_name": "Private Key",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          },
+          {
+            "name": "inpersonate",
+            "display_name": "Impersonate a User",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "delegatedEmail",
+            "display_name": "Email",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "httpNode",
+            "display_name": "Set up for use in HTTP Request node",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "scopes",
+            "display_name": "Scope(s)",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          }
+        ],
+        "oauth": null
+      },
+      {
+        "option_id": "google_sheets_trigger_oauth2_api",
         "label": "Google Sheets Trigger OAuth2 API",
         "n8n_credential_type": "googleSheetsTriggerOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -26743,69 +27604,138 @@
           "authQueryParameters": "access_type=offline&prompt=consent",
           "authentication": "body"
         }
-      },
-      {
-        "option_id": "google_service_account_api",
-        "label": "Google Service Account API",
-        "n8n_credential_type": "googleApi",
-        "connection_pattern": 1,
-        "auth_type": "api_key",
-        "fields": [
-          {
-            "name": "region",
-            "display_name": "Region",
-            "type": "options",
-            "secret": false,
-            "default": "global"
-          },
-          {
-            "name": "email",
-            "display_name": "Service Account Email",
-            "type": "string",
-            "secret": false,
-            "default": ""
-          },
-          {
-            "name": "privateKey",
-            "display_name": "Private Key",
-            "type": "string",
-            "secret": true,
-            "default": ""
-          },
-          {
-            "name": "inpersonate",
-            "display_name": "Impersonate a User",
-            "type": "boolean",
-            "secret": false,
-            "default": "false"
-          },
-          {
-            "name": "delegatedEmail",
-            "display_name": "Email",
-            "type": "string",
-            "secret": false,
-            "default": ""
-          },
-          {
-            "name": "httpNode",
-            "display_name": "Set up for use in HTTP Request node",
-            "type": "boolean",
-            "secret": false,
-            "default": "false"
-          },
-          {
-            "name": "scopes",
-            "display_name": "Scope(s)",
-            "type": "string",
-            "secret": false,
-            "default": ""
-          }
-        ],
-        "oauth": null
       }
     ],
-    "kind": "trigger_only",
+    "kind": "action_node",
     "nodes": {
+      "standalone": {
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "resources": {
+          "spreadsheet": "Document",
+          "sheet": "Sheet Within Document"
+        },
+        "operationsByResource": {
+          "sheet": [
+            {
+              "label": "Append or Update Row",
+              "value": "appendOrUpdate",
+              "action": "Append or update row in sheet"
+            },
+            {
+              "label": "Append Row",
+              "value": "append",
+              "action": "Append row in sheet"
+            },
+            {
+              "label": "Clear",
+              "value": "clear",
+              "action": "Clear sheet"
+            },
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create sheet"
+            },
+            {
+              "label": "Delete",
+              "value": "remove",
+              "action": "Delete sheet"
+            },
+            {
+              "label": "Delete Rows or Columns",
+              "value": "delete",
+              "action": "Delete rows or columns from sheet"
+            },
+            {
+              "label": "Get Row(s)",
+              "value": "read",
+              "action": "Get row(s) in sheet"
+            },
+            {
+              "label": "Update Row",
+              "value": "update",
+              "action": "Update row in sheet"
+            }
+          ],
+          "spreadsheet": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create spreadsheet"
+            },
+            {
+              "label": "Delete",
+              "value": "deleteSpreadsheet",
+              "action": "Delete spreadsheet"
+            }
+          ]
+        }
+      },
+      "tool": {
+        "type": "n8n-nodes-base.googleSheetsTool",
+        "typeVersion": 4.7,
+        "resources": {
+          "spreadsheet": "Document",
+          "sheet": "Sheet Within Document"
+        },
+        "operationsByResource": {
+          "sheet": [
+            {
+              "label": "Append or Update Row",
+              "value": "appendOrUpdate",
+              "action": "Append or update row in sheet"
+            },
+            {
+              "label": "Append Row",
+              "value": "append",
+              "action": "Append row in sheet"
+            },
+            {
+              "label": "Clear",
+              "value": "clear",
+              "action": "Clear sheet"
+            },
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create sheet"
+            },
+            {
+              "label": "Delete",
+              "value": "remove",
+              "action": "Delete sheet"
+            },
+            {
+              "label": "Delete Rows or Columns",
+              "value": "delete",
+              "action": "Delete rows or columns from sheet"
+            },
+            {
+              "label": "Get Row(s)",
+              "value": "read",
+              "action": "Get row(s) in sheet"
+            },
+            {
+              "label": "Update Row",
+              "value": "update",
+              "action": "Update row in sheet"
+            }
+          ],
+          "spreadsheet": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create spreadsheet"
+            },
+            {
+              "label": "Delete",
+              "value": "deleteSpreadsheet",
+              "action": "Delete spreadsheet"
+            }
+          ]
+        }
+      },
       "trigger": {
         "type": "n8n-nodes-base.googleSheetsTrigger",
         "typeVersion": 1
@@ -26824,6 +27754,10 @@
         "n8n_credential_type": "googleTasksOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -27008,6 +27942,10 @@
         "n8n_credential_type": "gotifyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "appApiToken",
@@ -27109,6 +28047,10 @@
         "n8n_credential_type": "grafanaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -27476,6 +28418,10 @@
         "n8n_credential_type": "gristApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -27573,6 +28519,9 @@
         "n8n_credential_type": "groqApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -27737,6 +28686,9 @@
         "n8n_credential_type": "gumroadApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -27754,6 +28706,9 @@
         "n8n_credential_type": "gumroadOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -28142,6 +29097,10 @@
         "n8n_credential_type": "haloPSAApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "hostingType",
@@ -28448,6 +29407,10 @@
         "n8n_credential_type": "harvestApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -28465,6 +29428,10 @@
         "n8n_credential_type": "harvestOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -29149,6 +30116,11 @@
         "n8n_credential_type": "helpScoutOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -29421,6 +30393,10 @@
         "n8n_credential_type": "highLevelOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -29902,6 +30878,10 @@
         "n8n_credential_type": "homeAssistantApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -30285,6 +31265,10 @@
         "n8n_credential_type": "httpSslAuth",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "ca",
@@ -30332,16 +31316,61 @@
   },
   "hubspot": {
     "service": "hubspot",
-    "display_name": "HubSpot Developer API",
+    "display_name": "HubSpot API",
     "category": "Sales",
     "default_option": "primary",
     "auth_options": [
       {
         "option_id": "primary",
+        "label": "HubSpot API",
+        "n8n_credential_type": "hubspotApi",
+        "connection_pattern": 1,
+        "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
+        "fields": [
+          {
+            "name": "apiKey",
+            "display_name": "API Key",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          }
+        ],
+        "oauth": null
+      },
+      {
+        "option_id": "hubspot_service_key",
+        "label": "HubSpot Service Key",
+        "n8n_credential_type": "hubspotAppToken",
+        "connection_pattern": 1,
+        "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
+        "fields": [
+          {
+            "name": "appToken",
+            "display_name": "Service Key",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          }
+        ],
+        "oauth": null
+      },
+      {
+        "option_id": "hubspot_developer_api",
         "label": "HubSpot Developer API",
         "n8n_credential_type": "hubspotDeveloperApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -30436,10 +31465,463 @@
           "authQueryParameters": "grant_type=authorization_code",
           "authentication": "body"
         }
+      },
+      {
+        "option_id": "hubspot_oauth2_api",
+        "label": "HubSpot OAuth2 API",
+        "n8n_credential_type": "hubspotOAuth2Api",
+        "connection_pattern": 4,
+        "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
+        "fields": [
+          {
+            "name": "serverUrl",
+            "display_name": "Server URL",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "clientId",
+            "display_name": "Client ID",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "clientSecret",
+            "display_name": "Client Secret",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          },
+          {
+            "name": "sendAdditionalBodyProperties",
+            "display_name": "Send Additional Body Properties",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "additionalBodyProperties",
+            "display_name": "Additional Body Properties",
+            "type": "json",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "ignoreSSLIssues",
+            "display_name": "Ignore SSL Issues (Insecure)",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "tokenExpiredStatusCode",
+            "display_name": "Token Expired Status Code",
+            "type": "number",
+            "secret": false,
+            "default": "401"
+          },
+          {
+            "name": "jweEnabled",
+            "display_name": "Encrypted Tokens (JWE)",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          },
+          {
+            "name": "jwksUri",
+            "display_name": "JWKS URI",
+            "type": "string",
+            "secret": false,
+            "default": "http://localhost:5678/rest/.well-known/jwks.json"
+          },
+          {
+            "name": "inlineJwks",
+            "display_name": "Inline JWKS in Client Registration",
+            "type": "boolean",
+            "secret": false,
+            "default": "false"
+          }
+        ],
+        "oauth": {
+          "grantType": "authorizationCode",
+          "authUrl": "https://app.hubspot.com/oauth/authorize",
+          "accessTokenUrl": "https://api.hubapi.com/oauth/v1/token",
+          "scope": "crm.lists.write crm.objects.contacts.read crm.objects.contacts.write crm.objects.companies.read crm.objects.companies.write crm.objects.deals.read crm.objects.deals.write crm.objects.owners.read crm.schemas.companies.read crm.schemas.contacts.read crm.schemas.deals.read forms tickets",
+          "authQueryParameters": "grant_type=authorization_code",
+          "authentication": "body"
+        }
       }
     ],
-    "kind": "trigger_only",
+    "kind": "action_node",
     "nodes": {
+      "standalone": {
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "resources": {
+          "company": "Company",
+          "contact": "Contact",
+          "contactList": "Contact List",
+          "deal": "Deal",
+          "engagement": "Engagement",
+          "ticket": "Ticket"
+        },
+        "operationsByResource": {
+          "contact": [
+            {
+              "label": "Create or Update",
+              "value": "upsert",
+              "action": "Create or update a contact"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a contact"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a contact"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many contacts"
+            },
+            {
+              "label": "Get Recently Created/Updated",
+              "value": "getRecentlyCreatedUpdated",
+              "action": "Get recently created/updated contacts"
+            },
+            {
+              "label": "Search",
+              "value": "search",
+              "action": "Search contacts"
+            }
+          ],
+          "contactList": [
+            {
+              "label": "Add",
+              "value": "add",
+              "action": "Add a contact to a list"
+            },
+            {
+              "label": "Remove",
+              "value": "remove",
+              "action": "Remove a contact from a list"
+            }
+          ],
+          "company": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a company"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a company"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a company"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many companies"
+            },
+            {
+              "label": "Get Recently Created/Updated",
+              "value": "getRecentlyCreatedUpdated",
+              "action": "Get recently created/updated companies"
+            },
+            {
+              "label": "Search",
+              "value": "searchByDomain",
+              "action": "Search for a company by Domain"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update a company"
+            }
+          ],
+          "deal": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a deal"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a deal"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a deal"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many deals"
+            },
+            {
+              "label": "Get Recently Created/Updated",
+              "value": "getRecentlyCreatedUpdated",
+              "action": "Get recently created/updated deals"
+            },
+            {
+              "label": "Search",
+              "value": "search",
+              "action": "Search for deals"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update a deal"
+            }
+          ],
+          "engagement": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create an engagement"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete an engagement"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get an engagement"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many engagements"
+            }
+          ],
+          "ticket": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a ticket"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a ticket"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a ticket"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many tickets"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update a ticket"
+            }
+          ]
+        }
+      },
+      "tool": {
+        "type": "n8n-nodes-base.hubspotTool",
+        "typeVersion": 2.2,
+        "resources": {
+          "company": "Company",
+          "contact": "Contact",
+          "contactList": "Contact List",
+          "deal": "Deal",
+          "engagement": "Engagement",
+          "ticket": "Ticket"
+        },
+        "operationsByResource": {
+          "contact": [
+            {
+              "label": "Create or Update",
+              "value": "upsert",
+              "action": "Create or update a contact"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a contact"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a contact"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many contacts"
+            },
+            {
+              "label": "Get Recently Created/Updated",
+              "value": "getRecentlyCreatedUpdated",
+              "action": "Get recently created/updated contacts"
+            },
+            {
+              "label": "Search",
+              "value": "search",
+              "action": "Search contacts"
+            }
+          ],
+          "contactList": [
+            {
+              "label": "Add",
+              "value": "add",
+              "action": "Add a contact to a list"
+            },
+            {
+              "label": "Remove",
+              "value": "remove",
+              "action": "Remove a contact from a list"
+            }
+          ],
+          "company": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a company"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a company"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a company"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many companies"
+            },
+            {
+              "label": "Get Recently Created/Updated",
+              "value": "getRecentlyCreatedUpdated",
+              "action": "Get recently created/updated companies"
+            },
+            {
+              "label": "Search",
+              "value": "searchByDomain",
+              "action": "Search for a company by Domain"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update a company"
+            }
+          ],
+          "deal": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a deal"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a deal"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a deal"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many deals"
+            },
+            {
+              "label": "Get Recently Created/Updated",
+              "value": "getRecentlyCreatedUpdated",
+              "action": "Get recently created/updated deals"
+            },
+            {
+              "label": "Search",
+              "value": "search",
+              "action": "Search for deals"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update a deal"
+            }
+          ],
+          "engagement": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create an engagement"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete an engagement"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get an engagement"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many engagements"
+            }
+          ],
+          "ticket": [
+            {
+              "label": "Create",
+              "value": "create",
+              "action": "Create a ticket"
+            },
+            {
+              "label": "Delete",
+              "value": "delete",
+              "action": "Delete a ticket"
+            },
+            {
+              "label": "Get",
+              "value": "get",
+              "action": "Get a ticket"
+            },
+            {
+              "label": "Get Many",
+              "value": "getAll",
+              "action": "Get many tickets"
+            },
+            {
+              "label": "Update",
+              "value": "update",
+              "action": "Update a ticket"
+            }
+          ]
+        }
+      },
       "trigger": {
         "type": "n8n-nodes-base.hubspotTrigger",
         "typeVersion": 1
@@ -30590,6 +32072,9 @@
         "n8n_credential_type": "huggingFaceApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -30630,6 +32115,10 @@
         "n8n_credential_type": "humanticAiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -30710,6 +32199,10 @@
         "n8n_credential_type": "hunterApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -30841,6 +32334,10 @@
         "n8n_credential_type": "intercomApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -31053,6 +32550,11 @@
         "n8n_credential_type": "invoiceNinjaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "url",
@@ -31467,6 +32969,10 @@
         "n8n_credential_type": "iterableApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -31728,6 +33234,10 @@
         "n8n_credential_type": "jenkinsApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "username",
@@ -31914,6 +33424,10 @@
         "n8n_credential_type": "jinaAiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -32000,6 +33514,11 @@
         "n8n_credential_type": "jiraSoftwareCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "email",
@@ -32031,6 +33550,11 @@
         "n8n_credential_type": "jiraSoftwareCloudOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -32139,6 +33663,11 @@
         "n8n_credential_type": "jiraSoftwareServerApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "email",
@@ -32170,6 +33699,11 @@
         "n8n_credential_type": "jiraSoftwareServerPatApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "personalAccessToken",
@@ -32449,6 +33983,9 @@
         "n8n_credential_type": "jotFormApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -32752,6 +34289,11 @@
         "n8n_credential_type": "jwtAuth",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "keyType",
@@ -32869,6 +34411,11 @@
         "n8n_credential_type": "kafka",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "clientId",
@@ -32958,6 +34505,11 @@
         "n8n_credential_type": "schemaRegistryApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "url",
@@ -33153,6 +34705,11 @@
         "n8n_credential_type": "keapOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -33640,6 +35197,11 @@
         "n8n_credential_type": "koBoToolboxApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "URL",
@@ -33889,6 +35451,10 @@
         "n8n_credential_type": "ldap",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "hostname",
@@ -34038,6 +35604,11 @@
         "n8n_credential_type": "lemlistApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -34272,6 +35843,9 @@
         "n8n_credential_type": "lemonadeApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -34324,6 +35898,10 @@
         "n8n_credential_type": "lineNotifyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -34454,6 +36032,11 @@
         "n8n_credential_type": "linearApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -34478,6 +36061,11 @@
         "n8n_credential_type": "linearOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -34831,6 +36419,10 @@
         "n8n_credential_type": "lingvaNexApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -34881,6 +36473,10 @@
         "n8n_credential_type": "linkedInOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -34982,6 +36578,10 @@
         "n8n_credential_type": "linkedInCommunityManagementOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -35112,6 +36712,9 @@
         "n8n_credential_type": "deepSeekApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -35144,6 +36747,9 @@
         "n8n_credential_type": "vercelAiGatewayApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -35183,6 +36789,9 @@
         "n8n_credential_type": "xAiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -35215,6 +36824,11 @@
         "n8n_credential_type": "loneScaleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -35601,6 +37215,10 @@
         "n8n_credential_type": "magento2Api",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -35826,6 +37444,10 @@
         "n8n_credential_type": "mailcheckApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -35886,6 +37508,11 @@
         "n8n_credential_type": "mailchimpApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -35903,6 +37530,11 @@
         "n8n_credential_type": "mailchimpOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -36185,6 +37817,11 @@
         "n8n_credential_type": "mailerLiteApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -36286,6 +37923,10 @@
         "n8n_credential_type": "mailgunApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiDomain",
@@ -36336,6 +37977,11 @@
         "n8n_credential_type": "mailjetEmailApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -36367,6 +38013,10 @@
         "n8n_credential_type": "mailjetSmsApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "token",
@@ -36484,6 +38134,10 @@
         "n8n_credential_type": "mandrillApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -36686,6 +38340,10 @@
         "n8n_credential_type": "marketstackApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -36785,6 +38443,10 @@
         "n8n_credential_type": "matrixApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -36982,6 +38644,10 @@
         "n8n_credential_type": "mattermostApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -37254,6 +38920,11 @@
         "n8n_credential_type": "mauticApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "url",
@@ -37285,6 +38956,11 @@
         "n8n_credential_type": "mauticOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -37686,6 +39362,10 @@
         "n8n_credential_type": "mcpOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "useDynamicClientRegistration",
@@ -37829,6 +39509,10 @@
         "n8n_credential_type": "httpMultipleHeadersAuth",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "headers",
@@ -37881,6 +39565,10 @@
         "n8n_credential_type": "mediumApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -37898,6 +39586,10 @@
         "n8n_credential_type": "mediumOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -38044,6 +39736,9 @@
         "n8n_credential_type": "motorheadApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "host",
@@ -38090,6 +39785,9 @@
         "n8n_credential_type": "xataApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "databaseEndpoint",
@@ -38136,6 +39834,10 @@
         "n8n_credential_type": "messageBirdApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessKey",
@@ -38212,6 +39914,10 @@
         "n8n_credential_type": "metabaseApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -38394,6 +40100,10 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -38530,6 +40240,10 @@
         "n8n_credential_type": "microsoftEntraServicePrincipalApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authentication",
@@ -38966,6 +40680,9 @@
         "n8n_credential_type": "microsoftAgent365Api",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "tenantId",
@@ -39144,6 +40861,10 @@
         "n8n_credential_type": "microsoftDynamicsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -39377,6 +41098,10 @@
         "n8n_credential_type": "microsoftEntraOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -39679,6 +41404,10 @@
         "n8n_credential_type": "microsoftExcelOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -39822,6 +41551,10 @@
         "n8n_credential_type": "microsoftEntraServicePrincipalApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authentication",
@@ -39883,6 +41616,10 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -40234,6 +41971,10 @@
         "n8n_credential_type": "microsoftGraphSecurityOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -40377,6 +42118,10 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -40602,6 +42347,11 @@
         "n8n_credential_type": "microsoftOneDriveOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -40745,6 +42495,11 @@
         "n8n_credential_type": "microsoftEntraServicePrincipalApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "authentication",
@@ -40806,6 +42561,11 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -41145,6 +42905,11 @@
         "n8n_credential_type": "microsoftOutlookOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -41302,6 +43067,11 @@
         "n8n_credential_type": "microsoftEntraServicePrincipalApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "authentication",
@@ -41363,6 +43133,11 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -41893,6 +43668,10 @@
         "n8n_credential_type": "microsoftSql",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "server",
@@ -42043,6 +43822,11 @@
         "n8n_credential_type": "microsoftTeamsOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -42186,6 +43970,11 @@
         "n8n_credential_type": "microsoftEntraServicePrincipalApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "authentication",
@@ -42247,6 +44036,11 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -42502,6 +44296,10 @@
         "n8n_credential_type": "microsoftToDoOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -42645,6 +44443,10 @@
         "n8n_credential_type": "microsoftEntraServicePrincipalApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authentication",
@@ -42706,6 +44508,10 @@
         "n8n_credential_type": "microsoftOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -43037,6 +44843,9 @@
         "n8n_credential_type": "mindeeReceiptApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -43054,6 +44863,9 @@
         "n8n_credential_type": "mindeeInvoiceApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -43091,6 +44903,10 @@
         "n8n_credential_type": "minimaxApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -43461,6 +45277,10 @@
         "n8n_credential_type": "mispApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -44059,6 +45879,10 @@
         "n8n_credential_type": "mistralCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -44133,6 +45957,10 @@
         "n8n_credential_type": "moceanApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "mocean-api-key",
@@ -44216,6 +46044,10 @@
         "n8n_credential_type": "mondayComApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -44233,6 +46065,10 @@
         "n8n_credential_type": "mondayComOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -44683,6 +46519,10 @@
         "n8n_credential_type": "mongoDb",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "configurationType",
@@ -44940,6 +46780,10 @@
         "n8n_credential_type": "monicaCrmApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "environment",
@@ -45590,6 +47434,10 @@
         "n8n_credential_type": "moonshotApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -45682,6 +47530,11 @@
         "n8n_credential_type": "mqtt",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "protocol",
@@ -45806,6 +47659,10 @@
         "n8n_credential_type": "msg91Api",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authkey",
@@ -45998,6 +47855,10 @@
         "n8n_credential_type": "mySql",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -46227,6 +48088,9 @@
         "n8n_credential_type": "n8nApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -46357,6 +48221,10 @@
         "n8n_credential_type": "nasaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "api_key",
@@ -46711,6 +48579,11 @@
         "n8n_credential_type": "netlifyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -46973,6 +48846,10 @@
         "n8n_credential_type": "nextCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "webDavUrl",
@@ -47004,6 +48881,10 @@
         "n8n_credential_type": "nextCloudOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -47327,6 +49208,10 @@
         "n8n_credential_type": "nocoDb",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -47351,6 +49236,10 @@
         "n8n_credential_type": "nocoDbApiToken",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -47550,6 +49439,11 @@
         "n8n_credential_type": "notionApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -47567,6 +49461,11 @@
         "n8n_credential_type": "notionOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -48023,6 +49922,10 @@
         "n8n_credential_type": "npmApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -48136,6 +50039,9 @@
         "n8n_credential_type": "nvidiaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "url",
@@ -48183,6 +50089,10 @@
         "n8n_credential_type": "odooApiKeyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -48214,6 +50124,10 @@
         "n8n_credential_type": "odooApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -48503,6 +50417,10 @@
         "n8n_credential_type": "oktaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -48610,6 +50528,10 @@
         "n8n_credential_type": "ollamaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -48712,6 +50634,10 @@
         "n8n_credential_type": "oneSimpleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -48880,6 +50806,11 @@
         "n8n_credential_type": "onfleetApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -49782,6 +51713,10 @@
         "n8n_credential_type": "openWeatherMapApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -49842,6 +51777,9 @@
         "n8n_credential_type": "openAiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -50034,6 +51972,9 @@
         "n8n_credential_type": "openRouterApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -50198,6 +52139,10 @@
         "n8n_credential_type": "oracleDBApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "user",
@@ -50455,6 +52400,9 @@
         "n8n_credential_type": "orbitApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -50573,6 +52521,10 @@
         "n8n_credential_type": "ouraApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -50669,6 +52621,10 @@
         "n8n_credential_type": "paddleApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "vendorAuthCode",
@@ -50847,6 +52803,10 @@
         "n8n_credential_type": "pagerDutyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -50864,6 +52824,10 @@
         "n8n_credential_type": "pagerDutyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -51092,6 +53056,10 @@
         "n8n_credential_type": "payPalApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "clientId",
@@ -51304,6 +53272,10 @@
         "n8n_credential_type": "peekalinkApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -51364,6 +53336,10 @@
         "n8n_credential_type": "perplexityApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -51466,6 +53442,10 @@
         "n8n_credential_type": "phantombusterApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -51576,6 +53556,10 @@
         "n8n_credential_type": "philipsHueOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -51743,6 +53727,11 @@
         "n8n_credential_type": "pipedriveApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -51760,6 +53749,11 @@
         "n8n_credential_type": "pipedriveOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -52601,6 +54595,10 @@
         "n8n_credential_type": "plivoApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authId",
@@ -52700,6 +54698,10 @@
         "n8n_credential_type": "postHogApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -52957,6 +54959,11 @@
         "n8n_credential_type": "postgres",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "host",
@@ -53323,6 +55330,9 @@
         "n8n_credential_type": "postmarkApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverToken",
@@ -53487,6 +55497,10 @@
         "n8n_credential_type": "profitWellApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -53563,6 +55577,10 @@
         "n8n_credential_type": "pushbulletOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -53723,6 +55741,11 @@
         "n8n_credential_type": "pushcutApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -53787,6 +55810,10 @@
         "n8n_credential_type": "pushoverApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -53915,6 +55942,10 @@
         "n8n_credential_type": "questDb",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -54010,6 +56041,10 @@
         "n8n_credential_type": "quickbaseApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "hostname",
@@ -54185,6 +56220,10 @@
         "n8n_credential_type": "quickBooksOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -54918,6 +56957,11 @@
         "n8n_credential_type": "rabbitmq",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "hostname",
@@ -55336,6 +57380,10 @@
         "n8n_credential_type": "raindropOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -55665,6 +57713,10 @@
         "n8n_credential_type": "redditOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -55939,6 +57991,11 @@
         "n8n_credential_type": "redis",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "password",
@@ -56272,6 +58329,10 @@
         "n8n_credential_type": "rocketchatApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "userId",
@@ -56388,6 +58449,10 @@
         "n8n_credential_type": "rundeckApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -56446,6 +58511,10 @@
         "n8n_credential_type": "s3",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "endpoint",
@@ -56663,6 +58732,11 @@
         "n8n_credential_type": "salesforceOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -56757,6 +58831,11 @@
         "n8n_credential_type": "salesforceJwtApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "environment",
@@ -57555,6 +59634,10 @@
         "n8n_credential_type": "salesmateApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "sessionToken",
@@ -57906,6 +59989,11 @@
         "n8n_credential_type": "seaTableApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "environment",
@@ -58159,6 +60247,10 @@
         "n8n_credential_type": "securityScorecardApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -58429,6 +60521,10 @@
         "n8n_credential_type": "segmentApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "writekey",
@@ -58558,6 +60654,10 @@
         "n8n_credential_type": "sendGridApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -58720,6 +60820,11 @@
         "n8n_credential_type": "sendInBlueApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -59074,6 +61179,10 @@
         "n8n_credential_type": "sendyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
@@ -59197,6 +61306,10 @@
         "n8n_credential_type": "sentryIoApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "token",
@@ -59214,6 +61327,10 @@
         "n8n_credential_type": "sentryIoOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -59301,6 +61418,10 @@
         "n8n_credential_type": "sentryIoServerApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "token",
@@ -59770,6 +61891,10 @@
         "n8n_credential_type": "serviceNowOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -59864,6 +61989,10 @@
         "n8n_credential_type": "serviceNowBasicApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "user",
@@ -60232,6 +62361,11 @@
         "n8n_credential_type": "shopifyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -60270,6 +62404,11 @@
         "n8n_credential_type": "shopifyAccessTokenApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "shopSubdomain",
@@ -60301,6 +62440,11 @@
         "n8n_credential_type": "shopifyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -60565,6 +62709,10 @@
         "n8n_credential_type": "signl4Api",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "teamSecret",
@@ -60635,6 +62783,11 @@
         "n8n_credential_type": "slackApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -60659,6 +62812,10 @@
         "n8n_credential_type": "slackOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -61284,6 +63441,10 @@
         "n8n_credential_type": "sms77Api",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -61492,6 +63653,10 @@
         "n8n_credential_type": "snowflake",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "account",
@@ -61588,6 +63753,10 @@
         "n8n_credential_type": "snowflakeOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -61852,6 +64021,10 @@
         "n8n_credential_type": "splunkApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authToken",
@@ -62094,6 +64267,10 @@
         "n8n_credential_type": "spotifyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -62550,6 +64727,9 @@
         "n8n_credential_type": "sshPassword",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "host",
@@ -62588,6 +64768,9 @@
         "n8n_credential_type": "sshPrivateKey",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "host",
@@ -62673,6 +64856,10 @@
         "n8n_credential_type": "stackbyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -62753,6 +64940,10 @@
         "n8n_credential_type": "storyblokContentApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -62770,6 +64961,10 @@
         "n8n_credential_type": "storyblokManagementApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -62890,6 +65085,10 @@
         "n8n_credential_type": "strapiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "email",
@@ -62928,6 +65127,10 @@
         "n8n_credential_type": "strapiTokenApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -63042,6 +65245,11 @@
         "n8n_credential_type": "stravaOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -63270,6 +65478,11 @@
         "n8n_credential_type": "stripeApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "secretKey",
@@ -63705,6 +65918,10 @@
         "n8n_credential_type": "supabaseApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -63831,6 +66048,9 @@
         "n8n_credential_type": "surveyMonkeyApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -63862,6 +66082,9 @@
         "n8n_credential_type": "surveyMonkeyOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -63964,6 +66187,10 @@
         "n8n_credential_type": "syncroMspApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -64266,6 +66493,11 @@
         "n8n_credential_type": "taigaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "username",
@@ -64559,6 +66791,10 @@
         "n8n_credential_type": "tapfiliateApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -64873,6 +67109,11 @@
         "n8n_credential_type": "telegramApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -65253,6 +67494,10 @@
         "n8n_credential_type": "theHiveApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "ApiKey",
@@ -65380,6 +67625,10 @@
         "n8n_credential_type": "theHiveProjectApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "ApiKey",
@@ -65966,6 +68215,10 @@
         "n8n_credential_type": "timescaleDb",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "host",
@@ -66078,6 +68331,10 @@
         "n8n_credential_type": "todoistApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -66095,6 +68352,10 @@
         "n8n_credential_type": "todoistOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -66605,6 +68866,9 @@
         "n8n_credential_type": "togglApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "username",
@@ -66776,6 +69040,9 @@
         "n8n_credential_type": "searXngApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiUrl",
@@ -66808,6 +69075,9 @@
         "n8n_credential_type": "serpApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -66840,6 +69110,9 @@
         "n8n_credential_type": "wolframAlphaApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "appId",
@@ -66872,6 +69145,10 @@
         "n8n_credential_type": "totpApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "secret",
@@ -66929,6 +69206,10 @@
         "n8n_credential_type": "travisCiApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -67063,6 +69344,11 @@
         "n8n_credential_type": "trelloApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -67094,6 +69380,11 @@
         "n8n_credential_type": "trelloOAuth1Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "consumerKey",
@@ -67742,6 +70033,10 @@
         "n8n_credential_type": "twakeCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "workspaceKey",
@@ -67843,6 +70138,11 @@
         "n8n_credential_type": "twilioApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "authType",
@@ -67951,6 +70251,10 @@
         "n8n_credential_type": "twistOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -68309,6 +70613,10 @@
         "n8n_credential_type": "twitterOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -68564,6 +70872,9 @@
         "n8n_credential_type": "typeformApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -68581,6 +70892,9 @@
         "n8n_credential_type": "typeformOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -68697,6 +71011,10 @@
         "n8n_credential_type": "unleashedSoftwareApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiId",
@@ -68922,6 +71240,10 @@
         "n8n_credential_type": "upleadApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -68998,6 +71320,10 @@
         "n8n_credential_type": "uprocApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "email",
@@ -69041,6 +71367,10 @@
         "n8n_credential_type": "uptimeRobotApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -69325,6 +71655,10 @@
         "n8n_credential_type": "urlScanIoApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -69537,6 +71871,9 @@
         "n8n_credential_type": "azureAiSearchApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "endpoint",
@@ -69576,6 +71913,9 @@
         "n8n_credential_type": "chromaSelfHostedApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -69616,6 +71956,9 @@
         "n8n_credential_type": "chromaCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -69669,6 +72012,9 @@
         "n8n_credential_type": "milvusApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -69715,6 +72061,9 @@
         "n8n_credential_type": "pineconeApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -69747,6 +72096,9 @@
         "n8n_credential_type": "qdrantApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -69786,6 +72138,9 @@
         "n8n_credential_type": "weaviateApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "connection_type",
@@ -70006,6 +72361,11 @@
         "n8n_credential_type": "venafiTlsProtectCloudApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "region",
@@ -70153,6 +72513,10 @@
         "n8n_credential_type": "venafiTlsProtectDatacenterApi",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "domain",
@@ -70309,6 +72673,10 @@
         "n8n_credential_type": "veroApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "authToken",
@@ -70513,6 +72881,10 @@
         "n8n_credential_type": "vonageApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -70580,6 +72952,11 @@
         "n8n_credential_type": "webflowOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -70920,6 +73297,10 @@
         "n8n_credential_type": "wekanApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "username",
@@ -71254,6 +73635,10 @@
         "n8n_credential_type": "whatsAppApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -71271,10 +73656,41 @@
           }
         ],
         "oauth": null
+      },
+      {
+        "option_id": "whatsapp_oauth_api",
+        "label": "WhatsApp OAuth API",
+        "n8n_credential_type": "whatsAppTriggerApi",
+        "connection_pattern": 1,
+        "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
+        "fields": [
+          {
+            "name": "clientId",
+            "display_name": "Client ID",
+            "type": "string",
+            "secret": false,
+            "default": ""
+          },
+          {
+            "name": "clientSecret",
+            "display_name": "Client Secret",
+            "type": "string",
+            "secret": true,
+            "default": ""
+          }
+        ],
+        "oauth": null
       }
     ],
     "kind": "action_node",
     "nodes": {
+      "trigger": {
+        "type": "n8n-nodes-base.whatsAppTrigger",
+        "typeVersion": 1
+      },
       "standalone": {
         "type": "n8n-nodes-base.whatsApp",
         "typeVersion": 1.1,
@@ -71337,6 +73753,10 @@
         "n8n_credential_type": "wiseApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiToken",
@@ -71611,6 +74031,11 @@
         "n8n_credential_type": "wooCommerceApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "consumerKey",
@@ -71980,6 +74405,10 @@
         "n8n_credential_type": "wordpressApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "username",
@@ -72018,6 +74447,10 @@
         "n8n_credential_type": "wordpressOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -72291,6 +74724,9 @@
         "n8n_credential_type": "workableApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "subdomain",
@@ -72330,6 +74766,9 @@
         "n8n_credential_type": "wufooApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "trigger"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -72369,6 +74808,10 @@
         "n8n_credential_type": "xeroOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -72707,6 +75150,10 @@
         "n8n_credential_type": "youTubeOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -73065,6 +75512,10 @@
         "n8n_credential_type": "yourlsApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "signature",
@@ -73186,6 +75637,10 @@
         "n8n_credential_type": "zammadTokenAuthApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -73217,6 +75672,10 @@
         "n8n_credential_type": "zammadBasicAuthApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "baseUrl",
@@ -73516,6 +75975,11 @@
         "n8n_credential_type": "zendeskApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "subdomain",
@@ -73547,6 +76011,11 @@
         "n8n_credential_type": "zendeskOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool",
+          "trigger"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -73940,6 +76409,9 @@
         "n8n_credential_type": "zepApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone"
+        ],
         "fields": [
           {
             "name": "apiKey",
@@ -74136,6 +76608,10 @@
         "n8n_credential_type": "zohoOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -74934,6 +77410,10 @@
         "n8n_credential_type": "zoomApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "accessToken",
@@ -74951,6 +77431,10 @@
         "n8n_credential_type": "zoomOAuth2Api",
         "connection_pattern": 4,
         "auth_type": "oauth2_extra",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "serverUrl",
@@ -75169,6 +77653,10 @@
         "n8n_credential_type": "zulipApi",
         "connection_pattern": 1,
         "auth_type": "api_key",
+        "applies_to": [
+          "standalone",
+          "tool"
+        ],
         "fields": [
           {
             "name": "url",
