@@ -22,8 +22,39 @@ import { cn } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import { WorkflowReviewStep } from "../components/workflow/WorkflowReviewStep";
+import { ConfigureWorkflowStep } from "../components/workflow/ConfigureWorkflowStep";
+import { CreateResult } from "../components/workflow/CreateResult";
+import { OperationPicker } from "../components/workflow/OperationPicker";
+import {
+  activateAgent,
+  createWorkflow,
+  extractWorkflow,
+  getParamSchema,
+  type CreateWorkflowResponse,
+  type Overrides,
+  type ParamValues,
+  type StepParamForm,
+  type UnresolvedStep,
+} from "../lib/agentsApi";
+import {
+  buildParams,
+  errorsFromMissing,
+  initialValues,
+  type FieldErrors,
+  type FormValues,
+} from "../lib/paramValues";
 
 type DomainId = "corporate" | "education" | "finance";
+
+// review: preview + integrations; unresolved: operation picker for ambiguous
+// steps; configure: per-step parameter form; result: deployed.
+type Phase = "review" | "unresolved" | "configure" | "result";
+
+// Route of the Integrations page (opened in a new tab so wizard state survives).
+const INTEGRATIONS_PATH = "/integrations";
+
+const errMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : "Something went wrong";
 
 const domains: Array<{
   id: DomainId;
@@ -32,28 +63,28 @@ const domains: Array<{
   icon: typeof Briefcase;
   hint: string;
 }> = [
-    {
-      id: "corporate",
-      title: "Corporate Operations",
-      description: "Automate workflow, communication, and task coordination.",
-      icon: Briefcase,
-      hint: "Your agent will be configured for Corporate Operations tasks",
-    },
-    {
-      id: "education",
-      title: "Education",
-      description: "Support learning plans, tutoring, and curriculum workflows.",
-      icon: GraduationCap,
-      hint: "Your agent will be configured for Education workflows",
-    },
-    {
-      id: "finance",
-      title: "Finance",
-      description: "Analyze reports, forecast trends, and simplify decisions.",
-      icon: Landmark,
-      hint: "Your agent will be configured for Finance insights",
-    },
-  ];
+  {
+    id: "corporate",
+    title: "Corporate Operations",
+    description: "Automate workflow, communication, and task coordination.",
+    icon: Briefcase,
+    hint: "Your agent will be configured for Corporate Operations tasks",
+  },
+  {
+    id: "education",
+    title: "Education",
+    description: "Support learning plans, tutoring, and curriculum workflows.",
+    icon: GraduationCap,
+    hint: "Your agent will be configured for Education workflows",
+  },
+  {
+    id: "finance",
+    title: "Finance",
+    description: "Analyze reports, forecast trends, and simplify decisions.",
+    icon: Landmark,
+    hint: "Your agent will be configured for Finance insights",
+  },
+];
 
 const promptTemplates = [
   {
@@ -81,34 +112,63 @@ const stepMotion = {
 };
 
 const NewAgentCreation = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");
   const [agentName, setAgentName] = useState("Omni Ops Assistant");
   const [description, setDescription] = useState(
-    "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities."
+    "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities.",
   );
 
-
-
-  const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(null);
+  const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(
+    null,
+  );
   const [integrations, setIntegrations] = useState<
-    { service: string; display_name: string; required: boolean; available: boolean }[]
+    {
+      service: string;
+      display_name: string;
+      required: boolean;
+      available: boolean;
+    }[]
   >([]);
   const [allRequiredAvailable, setAllRequiredAvailable] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [created, setCreated] = useState(false);
+  const [phase, setPhase] = useState<Phase>("review");
+  const [busy, setBusy] = useState(false); // param-schema / create-workflow in flight
+  const [retrying, setRetrying] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
+  const [forms, setForms] = useState<StepParamForm[]>([]);
+  const [values, setValues] = useState<FormValues>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  // Operation picks for ambiguous steps, sent as overrides to param-schema/create-workflow.
+  const [overrides, setOverrides] = useState<Overrides>({});
+  const [unresolved, setUnresolved] = useState<UnresolvedStep[]>([]);
+  const [result, setResult] = useState<CreateWorkflowResponse | null>(null);
 
   const activeDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedDomain) ?? domains[0],
-    [selectedDomain]
+    [selectedDomain],
   );
 
   const domainMap: Record<DomainId, "Corporate" | "Education" | "Finance"> = {
     corporate: "Corporate",
     education: "Education",
     finance: "Finance",
+  };
+
+  const automationName =
+    typeof workflow?.automation_name === "string"
+      ? workflow.automation_name
+      : null;
+
+  const resetCreateFlow = () => {
+    setPhase("review");
+    setForms([]);
+    setValues({});
+    setFieldErrors({});
+    setUnresolved([]);
+    setOverrides({});
+    setResult(null);
   };
 
   const handleStepTwoContinue = async () => {
@@ -127,37 +187,13 @@ const NewAgentCreation = () => {
     setIntegrations([]);
     setAllRequiredAvailable(false);
     setGenerating(true);
-    setCreated(false);
+    resetCreateFlow();
 
     try {
-      const res = await fetch(`http://localhost:8000/agents/extract-workflow`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          domain: domainMap[selectedDomain],
-          description: `Agent Name: ${agentName}\n${description}`,
-          top_k: 5,
-        }),
+      const data = await extractWorkflow(token, {
+        domain: domainMap[selectedDomain],
+        description: `Agent Name: ${agentName}\n${description}`,
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to generate AI output");
-      }
-
-      const data: {
-        workflow: Record<string, unknown>;
-        integrations: {
-          service: string;
-          display_name: string;
-          required: boolean;
-          available: boolean;
-        }[];
-        all_required_available: boolean;
-      } = await res.json();
 
       setWorkflow(data.workflow);
       setIntegrations(data.integrations);
@@ -174,14 +210,151 @@ const NewAgentCreation = () => {
     }
   };
 
-  const handleCreateAgent = () => {
-    setIsCreating(true);
+  // Compiles + deploys. Deployed -> result screen; not deployable -> back to the
+  // form with per-field errors (missing params) or the unresolved-steps view.
+  const submitCreate = async (params: ParamValues) => {
+    if (!automationName) return;
+    const res = await createWorkflow(token, automationName, {
+      params,
+      overrides,
+      workflow_name: agentName.trim(),
+    });
 
-    window.setTimeout(() => {
-      setIsCreating(false);
-      setCreated(true);
-      toast.success("Demo agent created successfully!");
-    }, 1400);
+    if (res.agent) {
+      setResult(res);
+      setPhase("result");
+      if (res.agent.status === "active") toast.success("Agent deployed");
+      else toast.warning("Agent created, but activation failed");
+      return;
+    }
+
+    const fieldIssues = res.needs_user_input.filter(
+      (u) => u.missing_fields.length > 0,
+    );
+    const otherIssues = res.needs_user_input.filter(
+      (u) => u.missing_fields.length === 0,
+    );
+    setFieldErrors(errorsFromMissing(fieldIssues));
+    if (otherIssues.length > 0) {
+      setUnresolved(otherIssues);
+      setPhase("unresolved");
+    } else if (fieldIssues.length > 0) {
+      setPhase("configure");
+      toast.error("Please fill in the highlighted fields");
+    } else {
+      toast.error("The workflow could not be built");
+    }
+  };
+
+  // Fetches the form for the current overrides and moves to the right phase.
+  const loadSchema = async () => {
+    if (!automationName) return;
+    setBusy(true);
+    try {
+      const schema = await getParamSchema(token, automationName, overrides);
+      if (!schema.is_ready) {
+        setUnresolved(schema.unresolved_steps);
+        setPhase("unresolved");
+        return;
+      }
+      if (schema.forms.length === 0) {
+        await submitCreate({}); // nothing to ask the user
+        return;
+      }
+      setForms(schema.forms);
+      setValues(initialValues(schema.forms));
+      setFieldErrors({});
+      setPhase("configure");
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCreateAgent = async () => {
+    if (!automationName) {
+      toast.error(
+        "This preview has no automation name. Regenerate it and try again.",
+      );
+      return;
+    }
+    if (!allRequiredAvailable) {
+      toast.error("Connect all required integrations first");
+      return;
+    }
+    await loadSchema();
+  };
+
+  const handleSubmitConfigure = async () => {
+    const { params, errors, valid } = buildParams(forms, values);
+    setFieldErrors(errors);
+    if (!valid) {
+      toast.error("Please fill in the highlighted fields");
+      return;
+    }
+    setBusy(true);
+    try {
+      await submitCreate(params);
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Retry activation for an agent that exists in n8n but never went active.
+  // Never re-posts create-workflow (that would create a second n8n workflow).
+  const handleRetryActivation = async () => {
+    if (!result?.agent) return;
+    setRetrying(true);
+    try {
+      const agent = await activateAgent(token, result.agent.id);
+      setResult({ ...result, agent });
+      toast.success("Agent activated");
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  // Re-runs extract-workflow but keeps the current workflow: only the
+  // integration status is refreshed.
+  const handleRecheckIntegrations = async () => {
+    setRechecking(true);
+    try {
+      const data = await extractWorkflow(token, {
+        domain: domainMap[selectedDomain],
+        description: `Agent Name: ${agentName}\n${description}`,
+      });
+      setIntegrations(data.integrations);
+      setAllRequiredAvailable(data.all_required_available);
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setRechecking(false);
+    }
+  };
+
+  const handleConnectIntegration = () => {
+    window.open(INTEGRATIONS_PATH, "_blank");
+  };
+
+  const handleCreateAnother = () => {
+    resetCreateFlow();
+    setWorkflow(null);
+    setIntegrations([]);
+    setAllRequiredAvailable(false);
+    setStep(1);
+  };
+
+  const handleBack = () => {
+    if (step === 3 && (phase === "configure" || phase === "unresolved")) {
+      setPhase("review");
+      return;
+    }
+    setStep((prev) => Math.max(1, prev - 1));
   };
 
   return (
@@ -215,7 +388,9 @@ const NewAgentCreation = () => {
           </a>
           <div className="flex items-center gap-3 rounded-full border border-border bg-card/70 px-3 py-2">
             <CircleUserRound className="size-5 text-primary" />
-            <span className="text-sm text-foreground/90">Sayam Gada</span>
+            <span className="text-sm text-foreground/90">
+              {user?.name ?? user?.email ?? "Account"}
+            </span>
           </div>
         </div>
       </motion.nav>
@@ -239,30 +414,45 @@ const NewAgentCreation = () => {
         <Card className="glass-card mb-6 border-border/80">
           <CardContent className="p-5">
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              {["Select Domain", "Describe Agent", "Preview & Test"].map((label, index) => {
-                const itemStep = index + 1;
-                const isActive = itemStep === step;
-                const isComplete = itemStep < step;
+              {["Select Domain", "Describe Agent", "Preview & Test"].map(
+                (label, index) => {
+                  const itemStep = index + 1;
+                  const isActive = itemStep === step;
+                  const isComplete = itemStep < step;
 
-                return (
-                  <div key={label} className="flex items-center gap-2">
-                    <div
-                      className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-full border text-sm transition-all duration-300",
-                        isComplete && "border-secondary/60 bg-secondary/15 text-secondary glow-secondary",
-                        isActive && "border-primary/70 bg-primary/15 text-primary glow-primary",
-                        !isActive && !isComplete && "border-border bg-muted/20 text-muted-foreground"
+                  return (
+                    <div key={label} className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-full border text-sm transition-all duration-300",
+                          isComplete &&
+                            "border-secondary/60 bg-secondary/15 text-secondary glow-secondary",
+                          isActive &&
+                            "border-primary/70 bg-primary/15 text-primary glow-primary",
+                          !isActive &&
+                            !isComplete &&
+                            "border-border bg-muted/20 text-muted-foreground",
+                        )}
+                      >
+                        {isComplete ? <Check className="size-4" /> : itemStep}
+                      </div>
+                      <p
+                        className={cn(
+                          "text-sm",
+                          isActive
+                            ? "text-foreground"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {label}
+                      </p>
+                      {index < 2 && (
+                        <div className="mx-1 h-px w-8 bg-border/80 md:w-14" />
                       )}
-                    >
-                      {isComplete ? <Check className="size-4" /> : itemStep}
                     </div>
-                    <p className={cn("text-sm", isActive ? "text-foreground" : "text-muted-foreground")}>
-                      {label}
-                    </p>
-                    {index < 2 && <div className="mx-1 h-px w-8 bg-border/80 md:w-14" />}
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           </CardContent>
         </Card>
@@ -298,16 +488,20 @@ const NewAgentCreation = () => {
                             "glass-card-hover rounded-xl border p-4 text-left",
                             selected
                               ? "border-primary/70 bg-primary/10 shadow-[0_0_35px_rgba(0,123,255,0.25)]"
-                              : "border-border/70"
+                              : "border-border/70",
                           )}
                         >
                           <div className="mb-3 flex items-center justify-between">
                             <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-background/40">
                               <Icon className="size-5 text-primary" />
                             </div>
-                            {selected && <CheckCircle2 className="size-5 text-primary" />}
+                            {selected && (
+                              <CheckCircle2 className="size-5 text-primary" />
+                            )}
                           </div>
-                          <h3 className="text-base font-semibold">{domain.title}</h3>
+                          <h3 className="text-base font-semibold">
+                            {domain.title}
+                          </h3>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {domain.description}
                           </p>
@@ -351,7 +545,9 @@ const NewAgentCreation = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="agent-description">Agent Description</Label>
+                      <Label htmlFor="agent-description">
+                        Agent Description
+                      </Label>
                       <Textarea
                         id="agent-description"
                         value={description}
@@ -359,7 +555,9 @@ const NewAgentCreation = () => {
                         className="min-h-[180px] border-border/80 bg-card/70 focus-visible:ring-primary"
                         placeholder="Create an AI assistant that helps draft professional emails and schedule meetings..."
                       />
-                      <p className="text-xs text-primary/90">{activeDomain.hint}</p>
+                      <p className="text-xs text-primary/90">
+                        {activeDomain.hint}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -399,17 +597,87 @@ const NewAgentCreation = () => {
               <Card className="glass-card border-border/70">
                 <CardContent className="space-y-6 p-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Preview & Test Agent</h2>
+                    <h2 className="text-xl font-semibold">
+                      Preview & Test Agent
+                    </h2>
                     <Badge className="bg-secondary/15 text-secondary hover:bg-secondary/20">
                       Step 3 of 3
                     </Badge>
                   </div>
 
-                  <WorkflowReviewStep
-                    workflow={workflow}
-                    integrations={integrations}
-                    generating={generating}
-                  />
+                  {phase === "review" && (
+                    <>
+                      <WorkflowReviewStep
+                        workflow={workflow}
+                        integrations={integrations}
+                        generating={generating}
+                        onConnectIntegration={handleConnectIntegration}
+                      />
+                      {!generating &&
+                        workflow &&
+                        integrations.some(
+                          (i) => i.required && !i.available,
+                        ) && (
+                          <div className="flex justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRecheckIntegrations}
+                              disabled={rechecking}
+                            >
+                              {rechecking
+                                ? "Checking..."
+                                : "Re-check connections"}
+                            </Button>
+                          </div>
+                        )}
+                    </>
+                  )}
+
+                  {phase === "unresolved" && (
+                    <OperationPicker
+                      items={unresolved}
+                      picks={overrides}
+                      busy={busy}
+                      onPick={(stepNo, operation) =>
+                        setOverrides((prev) => ({
+                          ...prev,
+                          [stepNo]: { operation },
+                        }))
+                      }
+                      onContinue={loadSchema}
+                      onBack={() => setPhase("review")}
+                    />
+                  )}
+
+                  {phase === "configure" && (
+                    <ConfigureWorkflowStep
+                      forms={forms}
+                      values={values}
+                      errors={fieldErrors}
+                      disabled={busy}
+                      onChange={(stepNo, name, value) => {
+                        setValues((prev) => ({
+                          ...prev,
+                          [stepNo]: { ...prev[stepNo], [name]: value },
+                        }));
+                        setFieldErrors((prev) => {
+                          if (!prev[stepNo]?.[name]) return prev;
+                          const { [name]: _removed, ...rest } = prev[stepNo];
+                          return { ...prev, [stepNo]: rest };
+                        });
+                      }}
+                    />
+                  )}
+
+                  {phase === "result" && result && (
+                    <CreateResult
+                      result={result}
+                      retrying={retrying}
+                      onRetry={handleRetryActivation}
+                      onCreateAnother={handleCreateAnother}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </motion.section>
@@ -418,14 +686,22 @@ const NewAgentCreation = () => {
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-5 md:flex-row md:items-center md:justify-between">
           <div className="text-xs text-muted-foreground">
-            {created ? "Demo agent successfully prepared." : "Progress is saved automatically"}
+            {phase === "result" && result?.agent?.status === "active"
+              ? "Agent deployed."
+              : "Progress is saved automatically"}
           </div>
 
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              onClick={() => setStep((prev) => Math.max(1, prev - 1))}
-              disabled={step === 1 || isCreating || generating}
+              onClick={handleBack}
+              disabled={
+                step === 1 ||
+                busy ||
+                generating ||
+                retrying ||
+                phase === "result"
+              }
               className="border-border bg-card/60 hover:bg-card"
             >
               Back
@@ -457,24 +733,28 @@ const NewAgentCreation = () => {
               </Button>
             )}
 
-            {step === 3 && (
+            {step === 3 && (phase === "review" || phase === "configure") && (
               <Button
-                onClick={handleCreateAgent}
-                disabled={isCreating || created || generating || !workflow}
+                onClick={
+                  phase === "configure"
+                    ? handleSubmitConfigure
+                    : handleCreateAgent
+                }
+                disabled={
+                  busy ||
+                  generating ||
+                  !workflow ||
+                  (phase === "review" && !allRequiredAvailable)
+                }
                 className={cn(
                   "min-w-36 border border-primary/50 bg-primary text-primary-foreground hover:bg-primary/90",
-                  !created && !isCreating && "glow-primary"
+                  !busy && "glow-primary",
                 )}
               >
-                {isCreating ? (
+                {busy ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
                     Creating...
-                  </>
-                ) : created ? (
-                  <>
-                    <CheckCircle2 className="mr-2 size-4 text-secondary" />
-                    Created
                   </>
                 ) : (
                   "Create Agent"

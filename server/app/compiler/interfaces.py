@@ -97,7 +97,14 @@ class SuppliedParamProvider(ParamProvider):
         missing: list[str] = []
         for f in field_defs:
             name = f.name
-            if name in step_values:
+            # A blank value for a required field counts as NOT supplied --
+            # otherwise "" from an untouched form input is accepted and the
+            # compiled node fails in n8n exactly like the original manual
+            # import did. (A required field that has a real default falls
+            # through to that default below.)
+            if name in step_values and not (
+                f.required and _is_blank(step_values[name])
+            ):
                 params[name] = step_values[name]
             elif f.required and (f.default in (None, "")):
                 # A required field with no real default (like sendTo/
@@ -111,6 +118,10 @@ class SuppliedParamProvider(ParamProvider):
             raise MissingRequiredParam(step.step, step.service, missing)
 
         return params
+
+
+def _is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
 
 
 class MissingRequiredParam(Exception):

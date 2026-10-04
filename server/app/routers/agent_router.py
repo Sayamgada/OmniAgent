@@ -1,5 +1,6 @@
 import dataclasses
 import traceback
+import uuid
 from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -226,6 +227,25 @@ class StepOverrideRequest(BaseModel):
     target: Optional[str] = None
 
 
+class ParamSchemaRequest(BaseModel):
+    # Same override shape create-workflow takes, so the picker's choices can
+    # be replayed here to get the form for the operations the user picked.
+    overrides: dict[int, StepOverrideRequest] = Field(default_factory=dict)
+
+
+def _to_overrides(raw: dict[int, StepOverrideRequest]) -> Overrides:
+    return {
+        step_num: StepOverride(operation=ov.operation, target=ov.target)
+        for step_num, ov in raw.items()
+    }
+
+
+# n8n error bodies can be long; Agent.last_error is String(1000) and an
+# over-length value would make db.commit() fail AFTER the workflow already
+# exists in n8n (orphaning it with no Agent row).
+_LAST_ERROR_MAX = 1000
+
+
 class CreateWorkflowRequest(BaseModel):
     # keyed by step number, matching Overrides/SuppliedParamProvider's own
     # shape -- lets the frontend resubmit exactly what param-schema asked
@@ -255,6 +275,31 @@ async def get_param_schema(
         )
 
 
+@router.post("/preview/{automation_name}/param-schema")
+async def post_param_schema(
+    automation_name: str,
+    body: ParamSchemaRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Same result as the GET above, but with the user's operation/target
+    picks applied first -- so after the ambiguity picker, one call returns
+    the real forms. With an empty `overrides` this is identical to the GET.
+    """
+    try:
+        steps = await _load_steps_for(automation_name)
+        result = build_param_form(steps, _to_overrides(body.overrides) or None)
+        return _to_plain(result)
+    except HTTPException:
+        raise
+    except Exception:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Error building parameter schema",
+        )
+
+
 @router.post("/preview/{automation_name}/create-workflow")
 async def create_workflow(
     automation_name: str,
@@ -272,10 +317,7 @@ async def create_workflow(
     try:
         steps = await _load_steps_for(automation_name)
 
-        overrides: Overrides = {
-            step_num: StepOverride(operation=ov.operation, target=ov.target)
-            for step_num, ov in body.overrides.items()
-        }
+        overrides: Overrides = _to_overrides(body.overrides)
 
         result = compile_workflow(
             steps,
@@ -321,7 +363,7 @@ async def create_workflow(
             await n8n_client.activate_workflow(n8n_workflow_id)
             agent_status = "active"
         except n8n_client.N8nClientError as e:
-            last_error = str(e)
+            last_error = str(e)[:_LAST_ERROR_MAX]
             response["warnings"].append(
                 f"workflow created in n8n but activation failed: {e}"
             )
@@ -338,12 +380,7 @@ async def create_workflow(
         db.commit()
         db.refresh(agent_row)
 
-        response["agent"] = {
-            "id": str(agent_row.id),
-            "n8n_workflow_id": agent_row.n8n_workflow_id,
-            "status": agent_row.status,
-            "workflow_name": agent_row.workflow_name,
-        }
+        response["agent"] = _agent_to_dict(agent_row)
         return response
     except HTTPException:
         raise
@@ -353,3 +390,54 @@ async def create_workflow(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Error compiling workflow",
         )
+
+
+def _agent_to_dict(agent: Agent) -> dict[str, Any]:
+    return {
+        "id": str(agent.id),
+        "n8n_workflow_id": agent.n8n_workflow_id,
+        "status": agent.status,
+        "workflow_name": agent.workflow_name,
+        "last_error": agent.last_error,
+    }
+
+
+@router.post("/{agent_id}/activate")
+async def activate_agent(
+    agent_id: uuid.UUID,
+    db: Session = Depends(get_postgres_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retry activation for an agent whose n8n workflow exists but never went
+    active (status="created" + last_error). This is the retry path -- the
+    frontend must NOT re-post create-workflow for that, which would create
+    a second n8n workflow.
+    """
+    # Filter by user_id too: another user's agent id is indistinguishable
+    # from a nonexistent one (404, not 403).
+    agent = (
+        db.query(Agent)
+        .filter(Agent.id == agent_id, Agent.user_id == current_user.id)
+        .first()
+    )
+    if agent is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found"
+        )
+
+    try:
+        await n8n_client.activate_workflow(agent.n8n_workflow_id)
+    except n8n_client.N8nClientError as e:
+        agent.last_error = str(e)[:_LAST_ERROR_MAX]
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"n8n activation failed: {e}",
+        )
+
+    agent.status = "active"
+    agent.last_error = None
+    db.commit()
+    db.refresh(agent)
+    return _agent_to_dict(agent)

@@ -175,6 +175,9 @@ class UnresolvedStep:
     service: str
     reason: str
     candidates: list[dict[str, Any]] = field(default_factory=list)
+    # Populated only for the "missing required parameter(s)" case, so the
+    # frontend can highlight exact fields instead of parsing `reason`.
+    missing_fields: list[str] = field(default_factory=list)
 
 
 @dataclass

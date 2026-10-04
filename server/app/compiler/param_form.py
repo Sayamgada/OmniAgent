@@ -19,9 +19,12 @@ Only step 3 is built here -- steps 1/2/4 depend on files not yet shared.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
+from typing import Optional
 
-from .models import Step
+from .bindings import Binding, compute_bindings
+from .compile import _apply_overrides
+from .models import Overrides, Step
 from .param_schema import FieldDef, get_required_params
 from .resolve import resolve_all_steps
 
@@ -32,6 +35,8 @@ class StepParamForm:
     service: str
     display_label: str  # human-readable, e.g. "Gmail — Send a message"
     fields: list[FieldDef]
+    # field name -> upstream-data bindings the UI can offer for it (Stage 3.4)
+    bindings: dict[str, list[Binding]] = field(default_factory=dict)
 
 
 @dataclass
@@ -43,7 +48,14 @@ class ParamFormResult:
     forms: list[StepParamForm]
 
 
-def build_param_form(steps: list[Step]) -> ParamFormResult:
+def build_param_form(
+    steps: list[Step], overrides: Optional[Overrides] = None
+) -> ParamFormResult:
+    # Same override application compile() does, so the form the user sees
+    # is computed for exactly the operation/target they picked. Mutates
+    # `steps` in place (as compile() does); callers load steps fresh per
+    # request, so nothing leaks between requests.
+    _apply_overrides(steps, overrides)
     resolved_by_step, report = resolve_all_steps(steps)
 
     if not report.is_deployable:
@@ -53,6 +65,7 @@ def build_param_form(steps: list[Step]) -> ParamFormResult:
             forms=[],
         )
 
+    steps_by_num = {s.step: s for s in steps}
     forms: list[StepParamForm] = []
     for step in steps:
         resolved = resolved_by_step[step.step]
@@ -83,6 +96,9 @@ def build_param_form(steps: list[Step]) -> ParamFormResult:
                 service=step.service,
                 display_label=f"{resolved.name} — {step.n8n_operation.get('action') if step.n8n_operation else step.operation or ''}",
                 fields=fields,
+                bindings=compute_bindings(
+                    step, steps_by_num, resolved_by_step, [f.name for f in fields]
+                ),
             )
         )
 

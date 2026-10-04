@@ -221,6 +221,7 @@ def compile(
                     service=e.service,
                     reason=f"missing required parameter(s): {', '.join(e.field_names)}",
                     candidates=[],
+                    missing_fields=list(e.field_names),
                 )
             )
             continue
