@@ -7,6 +7,7 @@ from app.core.n8n_operation_registry import (
     get_service_entry,
     get_trigger_node,
     resolve_operation,
+    resolve_resource,
     resolve_http_method,
 )
 from app.core.integration_catalog import INTEGRATION_CATALOG
@@ -91,7 +92,7 @@ def _valid_service_keys() -> frozenset:
     return frozenset(keys | _FALLBACK_SERVICE_KEYS)
 
 
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 6
 
 _ALLOWED_TOP_LEVEL_KEYS = {
     "schema_version",
@@ -167,10 +168,42 @@ def _check_operations(preview_json: dict) -> None:
             )
         _check_target(step)
         _check_service(step)
+        _check_trigger_refetch(step, preview_json)
         _check_depends_on(step, steps)
         _check_parallel_depends_on(step, steps)
         _check_condition_branch(step, steps)
         _check_ai_instructions(step)
+
+
+def _check_trigger_refetch(step: dict, preview_json: dict) -> None:
+    """
+    Service-agnostic compliance check for the TRIGGER-DELIVERED DATA rule.
+
+    A service-backed trigger already delivers the item that fired it. A step
+    that (a) uses the same service as the trigger, (b) is a plain "read", and
+    (c) depends on no earlier step, is the typical shape of a redundant
+    re-fetch of that item. Non-fatal and heuristic by design: it can't tell a
+    genuine read of DIFFERENT data from the same service (e.g. a thread or
+    history lookup), so it flags for review rather than blocking or dropping.
+    """
+    if not isinstance(step, dict) or not isinstance(preview_json, dict):
+        return
+    trigger = preview_json.get("trigger")
+    if not isinstance(trigger, dict):
+        return
+    trigger_service = trigger.get("service")
+    if not trigger_service or step.get("service") != trigger_service:
+        return
+    if step.get("operation") != "read":
+        return
+    if step.get("depends_on"):
+        return
+    print(
+        f"[workflow_generator] COMPLIANCE MISS (possible): step {step.get('step')} "
+        f"is a dependency-free 'read' on '{trigger_service}', the same service "
+        f"that fires the trigger. The trigger already delivers its item - verify "
+        f"this step retrieves DIFFERENT data, otherwise it is a redundant re-fetch."
+    )
 
 
 def _check_service(step: dict) -> None:
@@ -491,7 +524,19 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
             step["n8n_resolution_kind"] = "unsupported_kind"
             continue
 
-        op = resolve_operation(service, verb, resource=target)
+        # The model names the plainest noun ("row"), which is often not one
+        # of the service's real resource keys ("sheet"). Repair it from the
+        # registry's own operation text when that can be done unambiguously;
+        # the original is kept as target_original for traceability.
+        noun_hint = None
+        if target:
+            repaired = resolve_resource(service, target, verb)
+            if repaired and repaired != target:
+                step["target_original"] = target
+                step["target"] = repaired
+                noun_hint = target
+                target = repaired
+        op = resolve_operation(service, verb, resource=target, noun_hint=noun_hint)
         step["n8n_resolved"] = op is not None
         step["n8n_operation"] = op
         step["n8n_resolution_kind"] = (
@@ -607,7 +652,7 @@ async def generate_groq_workflow(
         Use EXACTLY this schema:
 
         {
-        "schema_version": 4,
+        "schema_version": 6,
         "automation_name": "",
         "automation_description": "",
 
@@ -982,6 +1027,27 @@ async def generate_groq_workflow(
         {"step": 3, "service": "groq", "operation": "generate", "depends_on": [1, 2]}
 
         --------------------------------------------------
+        TRIGGER-DELIVERED DATA
+
+        The trigger is not a workflow step. When it fires, the item or payload
+        that caused it (the incoming message, the new record, the submitted
+        form, the received request body) is ALREADY available to every
+        downstream step. This holds for every trigger type and every service.
+
+        Therefore, do NOT add a step whose only purpose is to obtain, read,
+        fetch, or receive what the trigger already delivered. Such a step is
+        redundant and must be omitted. Start the workflow at the first step
+        that does something with that data.
+
+        Add a "read"/"list"/"search"/"download" step on the trigger's own
+        service ONLY when it retrieves DIFFERENT data than the trigger
+        delivered - for example, related or historical items, or data from a
+        different resource than the one that fired the trigger.
+
+        Ask: "Would this step return the same item the trigger already gave
+        me?" If yes, omit it.
+
+        --------------------------------------------------
         CONDITION / BRANCH
 
         Most automations are a single straight-line sequence and need neither
@@ -1028,11 +1094,12 @@ async def generate_groq_workflow(
 
         {
         "step": 3,
-        "service": "gmail",
-        "operation": "read",
-        "target": "message",
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
         "parameters": {},
         "depends_on": [],
+        "instructions": "Evaluate the incoming request against the stated approval criteria and decide whether it should be approved or rejected, and give a short justification.",
         "condition": { "branches": ["approved", "rejected"] }
         }
 
@@ -1077,6 +1144,7 @@ async def generate_groq_workflow(
           sequencing; [] is correct for most steps.
         - Only add "condition"/"branch" when the automation's description
           genuinely implies a fork; omit both entirely otherwise.
+        - Never add a step that re-fetches what the trigger already delivered.
         - Never add top-level keys beyond the five specified.
         - Never output n8n nodes.
         - Never output implementation code.

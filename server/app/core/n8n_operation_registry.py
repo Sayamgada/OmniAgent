@@ -58,6 +58,7 @@ returns None rather than guessing, at every stage.
 """
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -87,6 +88,20 @@ VERB_KEYWORDS = {
     "download": ["download", "get", "export"],
 }
 
+# SECOND-TIER synonyms, consulted ONLY when VERB_KEYWORDS finds zero
+# candidates (never when it finds one or several -- ambiguity still returns
+# None). n8n's own recurring operation vocabulary often doesn't use the
+# everyday word a model reaches for: adding a row to a list is "append",
+# looking things up across a collection is "getAll"/"Get Many". Matching is
+# EXACT against the operation's own `value` (normalised), not a substring,
+# so this tier can't over-match. Keys are universal verbs, values are n8n
+# vocabulary -- nothing here names a service.
+VERB_SYNONYM_FALLBACKS = {
+    "create": ["append"],
+    "search": ["getAll", "getMany", "list"],
+    "list": ["getAll", "getMany"],
+}
+
 HTTP_METHOD_BY_VERB = {
     "create": "POST",
     "read": "GET",
@@ -111,6 +126,33 @@ AI_SUBNODE_HINTS = {
     "embed": "embeddings",
     "search": "reranker",
 }
+
+
+def _norm_value(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def _singular_noun(word: str) -> str:
+    w = (word or "").strip().lower()
+    w = re.sub(r"\(s\)$", "", w)
+    if w.endswith("ies") and len(w) > 4:
+        return w[:-3] + "y"
+    if w.endswith("s") and not w.endswith("ss") and len(w) > 3:
+        return w[:-1]
+    return w
+
+
+def _mentions_noun(op: dict, noun: str) -> bool:
+    """True if the operation's own label/action text names `noun` as a word
+    (singular or plural, incl. n8n's 'Row(s)' style), e.g. noun 'row' in
+    'Append row in sheet'."""
+    n = _singular_noun(noun)
+    if not n:
+        return False
+    text = f"{op.get('label','')} {op.get('action','')}".lower()
+    return bool(
+        re.search(r"(?<![a-z])" + re.escape(n) + r"(?:s|\(s\))?(?![a-z])", text)
+    )
 
 
 def resolve_http_method(universal_verb: str) -> str | None:
@@ -248,6 +290,7 @@ def resolve_operation(
     universal_verb: str,
     resource: str | None = None,
     family: str | None = None,
+    noun_hint: str | None = None,
 ) -> dict | None:
     """
     Best-effort, precision-first resolution of (service[, family], verb[,
@@ -259,6 +302,16 @@ def resolve_operation(
     candidates = list_operations(service, resource=resource, family=family)
     if not candidates:
         return None
+
+    # noun_hint is set ONLY when resolve_resource() repaired a step's target
+    # (e.g. 'row' -> 'sheet'). It narrows the candidates to operations whose
+    # own text names that noun, so a verb like "create" can't silently land
+    # on a different object's operation (e.g. "Create sheet") just because
+    # the value string happens to be literally "create".
+    if noun_hint:
+        narrowed = [op for op in candidates if _mentions_noun(op, noun_hint)]
+        if narrowed:
+            candidates = narrowed
 
     exact = [op for op in candidates if op.get("value") == universal_verb]
     if len(exact) == 1:
@@ -286,6 +339,77 @@ def resolve_operation(
         return non_hitl[0]
     if len(non_hitl) == 0 and len(matched) == 1:
         return matched[0]
+    if matched:
+        return None  # genuine ambiguity -- never guess
+
+    # Zero keyword matches (not ambiguity): try the second-tier vocabulary,
+    # exact-on-value only, still requiring exactly ONE candidate.
+    fallback = {_norm_value(k) for k in VERB_SYNONYM_FALLBACKS.get(universal_verb, [])}
+    if not fallback:
+        return None
+    fb = [
+        op
+        for op in candidates
+        if _norm_value(op.get("value", "")) in fallback and not _is_hitl_variant(op)
+    ]
+    return fb[0] if len(fb) == 1 else None
+
+
+def resolve_resource(
+    service: str,
+    target: str | None,
+    universal_verb: str | None = None,
+    family: str | None = None,
+) -> str | None:
+    """
+    Maps a step's free-text `target` onto one of the service's REAL resource
+    keys, or returns None if it can't do so with confidence.
+
+    The model is told to name "the plainest noun", but is never shown each
+    service's real resource list, so it will say 'row' for Google Sheets
+    (real resources: 'sheet', 'spreadsheet'). Evidence-based, in order:
+      1. target already IS a resource key -> returned unchanged.
+      2. normalised match against a resource key or label (case, plural).
+      3. the noun appears in the operation text of exactly ONE resource
+         ('row' only appears under 'sheet') -> that resource.
+         If it appears under several, accept one only if exactly one of
+         them yields a unique operation for the verb; else None.
+    Returns None for services with no resource concept, empty targets, or
+    when nothing/several fit -- the caller then leaves the target as-is.
+    """
+    if not target:
+        return None
+    resources = list_resources(service, family=family)
+    if not resources:
+        return None
+    if target in resources:
+        return target
+
+    norm = _singular_noun(target)
+    for key, label in resources.items():
+        if _singular_noun(key) == norm or _singular_noun(str(label)) == norm:
+            return key
+
+    node = _resolve_node_slot(service, family) or {}
+    ops_by_resource = node.get("operationsByResource", {}) or {}
+    with_hits = [
+        r
+        for r in resources
+        if any(_mentions_noun(op, target) for op in ops_by_resource.get(r, []))
+    ]
+    if len(with_hits) == 1:
+        return with_hits[0]
+    if len(with_hits) > 1 and universal_verb:
+        solvable = [
+            r
+            for r in with_hits
+            if resolve_operation(
+                service, universal_verb, resource=r, family=family, noun_hint=target
+            )
+            is not None
+        ]
+        if len(solvable) == 1:
+            return solvable[0]
     return None
 
 
