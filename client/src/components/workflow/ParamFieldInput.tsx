@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
@@ -23,6 +24,60 @@ const LONG_TEXT_FIELDS = new Set([
   "prompt",
 ]);
 
+/** Shape of a resourceLocator field's input modes, when the backend sends them. */
+interface LocatorMode {
+  name: string;
+  display_name?: string;
+  placeholder?: string | null;
+}
+
+/**
+ * n8n parameter descriptions contain a little raw HTML (<a href>, <code>).
+ * Rendered as text it shows up as literal tags, so turn the two tags we
+ * expect into real elements and strip anything else. Built from React
+ * nodes (never dangerouslySetInnerHTML) and links are limited to http(s).
+ */
+const stripTags = (t: string) => t.replace(/<[^>]+>/g, "");
+
+const renderDescription = (text: string): ReactNode => {
+  const token = /<a\s+([^>]*)>([\s\S]*?)<\/a>|<code>([\s\S]*?)<\/code>/gi;
+  const out: ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = token.exec(text)) !== null) {
+    if (m.index > last) out.push(stripTags(text.slice(last, m.index)));
+    if (m[1] !== undefined) {
+      const href = /href\s*=\s*['"]([^'"]+)['"]/i.exec(m[1])?.[1];
+      const label = stripTags(m[2] ?? "");
+      out.push(
+        href && /^https?:\/\//i.test(href) ? (
+          <a
+            key={key++}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {label}
+          </a>
+        ) : (
+          label
+        ),
+      );
+    } else {
+      out.push(
+        <code key={key++} className="rounded bg-muted px-1">
+          {stripTags(m[3] ?? "")}
+        </code>,
+      );
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(stripTags(text.slice(last)));
+  return out;
+};
+
 const controlClass =
   "w-full rounded-md border border-border/80 bg-card/70 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
@@ -35,8 +90,14 @@ export const ParamFieldInput = ({
   error,
   disabled,
 }: ParamFieldInputProps) => {
+  // An object value (e.g. an n8n resource locator {mode, value}) must never be
+  // stringified -- show its inner text value instead.
+  const raw =
+    value && typeof value === "object" && "value" in (value as object)
+      ? (value as { value?: unknown }).value
+      : value;
   const str =
-    typeof value === "string" || typeof value === "number" ? String(value) : "";
+    typeof raw === "string" || typeof raw === "number" ? String(raw) : "";
   const isTextField = field.type === "string" || field.type === "dateTime";
   // A string value starting with "=" is an n8n expression (bound to upstream data).
   const isBound =
@@ -109,6 +170,35 @@ export const ParamFieldInput = ({
               {o.label}
             </label>
           ))}
+        </div>
+      );
+      break;
+    }
+
+    case "resourceLocator": {
+      // The user types or pastes one value (a URL, an ID or a name); the
+      // compiler works out which n8n locator mode it is.
+      const modes = (
+        (field as ParamField & { modes?: LocatorMode[] }).modes ?? []
+      ).filter((m) => m.name !== "list");
+      const hint = modes.length
+        ? `Accepts: ${modes.map((m) => m.display_name ?? m.name).join(", ")}`
+        : undefined;
+      control = (
+        <div className="space-y-1">
+          <Input
+            id={id}
+            value={str}
+            placeholder={
+              modes.find((m) => m.placeholder)?.placeholder ??
+              field.placeholder ??
+              undefined
+            }
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.value)}
+            className="border-border/80 bg-card/70 focus-visible:ring-primary"
+          />
+          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
         </div>
       );
       break;
@@ -216,7 +306,9 @@ export const ParamFieldInput = ({
       {error ? (
         <p className="text-xs text-destructive">{error}</p>
       ) : field.description ? (
-        <p className="text-xs text-muted-foreground">{field.description}</p>
+        <p className="text-xs text-muted-foreground">
+          {renderDescription(field.description)}
+        </p>
       ) : null}
     </div>
   );

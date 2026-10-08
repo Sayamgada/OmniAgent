@@ -15,7 +15,12 @@ from app.core.n8n_operation_registry import resolve_operation
 from .graph import aggregate_node_name, build_connections, routing_token
 from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
 from .layout import X_SPACING, Y_SPACING, layout_positions
-from .param_schema import get_required_params
+from .param_schema import (
+    auth_params_for_credential,
+    get_required_params,
+    get_structural_defaults,
+    normalize_param_values,
+)
 from .resolve import resolve_all_steps
 from .models import (
     CompileReport,
@@ -102,6 +107,53 @@ def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
         # will correctly re-report it as needs_user_input with the real
         # candidate list, same as an unresolved step that was never
         # overridden at all.
+
+
+def _finalize_params(
+    step: Step,
+    resolved: Any,
+    field_defs: list,
+    params: dict[str, Any],
+    reported_cred_type: Optional[str],
+    report: CompileReport,
+) -> dict[str, Any]:
+    """
+    What the param provider returned is what the form collected: plain
+    values. n8n stores some of them differently and also needs a few
+    parameters the form never asks about. This layers, lowest to highest
+    precedence:
+      1. structural defaults (e.g. a resourceMapper -> "map automatically"),
+      2. the collected values, with resourceLocator values wrapped as
+         {"__rl": true, "mode": ..., "value": ...},
+      3. the authentication-selector parameter that makes the node look for
+         the credential type the user's connected row ACTUALLY holds (the
+         resolver reports it; without this a node connected via a
+         non-default option still asks for its default credential and
+         activation fails with "Missing required credential").
+    """
+    node_type, type_version = resolved.node_type, resolved.type_version
+    if node_type is None or type_version is None:
+        return params
+
+    final: dict[str, Any] = dict(
+        get_structural_defaults(node_type, type_version, step.target, step.operation)
+    )
+    final.update(normalize_param_values(field_defs, params))
+
+    # Only dedicated nodes: the generic httpRequest node accepts any
+    # predefined credential type, so "is it in the node's list" is meaningless.
+    if reported_cred_type and resolved.kind == "action_node":
+        auth = auth_params_for_credential(node_type, type_version, reported_cred_type)
+        if auth is None:
+            report.warnings.append(
+                f"step {step.step} ({step.service}): the connected credential "
+                f"type {reported_cred_type!r} is not accepted by node "
+                f"{node_type} (typeVersion {type_version}); reconnect the "
+                "service using a compatible option or this node cannot activate"
+            )
+        else:
+            final.update(auth)
+    return final
 
 
 def compile(
@@ -227,6 +279,7 @@ def compile(
             continue
 
         creds: dict[str, Any] = {}
+        reported_cred_type: Optional[str] = None
         if resolved.n8n_credential_type:
             cred = credential_resolver.resolve(
                 user_id, step.service, resolved.n8n_credential_type
@@ -242,6 +295,11 @@ def compile(
                 # was asked for.
                 cred_type = cred.get("type", resolved.n8n_credential_type)
                 creds[cred_type] = {k: v for k, v in cred.items() if k != "type"}
+                reported_cred_type = cred_type
+
+        params = _finalize_params(
+            step, resolved, field_defs, params, reported_cred_type, report
+        )
 
         n8n_nodes.append(
             N8nNode(
