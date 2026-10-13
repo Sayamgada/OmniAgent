@@ -3,18 +3,10 @@ import {
   Activity,
   ArrowRight,
   Bot,
-  CheckCircle2,
-  Cpu,
-  Layers,
-  MessageSquare,
   Play,
   Plug,
   Plus,
-  ShieldCheck,
-  Sparkles,
-  Upload,
   Workflow,
-  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -35,11 +27,6 @@ export default function DashboardHome() {
     user?.email?.split("@")[0] ||
     "Engineer";
 
-  // Primary dominant stats
-  const primaryStats = dashboardStats.slice(0, 2);
-  // Secondary vital stats
-  const secondaryStats = dashboardStats.slice(2);
-
   return (
     <div className="space-y-6 text-left">
       {/* 1. Command Center Telemetry Banner */}
@@ -56,7 +43,7 @@ export default function DashboardHome() {
             </div>
             
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Operational Workspace <span className="gradient-text font-black">Console</span>
+              Operational Workspace <span className="gradient-text font-black">· {displayName}</span>
             </h1>
             
             <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">

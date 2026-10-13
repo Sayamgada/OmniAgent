@@ -9,6 +9,7 @@ import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
 import DashboardLayout from "./layouts/DashboardLayout.tsx";
+import { ErrorBoundary } from "./components/common/ErrorBoundary.tsx";
 
 // Lazy-loaded routes for code splitting & optimal performance
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -48,36 +49,38 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+    <ThemeProvider>
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Suspense fallback={<PageLoaderFallback />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/oauth/callback" element={<OAuthCallback />} />
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoaderFallback />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-                <Route element={<GuestRoute />}>
-                  <Route path="/sign-in" element={<SignIn />} />
-                  <Route path="/sign-up" element={<SignUp />} />
-                </Route>
-
-                <Route element={<PrivateRoute />}>
-                  <Route element={<DashboardLayout />}>
-                    <Route path="/dashboard" element={<DashboardHome />} />
-                    <Route path="/agents" element={<MyAgents />} />
-                    <Route path="/agents/:id/edit" element={<EditAgent />} />
-                    <Route path="/integrations" element={<Integrations />} />
-                    <Route path="/settings" element={<Settings />} />
+                  <Route element={<GuestRoute />}>
+                    <Route path="/sign-in" element={<SignIn />} />
+                    <Route path="/sign-up" element={<SignUp />} />
                   </Route>
-                  <Route path="/new-agent" element={<NewAgentCreation />} />
-                </Route>
 
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
+                  <Route element={<PrivateRoute />}>
+                    <Route element={<DashboardLayout />}>
+                      <Route path="/dashboard" element={<DashboardHome />} />
+                      <Route path="/agents" element={<MyAgents />} />
+                      <Route path="/agents/:id/edit" element={<EditAgent />} />
+                      <Route path="/integrations" element={<Integrations />} />
+                      <Route path="/settings" element={<Settings />} />
+                    </Route>
+                    <Route path="/new-agent" element={<NewAgentCreation />} />
+                  </Route>
+
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

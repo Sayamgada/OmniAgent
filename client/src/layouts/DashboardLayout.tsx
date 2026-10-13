@@ -6,6 +6,7 @@ import { AnimatedBackground } from "../components/dashboard/AnimatedBackground";
 import { DashboardSidebar } from "../components/dashboard/DashboardSidebar";
 import { DashboardTopNav } from "../components/dashboard/DashboardTopNav";
 import { PageTransition } from "../components/dashboard/PageTransition";
+import { ErrorBoundary } from "../components/common/ErrorBoundary";
 
 export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -30,7 +31,9 @@ export default function DashboardLayout() {
           <div className="mx-auto max-w-7xl">
             <AnimatePresence mode="wait">
               <PageTransition key={location.pathname}>
-                <Outlet />
+                <ErrorBoundary>
+                  <Outlet />
+                </ErrorBoundary>
               </PageTransition>
             </AnimatePresence>
           </div>

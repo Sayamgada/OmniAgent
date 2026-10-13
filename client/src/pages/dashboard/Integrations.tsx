@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, Plug, Plus, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Plug, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { IntegrationCard } from "../../components/dashboard/IntegrationCard";

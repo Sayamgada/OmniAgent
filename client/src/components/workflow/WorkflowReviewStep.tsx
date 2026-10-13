@@ -7,12 +7,10 @@ import {
   AlertTriangle,
   Sparkles,
   Bot,
-  Cpu,
-  Layers,
   ShieldCheck,
   Zap,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";

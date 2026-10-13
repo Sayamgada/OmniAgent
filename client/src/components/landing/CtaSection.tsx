@@ -57,7 +57,7 @@ export const CtaSection: React.FC = () => {
           className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-foreground leading-[1.04]"
         >
           Give OmniAgent{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-cyan-400 to-teal-400">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-secondary">
             the work.
           </span>
         </motion.h2>

@@ -33,8 +33,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "", varian
         transition={{ type: "spring", stiffness: 450, damping: 28 }}
         className={`absolute left-1 top-1 bottom-1 rounded-full shadow-md flex items-center justify-center transition-colors duration-200 ${
           isDark
-            ? "bg-slate-800 border border-slate-700 text-sky-400"
-            : "bg-white border border-slate-200 text-amber-500"
+            ? "bg-card border border-border text-primary"
+            : "bg-white border border-border text-primary"
         } ${variant === "mobile" ? "size-7 left-1.5" : "size-6"}`}
       >
         <motion.div
@@ -48,12 +48,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "", varian
       </motion.div>
 
       {/* Static Sun icon on left */}
-      <span className="flex size-6 items-center justify-center text-amber-500/70 pl-0.5 pointer-events-none">
+      <span className="flex size-6 items-center justify-center text-muted-foreground pl-0.5 pointer-events-none">
         <Sun className="size-3" />
       </span>
 
       {/* Static Moon icon on right */}
-      <span className="flex size-6 items-center justify-center text-sky-400/70 pr-0.5 pointer-events-none">
+      <span className="flex size-6 items-center justify-center text-primary/80 pr-0.5 pointer-events-none">
         <Moon className="size-3" />
       </span>
     </button>

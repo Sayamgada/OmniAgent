@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Menu, X, ArrowRight, Zap } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
-import { useSiteTheme } from "../../context/ThemeContext";
 import { ThemeToggle } from "./ThemeToggle";
 
 const landingLinks = [
-  { label: "Intent", href: "#describe" },
-  { label: "Flow", href: "#execution" },
-  { label: "Possibilities", href: "#domains" },
-  { label: "Outcomes", href: "#outcomes" },
+  { label: "Intent", href: "#what-is-omniagent" },
+  { label: "Flow", href: "#the-work-disappears" },
+  { label: "Possibilities", href: "#before-after" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Experience", href: "#experience" },
 ] as const;
 
 const authLinks = [
@@ -26,47 +26,11 @@ type NavbarProps = {
 
 const Navbar = ({ variant = "landing" }: NavbarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const { isLoggedIn } = useAuth();
-  const { siteTheme, heroTheme, themeProgress } = useSiteTheme();
-
-  // Track scroll position to dynamically adapt navbar to active visual world
-  useEffect(() => {
-    if (variant !== "landing") {
-      setIsScrolledPastHero(true);
-      return;
-    }
-
-    const handleScroll = () => {
-      // Pinned hero is ~260vh tall, transition completes around 1.5x window.innerHeight
-      const threshold = window.innerHeight * 1.5;
-      setIsScrolledPastHero(window.scrollY >= threshold);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [variant]);
-
-  // Current visual environment: In Hero -> heroTheme; In Site -> siteTheme
-  const currentNavTheme = isScrolledPastHero ? siteTheme : heroTheme;
-  const isLightMode = currentNavTheme === "light";
-
-  // When inside Hero, calculate interpolated glass background from themeProgress
-  const heroNavBg = `rgba(${Math.round(6 + (255 - 6) * themeProgress)}, ${Math.round(9 + (255 - 9) * themeProgress)}, ${Math.round(15 + (255 - 15) * themeProgress)}, ${0.8 + 0.08 * themeProgress})`;
-  const heroNavBorder = `rgba(${Math.round(255 * (1 - themeProgress) + 226 * themeProgress)}, ${Math.round(255 * (1 - themeProgress) + 232 * themeProgress)}, ${Math.round(255 * (1 - themeProgress) + 240 * themeProgress)}, ${0.1 * (1 - themeProgress) + 0.8 * themeProgress})`;
 
   return (
-    <motion.header
-      initial={{ y: -16, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      style={!isScrolledPastHero ? { backgroundColor: heroNavBg, borderColor: heroNavBorder } : undefined}
-      className={`fixed left-0 right-0 top-0 z-50 transition-colors duration-350 backdrop-blur-2xl ${
-        isScrolledPastHero
-          ? "border-b border-border/80 bg-background/85 text-foreground shadow-xs"
-          : `border-b ${isLightMode ? "text-slate-900 shadow-sm" : "text-white"}`
-      }`}
+    <header
+      className="sticky top-0 left-0 right-0 z-40 w-full transition-colors duration-300 backdrop-blur-2xl border-b border-border/70 bg-background/85 text-foreground shadow-xs"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Brand */}
@@ -78,7 +42,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           <div className="flex size-8 items-center justify-center rounded-lg border border-primary/40 bg-primary/15 text-primary group-hover:border-primary/70 transition-colors shadow-sm">
             <Bot className="h-4.5 w-4.5" />
           </div>
-          <span className={`text-base font-bold tracking-tight ${isLightMode ? "text-slate-900" : "text-white"}`}>
+          <span className="text-base font-bold tracking-tight text-foreground">
             Omni<span className="text-primary font-extrabold">Agent</span>
           </span>
           <span className="hidden sm:inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
@@ -93,9 +57,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
               <a
                 key={link.label}
                 href={link.href}
-                className={`text-xs font-medium transition-colors hover:text-primary ${
-                  isLightMode ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                }`}
+                className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
               >
                 {link.label}
               </a>
@@ -122,20 +84,18 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`text-xs font-medium ${
-                  isLightMode ? "text-slate-700 hover:text-slate-900 hover:bg-slate-100" : "text-slate-300 hover:text-white hover:bg-white/10"
-                }`}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                 asChild
               >
                 <Link to="/sign-in">Sign In</Link>
               </Button>
 
-              {/* Theme Toggle (Exact placement: Sign In -> [THEME TOGGLE] -> Start Free) */}
+              {/* Theme Toggle */}
               <ThemeToggle />
 
               <Button
                 size="sm"
-                className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-black hover:bg-primary/90 glow-primary rounded-lg shadow-sm"
+                className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 shadow-sm rounded-lg"
                 asChild
               >
                 <Link to="/sign-up">
@@ -151,7 +111,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
               <ThemeToggle />
               <Button
                 size="sm"
-                className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-black hover:bg-primary/90 glow-primary rounded-lg"
+                className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 rounded-lg"
                 asChild
               >
                 <Link to="/dashboard">
@@ -165,7 +125,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           {variant === "auth" && (
             <>
               <ThemeToggle />
-              <Button size="sm" className="h-8.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 glow-primary rounded-lg" asChild>
+              <Button size="sm" className="h-8.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 rounded-lg" asChild>
                 <Link to={isLoggedIn ? "/dashboard" : "/sign-up"}>
                   {isLoggedIn ? "Open Workspace" : "Get Started"}
                 </Link>
@@ -177,9 +137,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
         {/* Mobile menu button */}
         <button
           type="button"
-          className={`flex size-9 items-center justify-center rounded-lg border transition-colors md:hidden ${
-            isLightMode ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50" : "border-white/10 bg-white/5 text-slate-300 hover:text-white"
-          }`}
+          className="flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground md:hidden transition-colors"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-expanded={mobileOpen}
           aria-label="Toggle navigation menu"
@@ -195,16 +153,14 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className={`border-t px-5 pb-6 pt-3 backdrop-blur-2xl md:hidden text-left ${
-              isLightMode ? "border-slate-200 bg-white/98 text-slate-900" : "border-white/10 bg-[#06090F]/98 text-white"
-            }`}
+            className="border-t border-border px-5 pb-6 pt-3 backdrop-blur-2xl md:hidden text-left bg-card text-foreground"
           >
             {variant === "landing"
               ? landingLinks.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
-                  className="block py-2.5 text-sm font-medium hover:text-primary transition-colors"
+                  className="block py-2.5 text-sm font-medium hover:text-primary transition-colors text-muted-foreground"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -214,7 +170,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
                 <Link
                   key={item.label}
                   to={item.to}
-                  className="block py-2.5 text-sm font-medium hover:text-primary transition-colors"
+                  className="block py-2.5 text-sm font-medium hover:text-primary transition-colors text-muted-foreground"
                   onClick={() => setMobileOpen(false)}
                 >
                   {item.label}
@@ -222,12 +178,12 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
               ))}
 
             {/* Mobile Theme Toggle Row */}
-            <div className="flex items-center justify-between py-3 border-t border-slate-200/40 mt-2">
+            <div className="flex items-center justify-between py-3 border-t border-border/50 mt-2">
               <span className="text-xs font-medium text-muted-foreground">Appearance Theme</span>
               <ThemeToggle variant="mobile" />
             </div>
 
-            <div className="mt-2 flex flex-col gap-2 border-t border-slate-200/50 pt-3">
+            <div className="mt-2 flex flex-col gap-2 border-t border-border/50 pt-3">
               {variant === "landing" && !isLoggedIn && (
                 <>
                   <Button variant="outline" className="w-full text-xs justify-center" asChild>
@@ -235,7 +191,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
                       Sign In
                     </Link>
                   </Button>
-                  <Button className="w-full bg-primary text-xs font-bold text-black justify-center" asChild>
+                  <Button className="w-full bg-primary text-xs font-bold text-primary-foreground justify-center" asChild>
                     <Link to="/sign-up" onClick={() => setMobileOpen(false)}>
                       Start Free
                     </Link>
@@ -243,7 +199,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
                 </>
               )}
               {((variant === "landing" && isLoggedIn) || variant === "auth") && (
-                <Button className="w-full bg-primary text-xs font-bold text-black justify-center" asChild>
+                <Button className="w-full bg-primary text-xs font-bold text-primary-foreground justify-center" asChild>
                   <Link
                     to={isLoggedIn ? "/dashboard" : "/sign-up"}
                     onClick={() => setMobileOpen(false)}
@@ -256,7 +212,7 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+    </header>
   );
 };
 

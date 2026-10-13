@@ -1,16 +1,12 @@
 import { motion } from "framer-motion";
 import {
-  Activity,
   Bot,
   Copy,
-  Cpu,
   GitBranch,
-  MessageSquare,
   MoreVertical,
   Pencil,
   Play,
   Trash2,
-  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -51,7 +47,7 @@ export function AgentCard({ agent, index = 0 }: AgentCardProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3 }}
-      className="group relative rounded-2xl border border-border/80 bg-card p-5 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-[0_8px_30px_rgba(0,102,255,0.08)] flex flex-col justify-between"
+      className="group relative rounded-2xl border border-border/80 bg-card p-5 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-[0_8px_30px_hsl(var(--primary)/0.12)] flex flex-col justify-between"
     >
       <div>
         {/* Top Header: Identity Glyph + Name + Status + More Menu */}

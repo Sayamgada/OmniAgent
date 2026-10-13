@@ -93,7 +93,7 @@ export const BeforeVsAfterSection: React.FC = () => {
           <div className="h-[2px] w-24 bg-primary/70 my-4" />
 
           <div className="space-y-3 mt-2">
-            <div className="text-2xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-cyan-400 to-teal-400">
+            <div className="text-2xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-secondary">
               OMNIAGENT COORDINATES.
             </div>
             <p className="text-base sm:text-lg text-muted-foreground font-medium max-w-lg mx-auto leading-relaxed">

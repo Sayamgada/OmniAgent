@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, BookOpen, Calendar, CheckSquare, Layers, Sparkles } from "lucide-react";
+import { CheckCircle2, BookOpen, Calendar, CheckSquare, Layers, Sparkles } from "lucide-react";
 import { useSiteTheme } from "../../context/ThemeContext";
 
 interface Particle {
@@ -49,11 +49,29 @@ const SAMPLE_DOMAINS = [
 
 export const HowItWorksSection: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [selectedDomainIdx, setSelectedDomainIdx] = useState(0);
-  const { siteTheme } = useSiteTheme();
-  const isDark = siteTheme === "dark";
+  const isVisibleRef = useRef(true);
 
+  const { siteTheme, variant } = useSiteTheme();
+  const isDark = siteTheme === "dark";
   const activeDomain = SAMPLE_DOMAINS[selectedDomainIdx];
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        isVisibleRef.current = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Particle Stream from Left (Human Intent) -> Center (OmniAgent Coordination) -> Right (Tangible Outcomes)
   useEffect(() => {
@@ -63,6 +81,7 @@ export const HowItWorksSection: React.FC = () => {
     if (!ctx) return;
 
     let animId: number;
+    let isRunning = true;
     let width = (canvas.width = canvas.parentElement?.clientWidth || 1200);
     let height = (canvas.height = canvas.parentElement?.clientHeight || 540);
 
@@ -75,10 +94,9 @@ export const HowItWorksSection: React.FC = () => {
     window.addEventListener("resize", handleResize);
 
     const particles: Particle[] = [];
-    const particleCount = 85;
-    const colors = isDark
-      ? ["#38BDF8", "#00F2FE", "#818CF8", "#34D399", "#67E8F9"]
-      : ["#0284C7", "#0D9488", "#4F46E5", "#059669", "#0891B2"];
+    const particleCount = 75;
+    const pal = variant.canvasPalette[siteTheme];
+    const colors = pal.particles || (isDark ? ["#38BDF8", "#00F2FE", "#818CF8"] : ["#0284C7", "#0D9488"]);
 
     const targets = [height * 0.22, height * 0.5, height * 0.78];
 
@@ -98,6 +116,13 @@ export const HowItWorksSection: React.FC = () => {
     let time = 0;
 
     const render = () => {
+      if (!isRunning) return;
+
+      if (!isVisibleRef.current) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+
       time += 0.02;
       ctx.clearRect(0, 0, width, height);
 
@@ -106,15 +131,9 @@ export const HowItWorksSection: React.FC = () => {
 
       // 1. Draw Expanded Atmospheric Orchestration Aura
       const corridorGrad = ctx.createRadialGradient(midX, midY, 20, midX, midY, width * 0.35);
-      if (isDark) {
-        corridorGrad.addColorStop(0, "rgba(56, 189, 248, 0.14)");
-        corridorGrad.addColorStop(0.5, "rgba(56, 189, 248, 0.04)");
-        corridorGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
-      } else {
-        corridorGrad.addColorStop(0, "rgba(2, 132, 199, 0.12)");
-        corridorGrad.addColorStop(0.5, "rgba(2, 132, 199, 0.03)");
-        corridorGrad.addColorStop(1, "rgba(2, 132, 199, 0)");
-      }
+      corridorGrad.addColorStop(0, `${pal.primary}22`);
+      corridorGrad.addColorStop(0.5, `${pal.primary}08`);
+      corridorGrad.addColorStop(1, `${pal.primary}00`);
       ctx.fillStyle = corridorGrad;
       ctx.fillRect(0, 0, width, height);
 
@@ -123,9 +142,7 @@ export const HowItWorksSection: React.FC = () => {
       ctx.translate(midX, midY);
       for (let r = 1; r <= 4; r++) {
         const radius = 34 * r + Math.sin(time * 2.2 + r * 1.2) * 6;
-        ctx.strokeStyle = isDark
-          ? `rgba(56, 189, 248, ${0.3 / r})`
-          : `rgba(2, 132, 199, ${0.35 / r})`;
+        ctx.strokeStyle = `${pal.primary}${Math.round((0.35 / r) * 255).toString(16).padStart(2, "0")}`;
         ctx.lineWidth = 1.4;
         ctx.setLineDash([8, 10]);
         ctx.beginPath();
@@ -138,83 +155,80 @@ export const HowItWorksSection: React.FC = () => {
       // 2. Guide Rails toward Right Outcomes
       const rightChannelsY = [height * 0.22, height * 0.5, height * 0.78];
       rightChannelsY.forEach((targetY) => {
-        const lineGrad = ctx.createLinearGradient(midX, midY, width - 40, targetY);
-        lineGrad.addColorStop(0, isDark ? "rgba(56, 189, 248, 0.35)" : "rgba(2, 132, 199, 0.35)");
-        lineGrad.addColorStop(0.7, isDark ? "rgba(56, 189, 248, 0.2)" : "rgba(2, 132, 199, 0.2)");
-        lineGrad.addColorStop(1, isDark ? "rgba(52, 211, 153, 0.5)" : "rgba(5, 150, 105, 0.5)");
-        ctx.strokeStyle = lineGrad;
-        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(midX, midY);
-        ctx.bezierCurveTo(midX + 120, midY, midX + 220, targetY, width - 20, targetY);
+        ctx.bezierCurveTo(midX + width * 0.15, midY, midX + width * 0.22, targetY, width * 0.92, targetY);
+        ctx.strokeStyle = `${pal.secondary}20`;
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       });
 
-      // 3. Render Particles Moving Fluidly Across Viewport
+      // 3. Update & Draw Particles (Intent -> Coordination -> Domain Outputs)
       particles.forEach((p) => {
-        p.x += p.vx;
-        const progress = Math.max(0, Math.min(1, p.x / width));
-
-        // Left region (0% - 40%): Organic waving particles from human intent
-        if (progress < 0.4) {
-          p.y += Math.sin(time * 2.5 + p.x * 0.015) * 1.1 + p.vy * 0.3;
-        }
-        // Center region (40% - 60%): Converging into central OmniCore
-        else if (progress < 0.6) {
-          p.y += (midY - p.y) * 0.09;
-        }
-        // Right region (60% - 100%): Branching into target outcome channels
-        else {
-          p.y += (p.targetY - p.y) * 0.13;
+        p.progress += 0.0035 * p.vx;
+        if (p.progress > 1) {
+          p.progress = 0;
+          p.x = width * 0.08;
+          p.y = height * 0.25 + Math.random() * (height * 0.5);
+          p.targetY = targets[Math.floor(Math.random() * targets.length)];
+          p.color = colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // Loop reset
-        if (p.x > width - 10) {
-          p.x = 20 + Math.random() * 40;
-          p.y = height * 0.2 + Math.random() * (height * 0.6);
-          p.targetY = rightChannelsY[Math.floor(Math.random() * rightChannelsY.length)];
+        const tProg = p.progress;
+
+        if (tProg < 0.5) {
+          const u = tProg / 0.5;
+          p.x = width * 0.08 + (midX - width * 0.08) * u;
+          const startY = height * 0.5 + Math.sin(tProg * 12 + time) * 70;
+          p.y = startY + (midY - startY) * u;
+        } else {
+          const u = (tProg - 0.5) / 0.5;
+          const cp1x = midX + width * 0.16;
+          const cp1y = midY;
+          const cp2x = midX + width * 0.25;
+          const cp2y = p.targetY;
+          const endX = width * 0.95;
+          const endY = p.targetY;
+
+          const invU = 1 - u;
+          p.x = invU * invU * invU * midX + 3 * invU * invU * u * cp1x + 3 * invU * u * u * cp2x + u * u * u * endX;
+          p.y = invU * invU * invU * midY + 3 * invU * invU * u * cp1y + 3 * invU * u * u * cp2y + u * u * u * endY;
         }
 
-        // Draw particle
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = 0.25 + 0.75 * progress;
+        ctx.save();
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.globalAlpha = 0.85;
         ctx.fill();
-
-        // Speed laser trails when aligned
-        if (progress > 0.45) {
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = p.size * 0.7;
-          ctx.beginPath();
-          ctx.moveTo(p.x - 14 * progress, p.y);
-          ctx.lineTo(p.x, p.y);
-          ctx.stroke();
-        }
+        ctx.restore();
       });
 
-      ctx.globalAlpha = 1.0;
       animId = requestAnimationFrame(render);
     };
 
-    render();
+    animId = requestAnimationFrame(render);
 
     return () => {
+      isRunning = false;
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
     };
-  }, [isDark]);
+  }, [siteTheme, variant]);
 
   return (
     <section
+      ref={sectionRef}
       id="how-it-works"
-      className="relative min-h-screen py-32 px-4 sm:px-6 lg:px-12 xl:px-16 bg-background border-t border-border/60 text-foreground transition-colors duration-350 flex flex-col justify-center overflow-hidden"
+      className="relative min-h-[95vh] py-32 px-4 sm:px-6 lg:px-12 bg-background border-t border-border/60 text-foreground transition-colors duration-350 flex flex-col justify-center overflow-hidden"
     >
-      {/* Immersive Atmospheric Ambient Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[750px] bg-primary/5 rounded-full blur-[220px] pointer-events-none" />
+      {/* Ambient background soft light */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[650px] bg-primary/5 rounded-full blur-[220px] pointer-events-none" />
 
-      <div className="max-w-7xl xl:max-w-[1400px] mx-auto w-full relative z-10 flex flex-col justify-between">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col">
+        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -228,7 +242,7 @@ export const HowItWorksSection: React.FC = () => {
 
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-foreground leading-tight">
             From an idea to{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-cyan-400 to-teal-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-secondary">
               tangible execution.
             </span>
           </h2>
@@ -255,10 +269,10 @@ export const HowItWorksSection: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* 3 Stage Column Markers (No Box/Card Container!) */}
+        {/* 3 Stage Column Markers */}
         <div className="hidden md:grid grid-cols-12 text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6 pb-3 border-b border-border/40">
           <div className="col-span-4 text-left flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
             <span className="font-bold text-foreground">01 · Human Intent</span>
           </div>
           <div className="col-span-4 text-center flex items-center justify-center gap-2">
@@ -266,7 +280,7 @@ export const HowItWorksSection: React.FC = () => {
             <span className="text-primary font-bold">02 · OmniAgent Coordinates</span>
           </div>
           <div className="col-span-4 text-right flex items-center justify-end gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="w-2 h-2 rounded-full bg-primary" />
             <span className="font-bold text-foreground">03 · Tangible Outcomes</span>
           </div>
         </div>
@@ -295,7 +309,7 @@ export const HowItWorksSection: React.FC = () => {
                   &quot;{activeDomain.thought}&quot;
                 </p>
                 <div className="mt-6 pt-4 border-t border-border/50 flex items-center gap-2.5 text-xs text-muted-foreground">
-                  <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span>Emitting plain language intent to OmniAgent...</span>
                 </div>
               </motion.div>
@@ -307,29 +321,24 @@ export const HowItWorksSection: React.FC = () => {
             <motion.div
               animate={{
                 scale: [1, 1.04, 1],
-                boxShadow: [
-                  "0 0 30px rgba(56, 189, 248, 0.2)",
-                  "0 0 60px rgba(56, 189, 248, 0.4)",
-                  "0 0 30px rgba(56, 189, 248, 0.2)",
-                ],
               }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="p-6 sm:p-8 rounded-full bg-card/95 backdrop-blur-2xl border border-primary/60 shadow-2xl flex flex-col items-center justify-center text-center w-48 h-48 sm:w-56 sm:h-56"
+              className="p-6 sm:p-8 rounded-full bg-card/95 backdrop-blur-2xl border border-primary/60 shadow-2xl flex flex-col items-center justify-center text-center w-48 h-48 sm:w-56 sm:h-56 ring-8 ring-primary/10"
             >
               <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/40 flex items-center justify-center text-primary mb-3 shadow-inner">
                 <Layers className="w-7 h-7 animate-pulse" />
               </div>
-              <div className="text-xs sm:text-sm font-black text-foreground tracking-wider uppercase">
-                Active Coordination
-              </div>
-              <div className="text-[11px] text-primary font-mono mt-1">
-                Autonomous Synthesis
-              </div>
+              <span className="text-xs font-mono font-bold tracking-wider uppercase text-foreground">
+                OmniAgent Core
+              </span>
+              <span className="text-[10px] font-mono text-primary mt-1 font-semibold">
+                Autonomous Assembly
+              </span>
             </motion.div>
           </div>
 
           {/* RIGHT — TANGIBLE OUTCOMES */}
-          <div className="relative z-10 w-full md:w-[34%] lg:w-[32%] max-w-md flex flex-col gap-4">
+          <div className="relative z-10 w-full md:w-[36%] lg:w-[34%] max-w-md space-y-3.5">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeDomain.id}
@@ -337,26 +346,32 @@ export const HowItWorksSection: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.35 }}
-                className="flex flex-col gap-3.5"
+                className="space-y-3"
               >
-                {activeDomain.outcomes.map((item, i) => {
+                {activeDomain.outcomes.map((item, idx) => {
                   const Icon = item.icon;
                   return (
                     <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
+                      key={item.title}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.12 }}
-                      className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-card/80 border border-emerald-500/40 backdrop-blur-xl shadow-xl hover:border-emerald-500/70 hover:scale-[1.02] transition-all"
+                      transition={{ delay: idx * 0.1 }}
+                      className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-4 sm:p-4.5 shadow-xl flex items-center justify-between hover:border-primary/50 transition-all group cursor-default"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                        <Icon className="w-5 h-5" />
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                            {item.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {item.subtitle}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-left overflow-hidden flex-1">
-                        <div className="text-sm sm:text-base font-bold text-foreground truncate">{item.title}</div>
-                        <div className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</div>
-                      </div>
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="w-4.5 h-4.5 text-primary opacity-80" />
                     </motion.div>
                   );
                 })}
@@ -365,12 +380,9 @@ export const HowItWorksSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Editorial Line */}
-        <div className="mt-12 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
-          <span>Human thoughts effortlessly organized into verified, production deliverables.</span>
-          <span className="text-primary flex items-center gap-1 font-sans font-semibold">
-            Orchestration In Motion <ArrowRight className="w-3.5 h-3.5" />
-          </span>
+        {/* Bottom Verification Banner */}
+        <div className="mt-12 text-center text-xs font-mono text-muted-foreground">
+          <span>Deterministic execution · Continuous validation · Zero manual orchestrator glue</span>
         </div>
       </div>
     </section>

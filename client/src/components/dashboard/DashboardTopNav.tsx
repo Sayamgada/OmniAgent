@@ -10,9 +10,8 @@ import {
   Activity,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useTheme } from "next-themes";
-
 import { useAuth } from "../../context/AuthContext";
+import { useSiteTheme } from "../../context/ThemeContext";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import {
@@ -40,7 +39,7 @@ export function DashboardTopNav({ onMenuClick }: DashboardTopNavProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+  const { siteTheme, toggleTheme } = useSiteTheme();
 
   const displayName =
     user?.full_name ||
@@ -110,11 +109,14 @@ export function DashboardTopNav({ onMenuClick }: DashboardTopNavProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card border border-transparent hover:border-border"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={toggleTheme}
             aria-label="Toggle theme"
           >
-            <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            {siteTheme === "dark" ? (
+              <Sun className="h-3.5 w-3.5 text-primary transition-transform hover:rotate-45" />
+            ) : (
+              <Moon className="h-3.5 w-3.5 text-primary transition-transform hover:-rotate-12" />
+            )}
           </Button>
 
           {/* Profile Menu */}

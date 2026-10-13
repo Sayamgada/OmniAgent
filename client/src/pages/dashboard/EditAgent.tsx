@@ -6,10 +6,8 @@ import {
   Brain,
   Calendar,
   Check,
-  CheckCircle2,
   Clock,
   FileText,
-  GitBranch,
   History,
   Layers,
   Link2,
@@ -17,14 +15,12 @@ import {
   Mic,
   Paperclip,
   Pencil,
-  Play,
   RotateCcw,
   Sparkles,
   Target,
   WandSparkles,
   Workflow,
   X,
-  Zap,
 } from "lucide-react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";

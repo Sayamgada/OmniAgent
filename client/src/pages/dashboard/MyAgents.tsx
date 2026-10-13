@@ -1,18 +1,12 @@
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
-  Activity,
   Bot,
-  Filter,
   LayoutGrid,
   List,
   Pencil,
   Play,
   Plus,
   Search,
-  Sparkles,
-  Workflow,
-  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -83,7 +77,7 @@ export default function MyAgents() {
             <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>AI Fleet Matrix</span>
             <span>·</span>
-            <span className="text-primary font-medium">{mockAgents.length} Active Workers</span>
+            <span className="text-primary font-medium">{mockAgents.length} Active Workers · {totalInvocations.toLocaleString()} Runs</span>
           </div>
           <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             AI Fleet <span className="gradient-text">Command</span>

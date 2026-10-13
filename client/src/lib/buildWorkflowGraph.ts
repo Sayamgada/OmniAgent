@@ -2,7 +2,6 @@ import dagre from "dagre";
 import type { Edge, Node } from "@xyflow/react";
 import type {
   AgentWorkflowConfig,
-  RequiredAgent,
   WorkflowNodeDetail,
   WorkflowNodeType,
   WorkflowStep,
@@ -65,7 +64,7 @@ export function buildWorkflowGraph(config: AgentWorkflowConfig): {
       source,
       target,
       animated: true,
-      style: { stroke: "hsl(211 100% 50%)", strokeWidth: 2 },
+      style: { stroke: "hsl(var(--primary))", strokeWidth: 2 },
     });
   };
 
@@ -219,7 +218,7 @@ export function buildFallbackGraph(raw: string): {
       source: "trigger",
       target: "output",
       animated: true,
-      style: { stroke: "hsl(211 100% 50%)", strokeWidth: 2 },
+      style: { stroke: "hsl(var(--primary))", strokeWidth: 2 },
     },
   ];
   return layoutGraph(nodes, edges);

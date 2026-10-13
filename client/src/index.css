@@ -5,91 +5,128 @@
 @layer base {
   :root,
   .dark {
-    /* Dark Theme — Deep Obsidian & Technical Slate */
-    --background: 224 45% 4%;         /* #06090F - Deep Obsidian */
-    --foreground: 210 40% 98%;        /* #F8FAFC - Pure Crisp White */
+    /* Dark Theme — Theme 02 Obsidian Bronze (#0B1118 & #B58863) */
+    --background: 213 37% 7%;          /* #0B1118 - Deep Obsidian Blue-Black */
+    --foreground: 24 24% 88%;          /* #D3C3B9 / #EBE2DC - Warm Off-White */
 
-    --card: 223 38% 8%;               /* #0D131F - Elevated Graphite Surface */
-    --card-foreground: 210 40% 98%;
+    --card: 210 28% 12%;               /* #16212B - Deep Slate Navy Surface */
+    --card-foreground: 24 24% 88%;
 
-    --popover: 223 38% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 28% 12%;
+    --popover-foreground: 24 24% 88%;
 
-    --primary: 217 100% 56%;           /* #1E70FF - Technical Azure */
+    --primary: 27 48% 55%;             /* #C98952 / #B58863 - Warm Bronze Amber */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 84% 42%;         /* #14C286 - Emerald Execution Pulse */
+    --secondary: 200 16% 36%;          /* #3D4D55 / #4D606A - Slate Navy */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 222 30% 12%;              /* #131A28 - Muted Fill */
-    --muted-foreground: 217 19% 65%;   /* #96A4B8 - Secondary Slate */
+    --muted: 210 24% 16%;              /* #1F2B36 - Muted Navy Fill */
+    --muted-foreground: 11 8% 63%;      /* #A79E9C - Warm Clay Gray */
 
-    --accent: 198 93% 52%;             /* #0BA5EC - Radiant Cyan */
-    --accent-foreground: 0 0% 100%;
+    --accent: 34 40% 70%;              /* #D8BAA0 - Radiant Bronze Sand */
+    --accent-foreground: 213 37% 7%;
 
-    --warning: 38 96% 53%;             /* #FBBF24 - Solar Amber */
-    --warning-foreground: 224 45% 4%;
+    --warning: 38 96% 53%;             /* Solar Amber */
+    --warning-foreground: 213 37% 7%;
 
-    --destructive: 0 84% 62%;          /* #EF4444 */
+    --destructive: 0 84% 62%;          /* Red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 28% 16%;             /* #1C2436 - Fine Hairline Border */
-    --input: 220 28% 16%;
-    --ring: 217 100% 56%;
+    --border: 210 20% 19%;             /* #27333E - Deep Slate Navy Border */
+    --input: 210 20% 19%;
+    --ring: 27 48% 55%;
 
     --radius: 0.625rem;
 
-    --glow-primary: 0 0 28px hsl(217 100% 56% / 0.22);
-    --glow-primary-strong: 0 0 42px hsl(217 100% 56% / 0.38);
-    --glow-secondary: 0 0 28px hsl(160 84% 42% / 0.22);
-    --glow-accent: 0 0 28px hsl(198 93% 52% / 0.22);
+    --glow-primary: 0 0 28px hsl(27 48% 55% / 0.25);
+    --glow-primary-strong: 0 0 42px hsl(27 48% 55% / 0.40);
+    --glow-secondary: 0 0 28px hsl(200 16% 36% / 0.22);
+    --glow-accent: 0 0 28px hsl(34 40% 70% / 0.22);
 
-    --sidebar-background: 224 45% 4.5%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 100% 56%;
+    --sidebar-background: 213 37% 7%;
+    --sidebar-foreground: 24 24% 88%;
+    --sidebar-primary: 27 48% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 28% 14%;
-    --sidebar-ring: 217 100% 56%;
+    --sidebar-accent: 210 24% 16%;
+    --sidebar-accent-foreground: 24 24% 88%;
+    --sidebar-border: 210 20% 19%;
+    --sidebar-ring: 27 48% 55%;
+
+    /* Semantic tokens */
+    --bg-primary: hsl(213 37% 7%);
+    --bg-secondary: hsl(210 28% 12%);
+    --surface: hsl(210 28% 12%);
+    --surface-elevated: hsl(210 24% 16%);
+    --text-primary: hsl(24 24% 88%);
+    --text-secondary: hsl(11 8% 63%);
+    --text-muted: hsl(11 8% 63%);
+    --accent-primary: hsl(27 48% 55%);
+    --accent-secondary: hsl(34 40% 70%);
+    --focus-ring: hsl(27 48% 55%);
+    --success: hsl(160 84% 42%);
+    --error: hsl(0 84% 62%);
   }
 
   .light {
-    /* Light Theme — Architectural White & Clean Slate */
-    --background: 0 0% 100%;          /* #FFFFFF - Pure White */
-    --foreground: 222 47% 11%;        /* #0F172A - Deep Slate Typography */
+    /* Light Theme — Theme 02 Obsidian Bronze Warm Linen & Deep Slate */
+    --background: 34 35% 95%;          /* #F7F3EE - Warm Linen Cream */
+    --foreground: 215 44% 10%;         /* #0E1724 - Deep Navy Charcoal */
 
-    --card: 0 0% 100%;                /* #FFFFFF - Clean White Card */
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%;                 /* #FFFFFF - Clean Warm White Card */
+    --card-foreground: 215 44% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 215 44% 10%;
 
-    --primary: 217 100% 50%;
+    --primary: 26 44% 42%;             /* #9A5E30 - Burnished Deep Bronze */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 84% 39%;
+    --secondary: 200 16% 29%;          /* #3D4D55 - Slate Navy */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;             /* #F1F5F9 - Soft Gray Fill */
-    --muted-foreground: 215 16% 45%;   /* #64748B */
+    --muted: 30 25% 90%;               /* #EBE4DC - Soft Sand Fill */
+    --muted-foreground: 11 12% 44%;     /* #7E6B65 - Warm Slate Clay */
 
-    --accent: 198 93% 45%;
+    --accent: 27 48% 52%;              /* #BF7B43 - Warm Ochre */
     --accent-foreground: 0 0% 100%;
 
-    --border: 214 32% 88%;             /* #E2E8F0 */
-    --input: 214 32% 88%;
-    --ring: 217 100% 50%;
+    --warning: 38 96% 53%;
+    --warning-foreground: 215 44% 10%;
 
-    --glow-primary: 0 0 24px hsl(217 100% 50% / 0.15);
-    --glow-primary-strong: 0 0 36px hsl(217 100% 50% / 0.25);
-    --glow-secondary: 0 0 24px hsl(160 84% 39% / 0.15);
-    --glow-accent: 0 0 24px hsl(198 93% 45% / 0.15);
+    --destructive: 0 84% 62%;
+    --destructive-foreground: 0 0% 100%;
 
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-accent: 210 40% 93%;
-    --sidebar-border: 214 32% 88%;
+    --border: 24 20% 80%;              /* #D5C8BF - Warm Linen Border */
+    --input: 24 20% 80%;
+    --ring: 26 44% 42%;
+
+    --glow-primary: 0 0 24px hsl(26 44% 42% / 0.18);
+    --glow-primary-strong: 0 0 36px hsl(26 44% 42% / 0.30);
+    --glow-secondary: 0 0 24px hsl(200 16% 29% / 0.15);
+    --glow-accent: 0 0 24px hsl(27 48% 52% / 0.18);
+
+    --sidebar-background: 34 35% 95%;
+    --sidebar-foreground: 215 44% 10%;
+    --sidebar-primary: 26 44% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 25% 90%;
+    --sidebar-border: 24 20% 80%;
+    --sidebar-ring: 26 44% 42%;
+
+    /* Semantic tokens */
+    --bg-primary: hsl(34 35% 95%);
+    --bg-secondary: hsl(0 0% 100%);
+    --surface: hsl(0 0% 100%);
+    --surface-elevated: hsl(30 25% 90%);
+    --text-primary: hsl(215 44% 10%);
+    --text-secondary: hsl(11 12% 44%);
+    --text-muted: hsl(11 12% 44%);
+    --accent-primary: hsl(26 44% 42%);
+    --accent-secondary: hsl(27 48% 52%);
+    --focus-ring: hsl(26 44% 42%);
+    --success: hsl(160 84% 39%);
+    --error: hsl(0 84% 62%);
   }
 }
 

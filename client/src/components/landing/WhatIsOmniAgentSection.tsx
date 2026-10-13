@@ -54,7 +54,7 @@ export const WhatIsOmniAgentSection: React.FC = () => {
               <br />
               THE WORK.
               <span className="block my-4 sm:my-6 h-[1px] w-24 bg-primary/60" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-cyan-400 to-teal-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-secondary">
                 OmniAgent
                 <br />
                 handles the

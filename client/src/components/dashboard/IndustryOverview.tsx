@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Cell, Pie, PieChart } from "recharts";
-import { TrendingUp, Layers, CheckCircle2, Zap } from "lucide-react";
+import { TrendingUp, Layers } from "lucide-react";
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { industryStats } from "../../lib/dashboard-data";

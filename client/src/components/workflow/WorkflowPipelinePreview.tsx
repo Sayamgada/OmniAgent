@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowDown, Check, GitBranch, Layers, Sparkles } from "lucide-react";
+import { ArrowDown, GitBranch } from "lucide-react";
 
 import type { PipelineNode, PipelineNodeChange } from "../../lib/edit-agent-data";
 import { cn } from "../../lib/utils";
@@ -42,7 +42,7 @@ const changeStyles: Record<
     bg: "bg-primary/10",
     badge: "bg-primary/15 text-primary border-primary/30",
     badgeText: "Modified",
-    glow: "shadow-[0_0_16px_rgba(30,112,255,0.2)]",
+    glow: "shadow-[0_0_16px_hsl(var(--primary)/0.25)]",
   },
 };
 

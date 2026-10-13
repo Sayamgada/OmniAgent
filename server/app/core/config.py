@@ -1,8 +1,21 @@
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-import os
 
-load_dotenv()
+# Search for .env in server directory first, then root directory
+_SERVER_DIR = Path(__file__).resolve().parent.parent.parent
+_ROOT_DIR = _SERVER_DIR.parent
+_SERVER_ENV = _SERVER_DIR / ".env"
+_ROOT_ENV = _ROOT_DIR / ".env"
+
+if _SERVER_ENV.exists():
+    load_dotenv(dotenv_path=_SERVER_ENV, override=True)
+elif _ROOT_ENV.exists():
+    load_dotenv(dotenv_path=_ROOT_ENV, override=True)
+else:
+    load_dotenv(override=True)
+
 
 class Settings(BaseSettings):
     POSTGRE_DB_URL: str

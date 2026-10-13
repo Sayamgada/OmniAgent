@@ -17,24 +17,39 @@ from app.services.vectorstore import search_automations, printVectorStore
 from app.database import get_mongo_db
 from fastapi import APIRouter, Depends
 from contextlib import asynccontextmanager
-Base.metadata.create_all(bind=engine)
+import logging
+
+logger = logging.getLogger("uvicorn.error")
 
 
 async def create_indexes():
-    collection = mongo_db["AutomationPreview"]
+    try:
+        collection = mongo_db["AutomationPreview"]
+        await collection.create_index(
+            "automation_name",
+            unique=True,
+            name="idx_automation_name"
+        )
+        logger.info("MongoDB indexes verified successfully.")
+    except Exception as e:
+        logger.error(f"MongoDB index verification failed: {e}")
 
-    await collection.create_index(
-        "automation_name",
-        unique=True,
-        name="idx_automation_name"
-    )
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Initializing PostgreSQL schema and connections...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("PostgreSQL database tables verified successfully.")
+    except Exception as e:
+        logger.error(f"PostgreSQL initialization failed: {e}")
+        raise
+
     await create_indexes()
     yield
 
 
-app = FastAPI(title="OmniAgent Auth")
+app = FastAPI(title="OmniAgent Auth", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

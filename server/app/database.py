@@ -7,7 +7,10 @@ from .core.config import settings
 
 # ---------------- PostgreSQL ----------------
 
-engine = create_engine(settings.POSTGRE_DB_URL)
+engine = create_engine(
+    settings.POSTGRE_DB_URL,
+    pool_pre_ping=True,
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,

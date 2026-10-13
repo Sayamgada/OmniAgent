@@ -11,7 +11,6 @@ import {
   Landmark,
   Loader2,
   Rocket,
-  ShieldCheck,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -232,6 +231,9 @@ export default function NewAgentCreation() {
       toast.success(
         `Agent "${createdAgent.name}" compiled and deployed successfully to runtime!`
       );
+      setTimeout(() => {
+        navigate("/agents");
+      }, 1200);
     } catch (err: any) {
       toast.error(err.message || "Failed to create and deploy agent");
     } finally {

@@ -1,19 +1,15 @@
 import { motion } from "framer-motion";
 import {
   Bell,
-  Bot,
   Cpu,
-  Lock,
   Monitor,
   ShieldCheck,
   Sliders,
   Sparkles,
   User,
-  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
 
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Button } from "../../components/ui/button";
@@ -30,10 +26,11 @@ import { Slider } from "../../components/ui/slider";
 import { Switch } from "../../components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useAuth } from "../../context/AuthContext";
+import { useSiteTheme } from "../../context/ThemeContext";
 
 export default function Settings() {
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { siteTheme, setSiteTheme } = useSiteTheme();
   const [temperature, setTemperature] = useState([0.7]);
   const [tokenLimit, setTokenLimit] = useState([4096]);
   const [emailNotif, setEmailNotif] = useState(true);
@@ -145,7 +142,7 @@ export default function Settings() {
                   <p className="text-xs font-bold text-foreground">Active Theme</p>
                   <p className="text-[11px] text-muted-foreground">Toggle between high-contrast obsidian dark and crisp light mode.</p>
                 </div>
-                <Select value={theme || "dark"} onValueChange={(val) => setTheme(val)}>
+                <Select value={siteTheme || "dark"} onValueChange={(val: "light" | "dark") => setSiteTheme(val)}>
                   <SelectTrigger className="w-32 h-8 border-border bg-card text-xs rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
