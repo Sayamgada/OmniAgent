@@ -74,7 +74,9 @@ def test_gmail_slice_compiles_and_is_deployable():
 
     # No per-operation param schema exists in the registry -- trigger gets
     # no parameters at all (correctly, this time -- not the Send action's).
-    assert trigger_node["parameters"] == {}
+    # Only the auth selector may be present; the Send action's resource/operation
+    # fields must never leak onto the trigger.
+    assert set(trigger_node["parameters"]) <= {"authentication"}
 
     # operation comes from the server-resolved n8n_operation
     # ({"value": "send"}) -- no verb-guessing bridge any more.

@@ -131,10 +131,15 @@ def test_branching_has_switch_with_two_labelled_outputs():
     assert len(rules) == 2
     assert [r.get("outputKey") for r in rules] == ["approved", "rejected"]
 
-    # one main output per rule, each wired to a downstream node
+    # one main output per rule, each wired to a downstream node, plus the
+    # extra "unrecognized" fallback output wired to a NoOp sink
     main = wf["connections"][switch["name"]]["main"]
-    assert len(main) == 2
+    assert len(main) == 3  # 2 rules + the fallback output
     assert all(len(branch) >= 1 for branch in main)
+    assert main[2][0]["node"].startswith("Unrecognized decision")
+    assert switch["parameters"]["options"]["fallbackOutput"] == "extra"
+    sinks = _nodes_of(wf, ".noOp")
+    assert [n["name"] for n in sinks] == [main[2][0]["node"]]
 
 
 @pytest.mark.parametrize("case", ["linear", "branching", "fanin"])

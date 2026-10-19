@@ -3,3 +3,6 @@ server/.env
 commands.txt
 __pycache__/
 *.pyc
+
+server/venv/
+venv/

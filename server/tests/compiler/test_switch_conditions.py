@@ -35,7 +35,7 @@ def test_agent_branching_uses_routing_markers():
     )
     c0, c1 = _cond(sw, 0), _cond(sw, 1)
     assert c0["leftValue"] == graph.AI_ROUTING_LEFT_VALUE
-    assert c0["operator"] == {"type": "string", "operation": "contains"}
+    assert c0["operator"] == {"type": "string", "operation": "equals"}
     assert c0["rightValue"] == "DECISION: [approved]"
     assert c1["rightValue"] == "DECISION: [rejected]"
     assert not any("placeholder" in w for w in report.warnings)

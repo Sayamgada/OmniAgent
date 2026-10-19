@@ -1,0 +1,336 @@
+{
+  "name": "Generated Workflow",
+  "nodes": [
+    {
+      "id": "2a8ccf3a-57e8-4a91-b32c-6e4145e5255a",
+      "name": "Gmail OAuth2 API",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "58dd39a8-709c-4dc8-8c5b-0390dcda3c66",
+      "name": "groq (AI Agent)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        280,
+        300
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the email content received in the trigger and determine whether it is a leave approval request. Respond with \"yes\" if it is a leave request, otherwise \"no\".\n\nRouting rule: end your reply with one final line containing exactly one of these markers, matching your decision: DECISION: [leave], DECISION: [not_leave]\n\nInput data:\n{{ JSON.stringify($json).slice(0, 8000) }}"
+      }
+    },
+    {
+      "id": "d8132b7f-d58e-4b38-957f-33c814c3b16d",
+      "name": "groq (Chat Model)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        280,
+        450
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "1cb07275-c0b4-46dc-8ddb-d7b928f6945c",
+      "name": "groq (AI Agent) 2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        300
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Based on the email identified as a leave request in step 1, evaluate the reason and any attached supporting document, and decide whether the leave should be approved or rejected. Output \"approved\" or \"rejected\" with a brief justification.\n\nRouting rule: end your reply with one final line containing exactly one of these markers, matching your decision: DECISION: [approved], DECISION: [rejected]\n\nInput data:\n{{ JSON.stringify($json.data).slice(0, 8000) }}"
+      }
+    },
+    {
+      "id": "074745f2-0017-4567-b054-23b9e3941933",
+      "name": "groq (Chat Model) 2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        560,
+        450
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "18a00a02-5a26-4159-8580-f2432f15e98b",
+      "name": "Gmail OAuth2 API 2",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER",
+        "emailType": "html",
+        "message": "PLACEHOLDER"
+      }
+    },
+    {
+      "id": "8bff3c9f-9e55-48d0-bc12-f648527246bf",
+      "name": "Gmail OAuth2 API 3",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER",
+        "emailType": "html",
+        "message": "PLACEHOLDER"
+      }
+    },
+    {
+      "id": "affcbaba-62cd-4e55-9c9c-05936461f872",
+      "name": "Switch (step 1)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        420.0,
+        300.0
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "rightValue": "DECISION: [leave]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "leave"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "rightValue": "DECISION: [not_leave]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "not_leave"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7f92e150-6756-4542-8926-db921ba51e2b",
+      "name": "Switch (step 2)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        700.0,
+        300.0
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "rightValue": "DECISION: [approved]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "rightValue": "DECISION: [rejected]"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "rejected"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7b9a035d-733c-428c-b9d3-0fcc14b3e502",
+      "name": "Aggregate (step 2)",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        420.0,
+        300.0
+      ],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "data"
+      }
+    }
+  ],
+  "connections": {
+    "groq (AI Agent)": {
+      "main": [
+        [
+          {
+            "node": "Switch (step 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "groq (AI Agent) 2": {
+      "main": [
+        [
+          {
+            "node": "Switch (step 2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "groq (Chat Model)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "groq (AI Agent)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail OAuth2 API": {
+      "main": [
+        [
+          {
+            "node": "groq (AI Agent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "groq (Chat Model) 2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "groq (AI Agent) 2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate (step 2)": {
+      "main": [
+        [
+          {
+            "node": "groq (AI Agent) 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch (step 1)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate (step 2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch (step 2)": {
+      "main": [
+        [
+          {
+            "node": "Gmail OAuth2 API 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail OAuth2 API 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}

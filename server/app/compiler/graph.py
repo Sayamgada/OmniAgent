@@ -108,7 +108,25 @@ def agent_needs_aggregate(
 # live check says otherwise.
 # ---------------------------------------------------------------------------
 ROUTING_TOKEN_FMT = "DECISION: [{label}]"
-AI_ROUTING_LEFT_VALUE = "={{ $json.output }}"  # AI Agent's text output field
+# Routing reads the LAST well-formed marker in the agent's reply (the agent is
+# told to finish with its own marker), canonicalised to "DECISION: [label]"
+# (case/spacing/trailing punctuation or markdown tolerated), and the Switch
+# rules then use `equals`. Unlike `contains`, a marker the agent merely echoed
+# from untrusted input (e.g. an email body) earlier in its reply cannot win.
+# A missing marker yields "" -> matches no rule -> the Switch fallback output.
+AI_ROUTING_LEFT_VALUE = (
+    "={{ (String($json.output || '').match(/DECISION:\\s*\\[[^\\]]*\\]/gi) || [])"
+    ".map(m => m.replace(/DECISION:\\s*\\[\\s*([^\\]]*?)\\s*\\]/i, 'DECISION: [$1]'))"
+    ".pop() || '' }}"
+)
+
+# Unmatched items go to an extra Switch output wired to a visible NoOp sink,
+# so an unrecognised answer is never silently dropped.
+SWITCH_FALLBACK_LABEL = "unrecognized"
+
+
+def fallback_sink_name(step_num: int) -> str:
+    return f"Unrecognized decision (step {step_num})"
 
 
 def routing_token(label: str) -> str:
@@ -159,7 +177,7 @@ def _switch_rule(branch, source_is_agent: bool, step: Step, report: CompileRepor
         return _rule(
             branch.label,
             AI_ROUTING_LEFT_VALUE,
-            {"type": "string", "operation": "contains"},
+            {"type": "string", "operation": "equals"},
             right=routing_token(branch.label),
             case_sensitive=False,
         )
@@ -282,6 +300,12 @@ def _synthesize_switch(
                     for branch in step.condition
                 ]
             },
+            # Extra output at index len(rules.values); see nodes.json
+            # (Switch v3.4 options.fallbackOutput = "extra").
+            "options": {
+                "fallbackOutput": "extra",
+                "renameFallbackOutput": SWITCH_FALLBACK_LABEL,
+            },
         },
         layout_hint="after_step",
     )
@@ -322,6 +346,35 @@ def build_connections(
                 target_index=0,
             )
         )
+
+        # Fallback sink: the Switch's extra output (index = number of rules).
+        noop = get_utility_node("noOp")
+        if noop is None:
+            report.warnings.append(
+                f"step {step.step} ({step.service}): registry has no 'noOp' "
+                "utility node, so the Switch's unrecognised-decision output is "
+                "left unconnected (unmatched items are dropped silently)."
+            )
+        else:
+            sink = ResolvedNode(
+                step=step.step,
+                kind="utility",
+                node_type=noop["type"],
+                type_version=noop["typeVersion"],
+                name=fallback_sink_name(step.step),
+                layout_hint="after_step",
+            )
+            synthesized.append(sink)
+            connections.append(
+                N8nConnection(
+                    source_name=switch_node.name,
+                    source_output="main",
+                    source_index=len(step.condition),
+                    target_name=sink.name,
+                    target_input="main",
+                    target_index=0,
+                )
+            )
 
     # Pass 2: subnode wiring, then main-chain wiring -- branch-routed
     # through a synthesized Switch where applicable, Merge-synthesized
@@ -409,6 +462,13 @@ def build_connections(
                     f"step {step.step} ({step.service}) declares branch "
                     f"{step.branch!r} off step {dep_num}, but {reason} -- "
                     "wiring directly from the dependency instead."
+                )
+            elif dep_step.condition and step.branch is None:
+                report.warnings.append(
+                    f"step {step.step} ({step.service}) depends on step "
+                    f"{dep_num}, which routes through a Switch, but declares no "
+                    f"'branch' -- wiring directly from step {dep_num}, so it runs "
+                    "for EVERY outcome and bypasses that Switch."
                 )
 
             normal_deps.append((dep_num, dep_resolved))

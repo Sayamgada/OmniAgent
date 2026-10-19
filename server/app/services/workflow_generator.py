@@ -1,4 +1,5 @@
 # app/services/workflow_generator.py
+import re
 from functools import lru_cache
 
 from app.models.automation_preview_model import automation_preview_collection
@@ -73,14 +74,49 @@ def _build_service_whitelist() -> dict:
     return by_category
 
 
+@lru_cache(maxsize=1)
+def _trigger_only_services() -> frozenset:
+    """
+    Services whose registry kind is "trigger_only": n8n ships a trigger node for
+    them but no action node, so they can fire a workflow yet can never be
+    compiled as a step. Derived from the registry's own `kind`, never from a
+    hand-written list. They stay in _valid_service_keys() (valid for triggers).
+    """
+    from app.core.n8n_operation_registry import get_kind
+
+    by_category = _build_service_whitelist()
+    return frozenset(
+        s
+        for services in by_category.values()
+        for s in services
+        if get_kind(s) == "trigger_only"
+    )
+
+
 def _service_whitelist_text() -> str:
     """Renders _build_service_whitelist() as the category-grouped block that
-    gets spliced into SYSTEM_INSTRUCTION in place of the old static list."""
+    gets spliced into SYSTEM_INSTRUCTION in place of the old static list.
+
+    Trigger-only services are left out of the category lists (those are the
+    values a STEP may use) and rendered in a separate block that states they
+    are valid only as trigger.service."""
     by_category = _build_service_whitelist()
+    trigger_only = _trigger_only_services()
     lines = []
     for category in sorted(by_category):
+        step_services = [s for s in by_category[category] if s not in trigger_only]
+        if not step_services:
+            continue
         lines.append(category)
-        lines.append(", ".join(by_category[category]))
+        lines.append(", ".join(step_services))
+        lines.append("")
+    if trigger_only:
+        lines.append(
+            "TRIGGER-ONLY SERVICES (valid ONLY as preview_json.trigger.service - "
+            "they have no action capability, so NEVER use one as a workflow "
+            'step\'s "service")'
+        )
+        lines.append(", ".join(sorted(trigger_only)))
         lines.append("")
     return "\n".join(lines).rstrip()
 
@@ -92,7 +128,7 @@ def _valid_service_keys() -> frozenset:
     return frozenset(keys | _FALLBACK_SERVICE_KEYS)
 
 
-CURRENT_SCHEMA_VERSION = 6
+CURRENT_SCHEMA_VERSION = 10
 
 _ALLOWED_TOP_LEVEL_KEYS = {
     "schema_version",
@@ -168,11 +204,161 @@ def _check_operations(preview_json: dict) -> None:
             )
         _check_target(step)
         _check_service(step)
+        _check_trigger_only_step(step)
         _check_trigger_refetch(step, preview_json)
         _check_depends_on(step, steps)
         _check_parallel_depends_on(step, steps)
         _check_condition_branch(step, steps)
+        _check_missing_branch(step, steps)
+        _check_routing_instructions(step)
         _check_ai_instructions(step)
+
+
+_DRAFT_LANGUAGE_RE = re.compile(
+    r"\b(draft(?:s|ed|ing)?|prepar(?:e|es|ed|ing)|propos(?:e|es|ed|ing)|"
+    r"compos(?:e|es|ed|ing)|suggest(?:s|ed|ing)?|queue(?:s|d)?|queu(?:ing)|"
+    r"queueing|stag(?:e|es|ed|ing))\b",
+    re.IGNORECASE,
+)
+
+
+def _check_action_escalation(description: str, preview_json: dict) -> None:
+    """
+    Non-fatal, heuristic. The request uses draft-like wording but a step's
+    operation is "send": the action may have been escalated beyond what the user
+    asked. Heuristic because the request may ask for a draft AND, separately,
+    a genuine send (e.g. summarise to Slack); flags for review, never blocks.
+    Needs the original request, so it is called from generate_groq_workflow.
+    """
+    if not isinstance(description, str) or not isinstance(preview_json, dict):
+        return
+    matched = sorted(
+        {m.group(0).lower() for m in _DRAFT_LANGUAGE_RE.finditer(description)}
+    )
+    if not matched:
+        return
+    steps = preview_json.get("workflow", [])
+    sends = [s for s in steps if isinstance(s, dict) and s.get("operation") == "send"]
+    if sends:
+        print(
+            f"[workflow_generator] COMPLIANCE MISS (possible): request contains "
+            f"draft-like wording {matched} but step(s) "
+            f"{[s.get('step') for s in sends]} use operation 'send'. Verify the "
+            f"user did not ask only for a draft/prepared item. Request: "
+            f"{description!r}"
+        )
+
+
+_REPLY_FORMAT_RE = re.compile(
+    r"\b(respond|reply|return|output|answer|say|write)\b[^.\n]{0,60}[\"\u201c\u201d']",
+    re.IGNORECASE,
+)
+
+
+def _check_routing_instructions(step: dict) -> None:
+    """Non-fatal. Instructions of a conditioned AI step that dictate reply
+    words (e.g. 'respond with "yes"') conflict with the routing marker the
+    compiler appends."""
+    if not isinstance(step, dict) or step.get("service") != "groq":
+        return
+    if not isinstance(step.get("condition"), dict):
+        return
+    instr = step.get("instructions")
+    if isinstance(instr, str) and _REPLY_FORMAT_RE.search(instr):
+        print(
+            f"[workflow_generator] COMPLIANCE MISS: step {step.get('step')} has a "
+            f"'condition' but its instructions dictate reply words/format. "
+            f"Describe the decision criteria only; the compiler adds the reply "
+            f"format. Instructions: {instr!r}"
+        )
+
+
+def _missing_branch_deps(step: dict, all_steps: list) -> list:
+    """[(dep_step_number, [branch labels])] for each dependency of `step` that
+    forks via a "condition", when `step` itself carries no "branch"."""
+    if not isinstance(step, dict) or step.get("branch") is not None:
+        return []
+    deps = step.get("depends_on")
+    if not isinstance(deps, list):
+        return []
+    by_num = {s.get("step"): s for s in all_steps if isinstance(s, dict)}
+    found = []
+    for d in deps:
+        dep = by_num.get(d)
+        cond = dep.get("condition") if isinstance(dep, dict) else None
+        if (
+            isinstance(cond, dict)
+            and isinstance(cond.get("branches"), list)
+            and cond["branches"]
+        ):
+            found.append((d, list(cond["branches"])))
+    return found
+
+
+def _check_missing_branch(step: dict, all_steps: list) -> None:
+    """
+    Non-fatal, heuristic. A step that depends on a step carrying a "condition"
+    but has no "branch" runs for EVERY outcome of that condition. That is only
+    right for an always-run step (e.g. logging), so this flags for review.
+    """
+    for d, branches in _missing_branch_deps(step, all_steps):
+        print(
+            f"[workflow_generator] COMPLIANCE MISS (possible): step "
+            f"{step.get('step')} depends on step {d}, which forks into "
+            f"{branches}, but carries no 'branch'. It will run for "
+            f"every outcome - verify it is meant to, otherwise tag it with "
+            f"the outcome it belongs to."
+        )
+
+
+def _collect_missing_branch_problems(preview_json: dict) -> list:
+    steps = preview_json.get("workflow", []) if isinstance(preview_json, dict) else []
+    return [
+        (s.get("step"), d, b) for s in steps for d, b in _missing_branch_deps(s, steps)
+    ]
+
+
+async def _retry_on_missing_branch(
+    user_content: str, system_instruction: str, result: dict
+) -> dict:
+    """
+    One corrective retry when a step depends on a forking step but carries no
+    "branch" (it would run for every outcome, e.g. replying to unrelated
+    emails). Non-fatal by design: if the retry fails or is no better, the
+    original result is kept.
+    """
+    problems = _collect_missing_branch_problems(result.get("preview_json", {}))
+    if not problems:
+        return result
+    print(
+        f"[workflow_generator] retrying once: {len(problems)} step(s) depend on a "
+        f"forking step without a 'branch'"
+    )
+    feedback = (
+        "\n\nCORRECTION REQUIRED. Your previous attempt was rejected because: "
+        + "; ".join(
+            f'step {s} depends on step {d}, which forks into {b}, but carries no "branch"'
+            for s, d, b in problems
+        )
+        + ". Regenerate the complete JSON for the same request. Every step that "
+        'depends on a step with a "condition" and applies to only some of its '
+        'outcomes must carry the matching "branch" (an outcome with nothing to '
+        "do gets no step). Return only the JSON."
+    )
+    try:
+        raw2 = await generate_workflow_from_prompt(
+            user_content + feedback, system_instruction
+        )
+        result2 = _sanitize_workflow_output(raw2)
+    except Exception as e:  # never let the retry break generation
+        print(f"[workflow_generator] retry failed ({e!r}); keeping first result")
+        return result
+    remaining = _collect_missing_branch_problems(result2.get("preview_json", {}))
+    if len(remaining) < len(problems):
+        print(f"[workflow_generator] retry improved result ({len(remaining)} left)")
+        return result2
+    print("[workflow_generator] retry no better; keeping first result")
+    return result
 
 
 def _check_trigger_refetch(step: dict, preview_json: dict) -> None:
@@ -204,6 +390,19 @@ def _check_trigger_refetch(step: dict, preview_json: dict) -> None:
         f"that fires the trigger. The trigger already delivers its item - verify "
         f"this step retrieves DIFFERENT data, otherwise it is a redundant re-fetch."
     )
+
+
+def _check_trigger_only_step(step: dict) -> None:
+    """Non-fatal: a step whose service is trigger-only can never compile."""
+    if not isinstance(step, dict):
+        return
+    service = step.get("service")
+    if service and service in _trigger_only_services():
+        print(
+            f"[workflow_generator] COMPLIANCE MISS: step {step.get('step')} uses "
+            f"trigger-only service '{service}', which has no action node in n8n "
+            f"and cannot compile as a step. It is valid only as trigger.service."
+        )
 
 
 def _check_service(step: dict) -> None:
@@ -652,7 +851,7 @@ async def generate_groq_workflow(
         Use EXACTLY this schema:
 
         {
-        "schema_version": 6,
+        "schema_version": 10,
         "automation_name": "",
         "automation_description": "",
 
@@ -775,6 +974,13 @@ async def generate_groq_workflow(
           structural-only rule that applies to "parameters" elsewhere in
           this schema.
 
+        - For a step that carries a "condition": describe the decision
+          criteria and what each outcome means, naming outcomes with the
+          branch labels. NEVER tell the AI what words, tokens or format to
+          reply with (no "respond with yes/no", no "return X or Y", no quoted
+          answer words) - the system adds the required reply format itself,
+          and a second, conflicting format breaks routing.
+
         A groq step with a missing or vague "instructions" field is an
         incomplete generation, equivalent to a step missing "operation" or
         "target" - it will be flagged and is not acceptable as a final
@@ -804,7 +1010,7 @@ async def generate_groq_workflow(
         API Call
 
         "service" - the specific external service the trigger fires from, chosen from
-        the same service whitelist used for workflow steps (Rule 7), AND that service
+        the service whitelist (Rule 7), including its TRIGGER-ONLY SERVICES block, AND that service
         must be one that genuinely has a trigger capability in n8n - do not pick a
         service purely because it appears elsewhere in the workflow if it has no
         trigger of its own. Required whenever "type" is Event, Email, or Form
@@ -843,6 +1049,11 @@ async def generate_groq_workflow(
 
         {SERVICE_WHITELIST}
 
+        A service listed under TRIGGER-ONLY SERVICES can fire a workflow but
+        cannot perform any action. Use it only in preview_json.trigger.service.
+        If a step needs to act on that system, use "http" or "webhook" and name
+        the real system in required_integrations[].display_name.
+
         OPERATION
 
         The "operation" field MUST be exactly one of these ten universal values.
@@ -867,6 +1078,17 @@ async def generate_groq_workflow(
         - Creating a calendar event, a Notion page, or a database row -> "create"
         - Looking something up or querying a database -> "read" or "search"
         - Attaching or storing a file -> "upload"
+
+        USE THE WEAKEST VERB THAT SATISFIES THE REQUEST. Never escalate an
+        action beyond what the user asked for. If the request says draft,
+        prepare, propose, compose, suggest, queue or stage something, the step
+        must NOT use "send" (or any operation that delivers or publishes it to
+        a recipient or audience). Use "create" with the draft/prepared object
+        as "target" instead. If the service has no draft or staging concept
+        for that object, end the workflow at a "groq" "generate" step whose
+        output is the draft, and say so in preview_json.output. Only use
+        "send" when the user explicitly asks for the item to be sent,
+        delivered, posted or published.
 
         Never invent an operation outside this list of ten, regardless of how
         unusual the service or action is. This universal verb, together with
@@ -1083,7 +1305,13 @@ async def generate_groq_workflow(
             "branch": "<one of the outcome strings from the condition step>"
 
         A later step with no "branch" key runs regardless of outcome (e.g. a
-        final logging step that always fires). A later step that depends on
+        final logging step that always fires). Therefore a step that only
+        makes sense for ONE outcome MUST carry that "branch" - at every level
+        of nesting. If step 2 should run only when step 1 decided "leave",
+        step 2 carries "branch": "leave", even when step 2 itself also carries
+        its own "condition" (a second-level fork). An outcome that needs no
+        action (e.g. "other" -> ignore) gets no step at all; it does NOT mean
+        the next step may omit its "branch". A later step that depends on
         the fork should also set "depends_on" to include the step carrying
         the "condition".
 
@@ -1145,6 +1373,12 @@ async def generate_groq_workflow(
         - Only add "condition"/"branch" when the automation's description
           genuinely implies a fork; omit both entirely otherwise.
         - Never add a step that re-fetches what the trigger already delivered.
+        - A step with a "condition" gets instructions that describe the decision
+          criteria only, never the reply words or format.
+        - A step that depends on a step with a "condition" and applies to only
+          some of its outcomes must carry the matching "branch".
+        - Use the weakest verb that satisfies the request: "draft"/"prepare"/
+          "propose"/"compose"/"suggest"/"queue"/"stage" never means "send".
         - Never add top-level keys beyond the five specified.
         - Never output n8n nodes.
         - Never output implementation code.
@@ -1169,6 +1403,8 @@ async def generate_groq_workflow(
     print("Groq")
     raw_workflow = await generate_workflow_from_prompt(user_content, system_instruction)
     result = _sanitize_workflow_output(raw_workflow)
+    result = await _retry_on_missing_branch(user_content, system_instruction, result)
+    _check_action_escalation(description, result.get("preview_json", {}))
     print("SANITIZED KEYS:", sorted(result.keys()))
     return result
 
