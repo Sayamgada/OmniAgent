@@ -498,6 +498,31 @@ def get_structural_defaults(
     return out
 
 
+def credential_required(node_type: str, type_version: float) -> bool:
+    """
+    True if this node REQUIRES a credential at this typeVersion: at least one
+    `credentials[]` entry that applies at this version is marked
+    `required: true`. Nodes with several selector-gated entries (Slack,
+    Google Sheets) list each as required, so "any applicable entry" is the
+    right reading -- one of them must be connected. Nodes with no
+    credentials (If/Set/Code...) and nodes unknown to nodes.json are never
+    required, so this can only under-block, never wrongly block them.
+    Known limit: entries gated by resource/operation (not just by an auth
+    selector) are not evaluated here.
+    """
+    node_def = _get_node_def(node_type, type_version)
+    if node_def is None:
+        return False
+    for c in node_def.get("credentials") or []:
+        show = (c.get("displayOptions") or {}).get("show") or {}
+        ver = show.get("@version")
+        if ver is not None and not _value_matches(type_version, ver):
+            continue
+        if c.get("required"):
+            return True
+    return False
+
+
 def auth_params_for_credential(
     node_type: str, type_version: float, credential_type: str
 ) -> Optional[dict[str, Any]]:

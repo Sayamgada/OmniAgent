@@ -180,14 +180,43 @@ class UnresolvedStep:
     missing_fields: list[str] = field(default_factory=list)
 
 
+CredentialProblem = Literal["incompatible", "missing", "untyped"]
+
+
+@dataclass
+class CredentialIssue:
+    """
+    A step whose credential situation makes the workflow un-activatable.
+    Kept separate from UnresolvedStep/needs_user_input on purpose: that list
+    drives the frontend's operation picker and parameter form, which must
+    not be handed credential problems.
+
+      incompatible -- the user's connected credential type is not accepted
+                      by the node (reconnect via a compatible option).
+      missing      -- the node requires a credential and the user has no
+                      active connection for the service (not connected, or
+                      OAuth still pending -- the resolver can't tell which).
+      untyped      -- the user's integration row has no n8n credential
+                      type/id, so no valid `credentials` entry can be built.
+    """
+
+    step: int
+    service: str
+    node_type: str
+    connected_type: Optional[str]
+    problem: CredentialProblem
+    message: str
+
+
 @dataclass
 class CompileReport:
     warnings: list[str] = field(default_factory=list)
     needs_user_input: list[UnresolvedStep] = field(default_factory=list)
+    credential_issues: list[CredentialIssue] = field(default_factory=list)
 
     @property
     def is_deployable(self) -> bool:
-        return len(self.needs_user_input) == 0
+        return not self.needs_user_input and not self.credential_issues
 
 
 @dataclass

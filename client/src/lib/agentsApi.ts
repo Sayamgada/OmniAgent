@@ -107,6 +107,7 @@ export interface CreateWorkflowResponse {
   needs_user_input: UnresolvedStep[];
   workflow_json: Record<string, unknown> | null;
   agent: AgentSummary | null;
+  credential_issues?: CredentialIssue[];
 }
 
 // ---------- plumbing ----------
@@ -209,4 +210,13 @@ export function activateAgent(
   return request(`/agents/${encodeURIComponent(agentId)}/activate`, token, {
     method: "POST",
   });
+}
+
+export interface CredentialIssue {
+  step: number;
+  service: string;
+  node_type: string;
+  connected_type: string | null;
+  problem: "incompatible" | "missing" | "untyped";
+  message: string;
 }

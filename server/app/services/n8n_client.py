@@ -180,6 +180,47 @@ async def delete_workflow(n8n_workflow_id: str) -> None:
         )
 
 
+async def get_workflow(n8n_workflow_id: str) -> dict:
+    """
+    Fetches one workflow (public API). Used to read its live `active` flag so
+    the agents list can show what n8n actually says rather than a stale DB
+    status. A deleted workflow raises N8nClientError with status_code == 404.
+    """
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(
+            f"{_base_url()}/workflows/{n8n_workflow_id}", headers=_headers()
+        )
+    if resp.status_code != 200:
+        raise N8nClientError(
+            f"n8n workflow lookup failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+    return resp.json()
+
+
+async def list_executions(n8n_workflow_id: str, limit: int = 20) -> dict:
+    """
+    Lists recent executions of one workflow, newest first (public API,
+    GET /executions?workflowId=...). Returns n8n's raw {"data": [...],
+    "nextCursor": ...}; execution payloads are NOT requested (no includeData),
+    so this stays small and never carries workflow data.
+    """
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(
+            f"{_base_url()}/executions",
+            headers=_headers(),
+            params={"workflowId": n8n_workflow_id, "limit": limit},
+        )
+    if resp.status_code != 200:
+        raise N8nClientError(
+            f"n8n executions lookup failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+    return resp.json()
+
+
 async def get_credential_schema(credential_type: str) -> dict:
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(

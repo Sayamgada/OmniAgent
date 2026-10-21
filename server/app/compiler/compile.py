@@ -17,6 +17,7 @@ from .interfaces import CredentialResolver, MissingRequiredParam, ParamProvider
 from .layout import X_SPACING, Y_SPACING, layout_positions
 from .param_schema import (
     auth_params_for_credential,
+    credential_required,
     get_required_params,
     get_structural_defaults,
     normalize_param_values,
@@ -25,6 +26,7 @@ from .resolve import resolve_all_steps
 from .models import (
     CompileReport,
     CompileResult,
+    CredentialIssue,
     N8nConnection,
     N8nNode,
     Step,
@@ -62,8 +64,11 @@ def _trigger_data_expr(trigger_name: str) -> str:
     .first() because Aggregate breaks item pairing."""
     safe = trigger_name.replace("\\", "\\\\").replace("'", "\\'")
     return (
-        "{{ JSON.stringify($('" + safe + "').first().json).slice(0, "
-        + str(PROMPT_TRIGGER_CAP) + ") }}"
+        "{{ JSON.stringify($('"
+        + safe
+        + "').first().json).slice(0, "
+        + str(PROMPT_TRIGGER_CAP)
+        + ") }}"
     )
 
 
@@ -156,6 +161,45 @@ def _apply_overrides(steps: list[Step], overrides: Optional[Overrides]) -> None:
         # overridden at all.
 
 
+def _add_credential_issue(
+    report: CompileReport,
+    step: Step,
+    node_type: str,
+    connected_type: Optional[str],
+    problem: str,
+    message: str,
+) -> None:
+    """One issue per step: an AI step compiles to two nodes (agent root +
+    chat model) and must not report the same problem twice."""
+    if any(i.step == step.step for i in report.credential_issues):
+        return
+    report.credential_issues.append(
+        CredentialIssue(
+            step=step.step,
+            service=step.service,
+            node_type=node_type,
+            connected_type=connected_type,
+            problem=problem,  # type: ignore[arg-type]
+            message=message,
+        )
+    )
+
+
+def _untyped_message(step: Step) -> str:
+    return (
+        f"step {step.step} ({step.service}): the connected integration has no "
+        "n8n credential id/type recorded; reconnect the service"
+    )
+
+
+def _missing_message(step: Step) -> str:
+    return (
+        f"step {step.step} ({step.service}): this step needs a connected "
+        f"{step.service} credential, but none is active (not connected, or "
+        "authorization is still in progress)"
+    )
+
+
 def _finalize_params(
     step: Step,
     resolved: Any,
@@ -192,11 +236,15 @@ def _finalize_params(
     if reported_cred_type and resolved.kind == "action_node":
         auth = auth_params_for_credential(node_type, type_version, reported_cred_type)
         if auth is None:
-            report.warnings.append(
+            msg = (
                 f"step {step.step} ({step.service}): the connected credential "
                 f"type {reported_cred_type!r} is not accepted by node "
                 f"{node_type} (typeVersion {type_version}); reconnect the "
                 "service using a compatible option or this node cannot activate"
+            )
+            report.warnings.append(msg)  # kept for existing consumers
+            _add_credential_issue(
+                report, step, node_type, reported_cred_type, "incompatible", msg
             )
         else:
             final.update(auth)
@@ -277,6 +325,26 @@ def compile(
                             f"{sub.n8n_credential_type}; node will be created "
                             "without one"
                         )
+                        if sub.node_type and credential_required(
+                            sub.node_type, sub.type_version
+                        ):
+                            _add_credential_issue(
+                                report,
+                                step,
+                                sub.node_type,
+                                None,
+                                "missing",
+                                _missing_message(step),
+                            )
+                    elif not cred.get("type") or not cred.get("id"):
+                        _add_credential_issue(
+                            report,
+                            step,
+                            sub.node_type or "",
+                            cred.get("type"),
+                            "untyped",
+                            _untyped_message(step),
+                        )
                     else:
                         # Key by the credential's REAL type (the resolver
                         # may report a different type than what was asked
@@ -336,6 +404,29 @@ def compile(
                 report.warnings.append(
                     f"step {step.step} ({step.service}): no credential connected for "
                     f"{resolved.n8n_credential_type}; node will be created without one"
+                )
+                # Dedicated nodes only (same scope as the compatibility
+                # check): the generic httpRequest node can run without a
+                # credential, so there it stays a warning.
+                if resolved.kind == "action_node" and credential_required(
+                    resolved.node_type, resolved.type_version
+                ):
+                    _add_credential_issue(
+                        report,
+                        step,
+                        resolved.node_type,
+                        None,
+                        "missing",
+                        _missing_message(step),
+                    )
+            elif not cred.get("type") or not cred.get("id"):
+                _add_credential_issue(
+                    report,
+                    step,
+                    resolved.node_type or "",
+                    cred.get("type"),
+                    "untyped",
+                    _untyped_message(step),
                 )
             else:
                 # See the agent-subnode branch above for why this keys by

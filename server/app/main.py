@@ -8,12 +8,14 @@ from app.database import engine, Base, mongo_db
 from app.routers.auth import router as auth_router  # Fixed
 from app.core.config import settings
 from app.routers.agent_router import router as agent_router
+from app.routers.agent_lifecycle import router as agent_lifecycle_router
 from app.routers.integration_router import router as integration_router
 from app.services.vectorstore import search_automations, printVectorStore
-from app.models.user import User                 # noqa: F401
-from app.models.integration import Integration 
+from app.models.user import User  # noqa: F401
+from app.models.integration import Integration
 from fastapi import APIRouter, Depends
 from contextlib import asynccontextmanager
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -21,10 +23,10 @@ async def create_indexes():
     collection = mongo_db["AutomationPreview"]
 
     await collection.create_index(
-        "automation_name",
-        unique=True,
-        name="idx_automation_name"
+        "automation_name", unique=True, name="idx_automation_name"
     )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_indexes()
@@ -43,7 +45,9 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 app.include_router(auth_router)
 app.include_router(agent_router)
+app.include_router(agent_lifecycle_router)
 app.include_router(integration_router)
+
 
 @app.get("/")
 def root():
@@ -52,31 +56,14 @@ def root():
 
 
 @app.get("/search")
-def search_automations_api(
-    query: str,
-    category: str | None = None,
-    top_k: int = 5
-):
+def search_automations_api(query: str, category: str | None = None, top_k: int = 5):
     if not query or not query.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Query parameter cannot be empty"
-        )
+        raise HTTPException(status_code=400, detail="Query parameter cannot be empty")
 
     try:
-        results = search_automations(
-            query=query,
-            category=category,
-            top_k=top_k
-        )
+        results = search_automations(query=query, category=category, top_k=top_k)
 
-        return {
-            "query": query,
-            "results": results
-        }
+        return {"query": query, "results": results}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Search failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")

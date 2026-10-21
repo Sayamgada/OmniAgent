@@ -3,12 +3,12 @@ from app.models.user import User
 from app.core.auth import get_password_hash
 from app.schemas.user import UserCreate
 
+
 def create_user(db: Session, user: UserCreate) -> User:
-    # Temporary developer flow: store plain text password.
-    # WARNING: this is extremely insecure and only for short-term local debugging.
+    # Social-login users (e.g. Google) arrive with password=None and keep None.
     db_user = User(
         email=user.email,
-        password=user.password,
+        password=get_password_hash(user.password) if user.password else None,
         provider=user.provider or "local",
         provider_id=user.provider_id,
         full_name=user.full_name,
@@ -17,6 +17,7 @@ def create_user(db: Session, user: UserCreate) -> User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 def get_user_by_email(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()

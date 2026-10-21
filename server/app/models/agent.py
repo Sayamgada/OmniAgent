@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -25,6 +25,13 @@ class Agent(Base):
     """
 
     __tablename__ = "agents"
+    # One agent name per user. create_all() does NOT add this to an existing
+    # table -- run scripts/sql/add_agents_unique_name.sql once (see its header).
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "workflow_name", name="uq_agents_user_workflow_name"
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
@@ -41,6 +48,8 @@ class Agent(Base):
     # "created"    -- n8n accepted the workflow but it isn't active yet
     # "active"     -- n8n confirmed activation succeeded
     # "failed"     -- n8n rejected creation or activation; see last_error
+    # "inactive"   -- exists in n8n, deliberately switched off (deactivate endpoint)
+    # "missing"    -- no longer exists in n8n (deleted there out-of-band)
     status = Column(String(20), nullable=False, default="created")
     last_error = Column(String(1000), nullable=True)
 

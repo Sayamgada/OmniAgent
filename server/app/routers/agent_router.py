@@ -5,6 +5,7 @@ from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.services.workflow_storage import (
@@ -31,6 +32,11 @@ from app.compiler.credential_resolver import PostgresCredentialResolver
 from app.compiler.loader import preview_to_steps
 from app.compiler.models import Overrides, StepOverride
 from app.models.agent import Agent
+from app.routers.agent_lifecycle import (
+    find_name_conflict,
+    name_conflict_detail,
+    remove_n8n_workflow_best_effort,
+)
 from app.services import n8n_client
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -339,6 +345,17 @@ async def create_workflow(
         if not result.report.is_deployable:
             return response
 
+        # Duplicate-deploy guard: one agent name per user. Checked BEFORE the
+        # n8n call so a repeat submit never creates a second n8n workflow;
+        # the DB unique constraint below is the backstop for a double-click
+        # race that slips past this check.
+        existing = find_name_conflict(db, current_user.id, body.workflow_name)
+        if existing is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=name_conflict_detail(existing),
+            )
+
         try:
             n8n_workflow = await n8n_client.create_workflow(result.workflow_json)
         except n8n_client.N8nClientError as e:
@@ -353,30 +370,40 @@ async def create_workflow(
         n8n_workflow_id = n8n_workflow["id"]
 
         # The workflow now genuinely exists in n8n regardless of what
-        # happens next -- write the Agent row even if activation fails, so
-        # we never lose track of a real n8n workflow id (same principle as
+        # happens next -- write the Agent row BEFORE activating, so we never
+        # lose track of a real n8n workflow id (same principle as
         # integration_service.connect_oauth_init keeping a pending row
-        # rather than silently dropping a half-created credential).
-        agent_status = "created"
-        last_error = None
-        try:
-            await n8n_client.activate_workflow(n8n_workflow_id)
-            agent_status = "active"
-        except n8n_client.N8nClientError as e:
-            last_error = str(e)[:_LAST_ERROR_MAX]
-            response["warnings"].append(
-                f"workflow created in n8n but activation failed: {e}"
-            )
-
+        # rather than silently dropping a half-created credential). Doing
+        # the insert first also means a lost uniqueness race only has to
+        # delete an inactive workflow, never deactivate a live one.
         agent_row = Agent(
             user_id=current_user.id,
             automation_name=automation_name,
             workflow_name=body.workflow_name,
             n8n_workflow_id=n8n_workflow_id,
-            status=agent_status,
-            last_error=last_error,
+            status="created",
+            last_error=None,
         )
-        db.add(agent_row)
+        try:
+            db.add(agent_row)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            await remove_n8n_workflow_best_effort(n8n_workflow_id)
+            existing = find_name_conflict(db, current_user.id, body.workflow_name)
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=name_conflict_detail(existing),
+            )
+
+        try:
+            await n8n_client.activate_workflow(n8n_workflow_id)
+            agent_row.status = "active"
+        except n8n_client.N8nClientError as e:
+            agent_row.last_error = str(e)[:_LAST_ERROR_MAX]
+            response["warnings"].append(
+                f"workflow created in n8n but activation failed: {e}"
+            )
         db.commit()
         db.refresh(agent_row)
 

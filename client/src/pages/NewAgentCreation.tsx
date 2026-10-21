@@ -31,6 +31,7 @@ import {
   extractWorkflow,
   getParamSchema,
   type CreateWorkflowResponse,
+  type CredentialIssue,
   type Overrides,
   type ParamValues,
   type StepParamForm,
@@ -144,6 +145,12 @@ const NewAgentCreation = () => {
   const [overrides, setOverrides] = useState<Overrides>({});
   const [unresolved, setUnresolved] = useState<UnresolvedStep[]>([]);
   const [result, setResult] = useState<CreateWorkflowResponse | null>(null);
+  // Connections the compiler refused (wrong auth type / not connected). Kept
+  // separate from the param/operation state so the form values survive while
+  // the user fixes the connection in the Integrations tab.
+  const [credentialIssues, setCredentialIssues] = useState<CredentialIssue[]>(
+    [],
+  );
 
   const activeDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedDomain) ?? domains[0],
@@ -169,6 +176,7 @@ const NewAgentCreation = () => {
     setUnresolved([]);
     setOverrides({});
     setResult(null);
+    setCredentialIssues([]);
   };
 
   const handleStepTwoContinue = async () => {
@@ -220,6 +228,9 @@ const NewAgentCreation = () => {
       workflow_name: agentName.trim(),
     });
 
+    const credIssues = res.credential_issues ?? [];
+    setCredentialIssues(credIssues);
+
     if (res.agent) {
       setResult(res);
       setPhase("result");
@@ -241,6 +252,8 @@ const NewAgentCreation = () => {
     } else if (fieldIssues.length > 0) {
       setPhase("configure");
       toast.error("Please fill in the highlighted fields");
+    } else if (credIssues.length > 0) {
+      toast.error("Fix the connection problems shown, then try again");
     } else {
       toast.error("The workflow could not be built");
     }
@@ -604,6 +617,48 @@ const NewAgentCreation = () => {
                       Step 3 of 3
                     </Badge>
                   </div>
+
+                  {credentialIssues.length > 0 && phase !== "result" && (
+                    <div
+                      role="alert"
+                      className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4"
+                    >
+                      <p className="text-sm font-medium">
+                        Some connected services can't be used by this agent
+                      </p>
+                      <ul className="space-y-2 text-sm">
+                        {credentialIssues.map((issue) => {
+                          const name =
+                            integrations.find(
+                              (i) => i.service === issue.service,
+                            )?.display_name ?? issue.service;
+                          return (
+                            <li key={issue.step}>
+                              <span className="font-medium">
+                                {issue.problem === "missing"
+                                  ? `Connect ${name}`
+                                  : `Reconnect ${name} with a compatible option`}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {issue.message}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleConnectIntegration}
+                      >
+                        Open Integrations
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Opens in a new tab so your answers here are kept. When
+                        you're done, come back and create the agent again.
+                      </p>
+                    </div>
+                  )}
 
                   {phase === "review" && (
                     <>
