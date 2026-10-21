@@ -1,0 +1,9 @@
+=== C2 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8353, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -

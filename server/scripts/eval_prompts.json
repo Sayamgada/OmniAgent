@@ -1,0 +1,142 @@
+[
+  {
+    "id": "C1",
+    "domain": "Corporate",
+    "category": "chained branching",
+    "prompt": "When an employee emails a leave request, decide whether it really is a leave request, then approve or reject it and reply to the sender.",
+    "expect": { "trigger_any_of": ["Email"], "fork": true }
+  },
+  {
+    "id": "C2",
+    "domain": "Corporate",
+    "category": "draft rule + same-service read that must be kept",
+    "prompt": "When a client email arrives, summarize the earlier emails in that conversation and draft a reply for me to review. Do not send anything.",
+    "expect": { "trigger_any_of": ["Email"], "forbid_ops": ["send"] }
+  },
+  {
+    "id": "C3",
+    "domain": "Corporate",
+    "category": "form trigger -> Slack (trigger-only rule)",
+    "prompt": "When someone submits our contact form, post the details to a Slack channel.",
+    "expect": { "trigger_any_of": ["Form Submission"] }
+  },
+  {
+    "id": "C4",
+    "domain": "Corporate",
+    "category": "two-way routing",
+    "prompt": "Mark each incoming email urgent or routine. Post urgent ones to Slack and log routine ones in a Google Sheet.",
+    "expect": { "trigger_any_of": ["Email"], "fork": true }
+  },
+  {
+    "id": "C5",
+    "domain": "Corporate",
+    "category": "schedule-triggered Sheets read (negative control)",
+    "prompt": "Every Monday at 9am, read the rows in my Pipeline Google Sheet and email me a summary.",
+    "expect": { "trigger_any_of": ["Schedule"] }
+  },
+  {
+    "id": "C6",
+    "domain": "Corporate",
+    "category": "fan-in",
+    "prompt": "Each morning, collect today's Google Calendar events and my unread Gmail, and send me one combined briefing on Slack.",
+    "expect": { "trigger_any_of": ["Schedule"] }
+  },
+  {
+    "id": "C7",
+    "domain": "Corporate",
+    "category": "non-Google services",
+    "prompt": "When a new Trello card is added to the Bugs board, create a GitHub issue with the same title.",
+    "expect": { "trigger_any_of": ["Event", "Webhook"] }
+  },
+  {
+    "id": "C8",
+    "domain": "Corporate",
+    "category": "three-way fork",
+    "prompt": "Route support emails: billing questions go to #billing on Slack, technical ones to #engineering, and everything else gets an automatic acknowledgement reply.",
+    "expect": { "trigger_any_of": ["Email"], "fork": true }
+  },
+  {
+    "id": "E1",
+    "domain": "Education",
+    "category": "form -> AI -> email",
+    "prompt": "When a student submits the assignment form, have the AI grade it against a rubric and email the student their feedback.",
+    "expect": { "trigger_any_of": ["Form Submission"] }
+  },
+  {
+    "id": "E2",
+    "domain": "Education",
+    "category": "schedule + calendar read + AI",
+    "prompt": "Every Friday, summarize this week's Google Calendar events for my class and email the summary to parents.",
+    "expect": { "trigger_any_of": ["Schedule"] }
+  },
+  {
+    "id": "E3",
+    "domain": "Education",
+    "category": "draft rule",
+    "prompt": "When a student emails me a question, draft an answer for me to review before anything is sent.",
+    "expect": { "trigger_any_of": ["Email"], "forbid_ops": ["send"] }
+  },
+  {
+    "id": "E4",
+    "domain": "Education",
+    "category": "Sheets trigger + condition",
+    "prompt": "When a new row is added to the attendance Google Sheet, if that student has been absent three times, email their guardian.",
+    "expect": { "trigger_any_of": ["Event", "Webhook"], "fork": true }
+  },
+  {
+    "id": "E5",
+    "domain": "Education",
+    "category": "schedule + read + AI",
+    "prompt": "Once a week, collect the responses from our feedback Google Form and post a digest in Slack.",
+    "expect": { "trigger_any_of": ["Schedule"] }
+  },
+  {
+    "id": "E6",
+    "domain": "Education",
+    "category": "Drive trigger",
+    "prompt": "When a new file is uploaded to the Course Materials Google Drive folder, announce it in a Slack channel.",
+    "expect": { "trigger_any_of": ["Event", "Webhook"] }
+  },
+  {
+    "id": "F1",
+    "domain": "Finance",
+    "category": "extraction",
+    "prompt": "When an invoice email arrives, extract the vendor, amount and due date and add a row to a Google Sheet.",
+    "expect": { "trigger_any_of": ["Email"] }
+  },
+  {
+    "id": "F2",
+    "domain": "Finance",
+    "category": "payment trigger",
+    "prompt": "When a Stripe payment fails, email the customer and notify the finance team on Slack.",
+    "expect": { "trigger_any_of": ["Event", "Webhook"] }
+  },
+  {
+    "id": "F3",
+    "domain": "Finance",
+    "category": "schedule",
+    "prompt": "On the first of every month, summarize last month's expenses from our Google Sheet and email a budget summary to the finance team.",
+    "expect": { "trigger_any_of": ["Schedule"] }
+  },
+  {
+    "id": "F4",
+    "domain": "Finance",
+    "category": "threshold branching",
+    "prompt": "When an expense claim email arrives, approve it if the amount is under 5000 rupees, otherwise send it to the manager for review.",
+    "expect": { "trigger_any_of": ["Email"], "fork": true }
+  },
+  {
+    "id": "X1",
+    "domain": "Finance",
+    "category": "out of scope: trading (must be refused)",
+    "prompt": "Watch stock prices and automatically buy shares whenever a price drops 5 percent.",
+    "expect": { "refuse": true }
+  },
+  {
+    "id": "X2",
+    "domain": "Corporate",
+    "category": "unlisted service -> http/webhook fallback (not a refusal)",
+    "prompt": "When I email myself 'book flight' with a destination and date, book it on airline-booking-site.example, which has no integration.",
+    "expect": { "require_any_service": ["http", "webhook"] }
+  }
+]

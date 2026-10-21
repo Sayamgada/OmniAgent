@@ -1,0 +1,65 @@
+{
+  "preview_json": {
+    "title": "Client Email Conversation Summarizer and Draft",
+    "description": "Summarizes prior emails in a client thread and creates a draft reply for review when a new email arrives.",
+    "trigger": {
+      "type": "Email",
+      "service": "gmail",
+      "description": "New email from client triggers the workflow.",
+      "n8n_trigger_resolved": true,
+      "n8n_trigger_node": {
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1.4
+      }
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "gmail",
+        "operation": "read",
+        "target": "thread",
+        "parameters": {},
+        "depends_on": [],
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "no_operation_match"
+      },
+      {
+        "step": 2,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [
+          1
+        ],
+        "instructions": "Summarize the previous messages in the email thread provided in step 1 and draft a professional reply to the client, ready for the user to review.",
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      }
+    ],
+    "output": "A draft reply summarizing the conversation, ready for the user to review."
+  },
+  "automation_name": "Client Email Conversation Summarizer and Draft",
+  "schema_version": 10,
+  "required_integrations": [
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true
+    },
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true
+    }
+  ],
+  "automation_description": "When a new client email arrives, the automation gathers previous messages in the thread, summarizes the conversation, and creates a draft reply for the user to review."
+}

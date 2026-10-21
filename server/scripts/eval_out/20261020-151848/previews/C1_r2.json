@@ -1,0 +1,94 @@
+{
+  "preview_json": {
+    "title": "Leave Request Email Approval",
+    "description": "Processes incoming leave request emails, decides approval or rejection, and replies to the employee.",
+    "trigger": {
+      "type": "Email",
+      "service": "gmail",
+      "description": "Fires when a new email arrives in Gmail.",
+      "n8n_trigger_resolved": true,
+      "n8n_trigger_node": {
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1.4
+      }
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "groq",
+        "operation": "generate",
+        "target": "",
+        "parameters": {},
+        "depends_on": [],
+        "instructions": "Analyze the email content received in the trigger and determine if it is a leave request. If it is not a leave request, treat it as rejected. If it is a leave request, evaluate eligibility based on company policy and decide whether to approve or reject the request, providing a brief justification.",
+        "condition": {
+          "branches": [
+            "approved",
+            "rejected"
+          ]
+        },
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 2,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [
+          1
+        ],
+        "branch": "approved",
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message"
+        },
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 3,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [
+          1
+        ],
+        "branch": "rejected",
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Send",
+          "value": "send",
+          "action": "Send a message"
+        },
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "An email reply is sent to the employee indicating approval or rejection of their leave request."
+  },
+  "automation_name": "Leave Request Email Approval",
+  "schema_version": 10,
+  "required_integrations": [
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true
+    },
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true
+    }
+  ],
+  "automation_description": "When an employee sends a leave request via email, the automation determines if it is a valid leave request, decides to approve or reject it, and replies to the sender with the outcome."
+}

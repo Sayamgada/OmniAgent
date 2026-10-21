@@ -1,0 +1,169 @@
+{
+  "automation_name": "Client Email Conversation Summarizer and Draft",
+  "automation_description": "When a new client email arrives, the automation gathers previous messages in the thread, summarizes the conversation, and creates a draft reply for the user to review.",
+  "schema_version": 10,
+  "task_summary": "Summarizes prior emails in a client thread and drafts a reply for review.",
+  "intent_type": "automation_preview",
+  "complexity": "medium",
+  "required_agents": [
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": ["Get many threads"]
+    },
+    {
+      "agent_name": "groq",
+      "role": "Workflow step",
+      "responsibilities": ["generate"]
+    },
+    {
+      "agent_name": "gmail",
+      "role": "Workflow step",
+      "responsibilities": ["Create a draft"]
+    }
+  ],
+  "workflow": [
+    {
+      "step": 1,
+      "description": "Get many threads",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Get many threads",
+      "input": "",
+      "output": "",
+      "operation": "list",
+      "target": "thread",
+      "parameters": {},
+      "depends_on": [],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Get Many",
+        "value": "getAll",
+        "action": "Get many threads"
+      }
+    },
+    {
+      "step": 2,
+      "description": "generate",
+      "agent": "groq",
+      "service": "groq",
+      "action": "generate",
+      "input": "",
+      "output": "",
+      "operation": "generate",
+      "target": "draft",
+      "parameters": {},
+      "depends_on": [1],
+      "n8n_resolved": false
+    },
+    {
+      "step": 3,
+      "description": "Create a draft",
+      "agent": "gmail",
+      "service": "gmail",
+      "action": "Create a draft",
+      "input": "",
+      "output": "",
+      "operation": "create",
+      "target": "draft",
+      "parameters": {},
+      "depends_on": [2],
+      "n8n_resolved": true,
+      "n8n_operation": {
+        "label": "Create",
+        "value": "create",
+        "action": "Create a draft"
+      }
+    }
+  ],
+  "inputs_required": [],
+  "expected_outputs": [
+    "A draft email is created in Gmail containing the summarized conversation and suggested reply, ready for the user to edit and send."
+  ],
+  "tools_required": ["gmail", "Gmail", "groq", "AI Provider (Groq)"],
+  "constraints": [],
+  "trigger_type": "Email",
+  "edge_cases": [],
+  "success_criteria": [
+    "A draft email is created in Gmail containing the summarized conversation and suggested reply, ready for the user to edit and send."
+  ],
+  "required_integrations": [
+    {
+      "service": "gmail",
+      "display_name": "Gmail",
+      "required": true,
+      "available": true
+    },
+    {
+      "service": "groq",
+      "display_name": "AI Provider (Groq)",
+      "required": true,
+      "available": true
+    }
+  ],
+  "preview_json": {
+    "title": "Client Email Conversation Summarizer and Draft",
+    "description": "Summarizes prior emails in a client thread and drafts a reply for review.",
+    "trigger": {
+      "type": "Email",
+      "service": "gmail",
+      "description": "Triggers when a new email from a client is received in Gmail.",
+      "n8n_trigger_resolved": true,
+      "n8n_trigger_node": {
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1.4
+      }
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "gmail",
+        "operation": "list",
+        "target": "thread",
+        "parameters": {},
+        "depends_on": [],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Get Many",
+          "value": "getAll",
+          "action": "Get many threads"
+        },
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 2,
+        "service": "groq",
+        "operation": "generate",
+        "target": "draft",
+        "parameters": {},
+        "depends_on": [1],
+        "instructions": "Using the email thread retrieved in step 1, summarize the prior conversation and compose a concise reply draft addressing the client’s latest message. Produce both the summary and the draft text.",
+        "n8n_resolved": false,
+        "n8n_operation": null,
+        "n8n_resolution_kind": "ai_subnode",
+        "n8n_subnode": {
+          "root_node_type": "@n8n/n8n-nodes-langchain.agent",
+          "connection_type": "ai_languageModel",
+          "chat_model_node_type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+          "agent_instructions_source": "step.instructions"
+        }
+      },
+      {
+        "step": 3,
+        "service": "gmail",
+        "operation": "create",
+        "target": "draft",
+        "parameters": {},
+        "depends_on": [2],
+        "n8n_resolved": true,
+        "n8n_operation": {
+          "label": "Create",
+          "value": "create",
+          "action": "Create a draft"
+        },
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "A draft email is created in Gmail containing the summarized conversation and suggested reply, ready for the user to edit and send."
+  }
+}

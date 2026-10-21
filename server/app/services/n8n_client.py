@@ -143,6 +143,43 @@ async def activate_workflow(n8n_workflow_id: str) -> dict:
     return resp.json()
 
 
+async def deactivate_workflow(n8n_workflow_id: str) -> dict:
+    """
+    Deactivates an active workflow (public API). Used by scripts/eval_harness.py
+    so a test workflow stops polling before it is deleted. Not yet verified
+    against this project's n8n instance -- confirm once with one workflow.
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            f"{_base_url()}/workflows/{n8n_workflow_id}/deactivate", headers=_headers()
+        )
+    if resp.status_code not in (200, 201):
+        raise N8nClientError(
+            f"n8n workflow deactivation failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+    return resp.json()
+
+
+async def delete_workflow(n8n_workflow_id: str) -> None:
+    """
+    Deletes a workflow (public API). Callers that created an active workflow
+    should deactivate it first. Not yet verified against this project's n8n
+    instance -- confirm once with one workflow.
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.delete(
+            f"{_base_url()}/workflows/{n8n_workflow_id}", headers=_headers()
+        )
+    if resp.status_code not in (200, 204):
+        raise N8nClientError(
+            f"n8n workflow deletion failed ({resp.status_code})",
+            status_code=resp.status_code,
+            detail=_safe_json(resp),
+        )
+
+
 async def get_credential_schema(credential_type: str) -> dict:
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(

@@ -1,0 +1,2 @@
+run_id,prompt_id,domain,category,run,expect_refuse,best_similarity,cache_would_hit,search_error,generated,gen_error,refused,compliance_misses,warnings,retry,final_missing_branch,clean,steps,needs_pick,bad_kinds,trigger_resolved,resolved,compiled,needs_user_input,compile_warnings,compile_error,expectation_notes,n8n_attempted,n8n_created,n8n_activated,n8n_deleted,n8n_error,failed_stage,seconds
+20261020-152258,C1,Corporate,chained branching,1,False,0.84,True,,True,,False,0,0,none,0,True,3,0,,True,True,True,0,0,,,True,True,False,True,,,14.8

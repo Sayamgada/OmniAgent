@@ -516,6 +516,21 @@ def _check_parallel_depends_on(step: dict, all_steps: list) -> None:
             upstream.get("service") == service
             and upstream.get("operation") == operation
         ):
+            # A step routed off one of the upstream step's own condition
+            # branches is a deliberate chain (the upstream decides, this step
+            # acts on one outcome), not two independent reads wrongly chained.
+            upstream_condition = upstream.get("condition")
+            upstream_branches = (
+                upstream_condition.get("branches")
+                if isinstance(upstream_condition, dict)
+                else None
+            )
+            if (
+                step.get("branch") is not None
+                and isinstance(upstream_branches, list)
+                and step.get("branch") in upstream_branches
+            ):
+                continue
             print(
                 f"[workflow_generator] Step {this_step} depends_on step {ref} - "
                 f"both use service '{service}' / operation '{operation}'. This is "

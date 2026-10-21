@@ -39,6 +39,7 @@ CASES = {
     "linear": "test_preview.json",
     "branching": "test_preview_branching.json",
     "fanin": "test_preview_fanin.json",
+    "leave_chained": "test_preview_leave_chained.json",
 }
 
 
@@ -150,3 +151,47 @@ def test_ai_agent_has_chat_model_wired_via_ai_language_model(case):
     assert len(agents) == 1 and len(chat_models) == 1
     conns = wf["connections"][chat_models[0]["name"]]
     assert conns["ai_languageModel"][0][0]["node"] == agents[0]["name"]
+
+
+def _reachable(wf: dict, start: str) -> set:
+    seen, stack = set(), [start]
+    while stack:
+        cur = stack.pop()
+        for branch in wf["connections"].get(cur, {}).get("main", []):
+            for t in branch or []:
+                if t["node"] not in seen:
+                    seen.add(t["node"])
+                    stack.append(t["node"])
+    return seen
+
+
+def test_leave_chained_nested_switch_wiring():
+    wf = _compile("leave_chained")
+    switches = {n["name"]: n for n in _nodes_of(wf, ".switch")}
+    assert sorted(switches) == ["Switch (step 1)", "Switch (step 2)"]
+
+    def keys(s):
+        return [r.get("outputKey") for r in s["parameters"]["rules"]["values"]]
+
+    assert keys(switches["Switch (step 1)"]) == ["leave_request", "not_leave_request"]
+    assert keys(switches["Switch (step 2)"]) == ["approved", "rejected"]
+
+    first = wf["connections"]["Switch (step 1)"]["main"]
+    second = wf["connections"]["Switch (step 2)"]["main"]
+
+    # not_leave_request has nothing hanging off it; leave_request reaches Switch 2
+    assert first[1] == []
+    downstream = set()
+    for t in first[0]:
+        downstream |= {t["node"]} | _reachable(wf, t["node"])
+    assert "Switch (step 2)" in downstream
+
+    # approved / rejected go to two distinct Gmail sends
+    gmail = {n["name"] for n in _nodes_of(wf, ".gmail")}
+    approved, rejected = second[0][0]["node"], second[1][0]["node"]
+    assert {approved, rejected} <= gmail and approved != rejected
+
+    # each Switch's fallback goes to its own NoOp sink
+    sinks = {n["name"] for n in _nodes_of(wf, ".noOp")}
+    f1, f2 = first[2][0]["node"], second[2][0]["node"]
+    assert {f1, f2} <= sinks and f1 != f2

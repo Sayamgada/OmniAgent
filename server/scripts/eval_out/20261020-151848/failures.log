@@ -1,0 +1,589 @@
+=== C1 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8346, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C1 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8346, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C2 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8353, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C2 run 2 (Corporate) stage=compile ===
+gen_error: 
+expectations: 
+bad_kinds:   needs_user_input: 1  compile_error: 
+n8n_error: 
+compliance:
+  [workflow_generator] COMPLIANCE MISS (possible): step 1 is a dependency-free 'read' on 'gmail', the same service that fires the trigger. The trigger already delivers its item - verify this step retrieves DIFFERENT data, otherwise it is a redundant re-fetch.
+warnings:
+  -
+
+=== C2 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8690, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C3 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8242, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C3 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8641, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C3 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8304, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C4 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8247, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C4 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8309, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C4 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8247, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C5 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8298, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C5 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8236, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C5 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8635, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C6 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8315, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C6 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8253, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C6 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8652, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C7 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8295, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C7 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8295, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C7 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8632, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C8 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8325, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C8 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8325, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== C8 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8263, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E1 run 1 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8655, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E1 run 2 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8318, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E1 run 3 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8655, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E2 run 1 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8286, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E2 run 2 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8623, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E2 run 3 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8623, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E3 run 1 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8229, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E3 run 2 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8229, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E3 run 3 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8628, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E4 run 1 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8644, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E4 run 2 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8245, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E4 run 3 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8245, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E5 run 1 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8313, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E5 run 2 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8313, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E5 run 3 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8251, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E6 run 1 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8309, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E6 run 2 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8646, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== E6 run 3 (Education) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8247, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F1 run 1 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8291, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F1 run 2 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8229, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F1 run 3 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8628, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F2 run 1 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8225, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F2 run 2 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8287, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F2 run 3 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8624, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F3 run 1 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8250, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F3 run 2 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8250, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F3 run 3 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8250, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F4 run 1 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8253, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F4 run 2 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8253, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== F4 run 3 (Finance) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8652, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== X1 run 1 (Finance) stage=- ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8617, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== X1 run 2 (Finance) stage=- ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8218, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== X1 run 3 (Finance) stage=- ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8218, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== X2 run 1 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8317, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== X2 run 2 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8255, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
+
+=== X2 run 3 (Corporate) stage=generate ===
+gen_error: APIStatusError("Error code: 413 - {'error': {'message': 'Request too large for model `openai/gpt-oss-120b` in organization `org_01kwhekrs7e7hv7wrs76t89rmy` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8317, please reduce your message size and try again. Need more tokens
+expectations: 
+bad_kinds:   needs_user_input: 0  compile_error: 
+n8n_error: 
+compliance:
+  -
+warnings:
+  -
