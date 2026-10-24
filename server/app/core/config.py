@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     FAISS_INDEX_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "faiss_index"))
     GROQ_API_KEY: str
 
+    GEMINI_API_KEY: str
+
     MONGO_DB_URL: str
     MONGO_DB_NAME: str
 

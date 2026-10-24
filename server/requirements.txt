@@ -17,7 +17,7 @@ pypdf
 langchain-huggingface
 sentence-transformers 
 faiss-cpu
-langchain-groq
+langchain-google-genai
 pymongo
 PyJWT
 pydantic[email]
