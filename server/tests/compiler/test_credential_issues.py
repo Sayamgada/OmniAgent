@@ -13,6 +13,7 @@ import pytest
 
 from app.compiler.interfaces import CredentialResolver, PlaceholderParamProvider
 from app.compiler.models import ResolvedNode, Step
+from app.compiler.param_schema import _NODES_JSON_PATH
 
 C = importlib.import_module("app.compiler.compile")  # not the re-exported function
 
@@ -74,7 +75,8 @@ def run(monkeypatch):
         monkeypatch.setattr(
             C, "auth_params_for_credential", lambda *a, **k: {} if accepts else None
         )
-        monkeypatch.setattr(C, "credential_required", lambda *a, **k: required)
+        if required is not None:  # None = keep the REAL credential_required
+            monkeypatch.setattr(C, "credential_required", lambda *a, **k: required)
         step = Step(step=1, service="gmail", instructions="do it")
         return C.compile([step], PlaceholderParamProvider(), StubResolver(cred), "u1")
 
@@ -121,5 +123,41 @@ def test_untyped_row_blocks_and_never_keys_credentials_by_none(run):
 
 def test_ai_step_reports_one_issue(run):
     r = run(_agent(), None, required=True)
+    assert [i.problem for i in r.report.credential_issues] == ["missing"]
+    assert r.workflow_json is None
+
+
+# ---- real credential_required (reads scripts/nodes.json) ------------------
+# The tests above stub the required-lookup; these two keep it real, because
+# the bug they guard against lived inside it: nodes whose auth defaults to
+# "none" reported "credential required", so a missing credential blocked deploy.
+
+needs_nodes_json = pytest.mark.skipif(
+    not _NODES_JSON_PATH.exists(), reason="needs the real scripts/nodes.json"
+)
+
+
+def _graphql():
+    return ResolvedNode(
+        step=1,
+        kind="action_node",
+        node_type="n8n-nodes-base.graphql",
+        type_version=1.1,
+        n8n_credential_type="httpHeaderAuth",
+        name="GraphQL",
+    )
+
+
+@needs_nodes_json
+def test_no_auth_by_default_node_without_a_credential_is_not_blocked(run):
+    r = run(_graphql(), None, required=None)
+    assert r.report.credential_issues == []
+    assert r.report.is_deployable and r.workflow_json is not None
+    assert r.report.warnings  # the user is still told no credential is connected
+
+
+@needs_nodes_json
+def test_gmail_without_a_credential_still_blocks_with_the_real_check(run):
+    r = run(_action(), None, required=None)
     assert [i.problem for i in r.report.credential_issues] == ["missing"]
     assert r.workflow_json is None

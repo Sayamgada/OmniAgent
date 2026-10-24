@@ -498,27 +498,63 @@ def get_structural_defaults(
     return out
 
 
+# displayOptions keys the credential check does NOT evaluate: a credential gated
+# by resource/operation is treated as applying (see credential_required).
+_CRED_UNEVALUATED_KEYS = {"resource", "operation"}
+
+
+def _credential_applies_by_default(
+    cred: dict[str, Any], siblings: dict[str, Any], type_version: float
+) -> bool:
+    """True if this credentials[] entry applies when the node is created with
+    its default parameters. Conditions on resource/operation are dropped (not
+    evaluated), and a condition on a parameter with no usable default is
+    skipped by _display_options_match -- both mean "applies", so anything this
+    cannot decide keeps the credential required."""
+    options = cred.get("displayOptions") or {}
+    kept = {
+        mode: {
+            k: v
+            for k, v in (options.get(mode) or {}).items()
+            if k.lstrip("/") not in _CRED_UNEVALUATED_KEYS
+        }
+        for mode in ("show", "hide")
+    }
+    return _display_options_match(kept, None, None, type_version, siblings)
+
+
 def credential_required(node_type: str, type_version: float) -> bool:
     """
     True if this node REQUIRES a credential at this typeVersion: at least one
-    `credentials[]` entry that applies at this version is marked
-    `required: true`. Nodes with several selector-gated entries (Slack,
-    Google Sheets) list each as required, so "any applicable entry" is the
-    right reading -- one of them must be connected. Nodes with no
-    credentials (If/Set/Code...) and nodes unknown to nodes.json are never
-    required, so this can only under-block, never wrongly block them.
-    Known limit: entries gated by resource/operation (not just by an auth
-    selector) are not evaluated here.
+    `credentials[]` entry that is marked `required: true` AND applies with the
+    node's DEFAULT parameters.
+
+    "Applies by default" matters for the two shapes nodes.json uses:
+      * pick-one-auth nodes (Airtable, Slack, Google Sheets, AWS ...): each
+        method is its own entry, gated by a selector (`authentication`,
+        `authType` ...). The selector's default selects one of them, so one is
+        required -- True.
+      * optional-auth nodes (GraphQL, Webhook, Wait, HTTP Request, Git,
+        Form/Chat Trigger ...): the same kind of entries, but the selector
+        defaults to "none", so no entry applies and the node runs without a
+        credential -- False. Before this, "any entry marked required" made
+        these report True and a missing credential blocked deploy.
+    Nodes with no credentials (If/Set/Code...) and nodes unknown to nodes.json
+    are never required, so this can only under-block, never wrongly block them.
+    Conditions this cannot evaluate (resource/operation, a parameter with no
+    default, operator forms it doesn't know) count as "applies", so uncertainty
+    keeps the credential required.
     """
     node_def = _get_node_def(node_type, type_version)
     if node_def is None:
         return False
+    siblings = _sibling_defaults(
+        node_def.get("properties") or [], None, None, type_version
+    )
     for c in node_def.get("credentials") or []:
-        show = (c.get("displayOptions") or {}).get("show") or {}
-        ver = show.get("@version")
-        if ver is not None and not _value_matches(type_version, ver):
-            continue
-        if c.get("required"):
+        if c.get("required") and _credential_applies_by_default(
+            c, siblings, type_version
+        ):
             return True
     return False
 
