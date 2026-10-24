@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Button } from "../ui/button";
 import type { CreateWorkflowResponse } from "../../lib/agentsApi";
@@ -72,9 +73,14 @@ export const CreateResult = ({
         </ul>
       )}
 
-      <Button variant="outline" onClick={onCreateAnother}>
-        Create another agent
-      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Button asChild>
+          <Link to="/agents">View my agents</Link>
+        </Button>
+        <Button variant="outline" onClick={onCreateAnother}>
+          Create another agent
+        </Button>
+      </div>
     </div>
   );
 };

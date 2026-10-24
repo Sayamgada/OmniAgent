@@ -26,10 +26,13 @@ import { ConfigureWorkflowStep } from "../components/workflow/ConfigureWorkflowS
 import { CreateResult } from "../components/workflow/CreateResult";
 import { OperationPicker } from "../components/workflow/OperationPicker";
 import {
+  ApiError,
   activateAgent,
+  checkIntegrations,
   createWorkflow,
   extractWorkflow,
   getParamSchema,
+  requiredIntegrationsOf,
   type CreateWorkflowResponse,
   type CredentialIssue,
   type Overrides,
@@ -151,6 +154,19 @@ const NewAgentCreation = () => {
   const [credentialIssues, setCredentialIssues] = useState<CredentialIssue[]>(
     [],
   );
+  // Set when create-workflow answers 409 agent_name_taken. Keeps the name that
+  // was rejected so the inline rename field can tell "still the same" from "changed".
+  const [nameTaken, setNameTaken] = useState<{
+    name: string;
+    message: string;
+  } | null>(null);
+  // The domain + description the current `workflow` was generated from. Lets
+  // step 2's Continue tell "nothing changed" (keep the workflow) from "edited"
+  // (revise it via edit_of) from "different domain" (generate fresh).
+  const [generatedFor, setGeneratedFor] = useState<{
+    domain: string;
+    description: string;
+  } | null>(null);
 
   const activeDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedDomain) ?? domains[0],
@@ -177,6 +193,7 @@ const NewAgentCreation = () => {
     setOverrides({});
     setResult(null);
     setCredentialIssues([]);
+    setNameTaken(null);
   };
 
   const handleStepTwoContinue = async () => {
@@ -190,29 +207,67 @@ const NewAgentCreation = () => {
       return;
     }
 
+    const domain = domainMap[selectedDomain];
+    const trimmed = description.trim();
+
+    // A workflow already exists for this domain: this Continue is either a
+    // no-op (description untouched) or an edit of that workflow.
+    const canRevise =
+      workflow !== null &&
+      automationName !== null &&
+      generatedFor !== null &&
+      generatedFor.domain === domain;
+
+    if (canRevise && generatedFor.description === trimmed) {
+      setStep(3); // keep the workflow (and any revision) the user already reviewed
+      return;
+    }
+
+    // Never look a revision up in the cache: a small edit still matches the
+    // workflow it revises and would silently bring the old one back.
+    const editOf = canRevise ? automationName : null;
+    const previous = { workflow, integrations, allRequiredAvailable };
+
     setStep(3);
     setWorkflow(null);
     setIntegrations([]);
     setAllRequiredAvailable(false);
     setGenerating(true);
-    resetCreateFlow();
+    if (editOf) setPhase("review");
+    else resetCreateFlow();
 
     try {
       const data = await extractWorkflow(token, {
-        domain: domainMap[selectedDomain],
+        domain,
         description: `Agent Name: ${agentName}\n${description}`,
+        ...(editOf ? { edit_of: editOf } : {}),
       });
 
+      if (editOf) resetCreateFlow(); // forms/overrides belong to the old workflow
       setWorkflow(data.workflow);
       setIntegrations(data.integrations);
       setAllRequiredAvailable(data.all_required_available);
+      setGeneratedFor({ domain, description: trimmed });
 
-      toast.success("AI output generated successfully");
+      toast.success(
+        editOf
+          ? "Workflow updated with your changes"
+          : "AI output generated successfully",
+      );
     } catch (err: any) {
-      setWorkflow(null);
-      setIntegrations([]);
-      setAllRequiredAvailable(false);
-      toast.error(err.message || "Failed to generate AI output");
+      if (editOf) {
+        // A failed edit must not cost the user the workflow they already had.
+        setWorkflow(previous.workflow);
+        setIntegrations(previous.integrations);
+        setAllRequiredAvailable(previous.allRequiredAvailable);
+        setStep(2);
+        toast.error(err.message || "Failed to apply your changes");
+      } else {
+        setWorkflow(null);
+        setIntegrations([]);
+        setAllRequiredAvailable(false);
+        toast.error(err.message || "Failed to generate AI output");
+      }
     } finally {
       setGenerating(false);
     }
@@ -222,11 +277,25 @@ const NewAgentCreation = () => {
   // form with per-field errors (missing params) or the unresolved-steps view.
   const submitCreate = async (params: ParamValues) => {
     if (!automationName) return;
-    const res = await createWorkflow(token, automationName, {
-      params,
-      overrides,
-      workflow_name: agentName.trim(),
-    });
+    const workflowName = agentName.trim();
+    let res: CreateWorkflowResponse;
+    try {
+      res = await createWorkflow(token, automationName, {
+        params,
+        overrides,
+        workflow_name: workflowName,
+      });
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "agent_name_taken") {
+        // Stay on step 3 so the typed answers survive; the rename field is
+        // shown above the form.
+        setNameTaken({ name: workflowName, message: err.message });
+        toast.error("You already have an agent with this name");
+        return;
+      }
+      throw err;
+    }
+    setNameTaken(null);
 
     const credIssues = res.credential_issues ?? [];
     setCredentialIssues(credIssues);
@@ -332,15 +401,18 @@ const NewAgentCreation = () => {
     }
   };
 
-  // Re-runs extract-workflow but keeps the current workflow: only the
-  // integration status is refreshed.
+  // Refreshes integration status for the workflow on screen only. It checks
+  // that workflow's own required_integrations; it must not re-run extraction,
+  // whose similarity search would match the original of an edited workflow and
+  // report the wrong integrations (and write to Mongo/FAISS on every click).
   const handleRecheckIntegrations = async () => {
+    if (!workflow) return;
     setRechecking(true);
     try {
-      const data = await extractWorkflow(token, {
-        domain: domainMap[selectedDomain],
-        description: `Agent Name: ${agentName}\n${description}`,
-      });
+      const data = await checkIntegrations(
+        token,
+        requiredIntegrationsOf(workflow),
+      );
       setIntegrations(data.integrations);
       setAllRequiredAvailable(data.all_required_available);
     } catch (err) {
@@ -356,11 +428,15 @@ const NewAgentCreation = () => {
 
   const handleCreateAnother = () => {
     resetCreateFlow();
+    setGeneratedFor(null);
     setWorkflow(null);
     setIntegrations([]);
     setAllRequiredAvailable(false);
     setStep(1);
   };
+
+  // Back to step 2 with the typed name and description kept.
+  const handleEditPrompt = () => setStep(2);
 
   const handleBack = () => {
     if (step === 3 && (phase === "configure" || phase === "unresolved")) {
@@ -571,6 +647,15 @@ const NewAgentCreation = () => {
                       <p className="text-xs text-primary/90">
                         {activeDomain.hint}
                       </p>
+                      {workflow &&
+                        generatedFor &&
+                        generatedFor.domain === domainMap[selectedDomain] && (
+                          <p className="text-xs text-muted-foreground">
+                            {description.trim() === generatedFor.description
+                              ? "No changes to the description. Continue keeps your current workflow."
+                              : "You're editing a generated workflow. Continue revises it with your changes instead of starting over."}
+                          </p>
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -657,6 +742,32 @@ const NewAgentCreation = () => {
                         Opens in a new tab so your answers here are kept. When
                         you're done, come back and create the agent again.
                       </p>
+                    </div>
+                  )}
+
+                  {nameTaken && phase !== "result" && (
+                    <div
+                      role="alert"
+                      className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 p-4"
+                    >
+                      <Label htmlFor="agent-name-retry">Agent name</Label>
+                      <Input
+                        id="agent-name-retry"
+                        value={agentName}
+                        aria-invalid={agentName.trim() === nameTaken.name}
+                        onChange={(event) => setAgentName(event.target.value)}
+                        className="border-border/80 bg-card/70 focus-visible:ring-primary"
+                      />
+                      {agentName.trim() === nameTaken.name ? (
+                        <p className="text-xs text-destructive">
+                          {nameTaken.message}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Press Create Agent to continue with the new name. Your
+                          answers are kept.
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -762,6 +873,17 @@ const NewAgentCreation = () => {
               Back
             </Button>
 
+            {step === 3 && phase === "review" && workflow && (
+              <Button
+                variant="outline"
+                onClick={handleEditPrompt}
+                disabled={busy || generating || rechecking}
+                className="border-border bg-card/60 hover:bg-card"
+              >
+                Edit prompt
+              </Button>
+            )}
+
             {step === 1 && (
               <Button
                 onClick={() => setStep(2)}
@@ -799,6 +921,8 @@ const NewAgentCreation = () => {
                   busy ||
                   generating ||
                   !workflow ||
+                  !agentName.trim() ||
+                  agentName.trim() === nameTaken?.name ||
                   (phase === "review" && !allRequiredAvailable)
                 }
                 className={cn(
