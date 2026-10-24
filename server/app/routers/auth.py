@@ -11,7 +11,7 @@ from app.core.auth import (
     settings,
 )
 from app.services.auth import create_user, get_user_by_email
-from app.schemas.user import UserCreate, Token, UserOut
+from app.schemas.user import UserCreate, UserSignup, Token, UserOut
 
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
@@ -51,16 +51,44 @@ async def google_callback(request: Request, db: Session = Depends(get_postgres_d
         )
 
     email = userinfo.get("email")
+    google_sub = userinfo.get("sub")
+    if not email or not google_sub:
+        raise HTTPException(
+            status_code=400, detail="Google did not return an email address"
+        )
+    # An email Google has not verified proves nothing about who owns it.
+    if userinfo.get("email_verified") not in (True, "true"):
+        raise HTTPException(
+            status_code=400, detail="Your Google email address is not verified"
+        )
+
     db_user = get_user_by_email(db, email)
     if not db_user:
         new_user = UserCreate(
             email=email,
             full_name=userinfo.get("name"),
             provider="google",
-            provider_id=userinfo.get("sub"),
+            provider_id=google_sub,
             password=None,
         )
         db_user = create_user(db, new_user)
+    elif db_user.provider != "google":
+        # Pre-hijack guard: an account with this email already exists and was
+        # created with a password nobody has proven they own the email for
+        # (anyone can sign up as victim@example.com). Never hand its session to
+        # whoever arrives via Google; the owner signs in with their password.
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "An account with this email already exists. "
+                "Sign in with your email and password instead."
+            ),
+        )
+    elif db_user.provider_id != google_sub:
+        raise HTTPException(
+            status_code=409,
+            detail="This email is already linked to a different Google account.",
+        )
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -88,7 +116,7 @@ def signin(
 
 
 @router.post("/signup", response_model=UserOut)
-def signup(user: UserCreate, db: Session = Depends(get_postgres_db)):
+def signup(user: UserSignup, db: Session = Depends(get_postgres_db)):
     if not user.password or len(user.password) < MIN_PASSWORD_LENGTH:
         raise HTTPException(
             status_code=400,
@@ -102,4 +130,14 @@ def signup(user: UserCreate, db: Session = Depends(get_postgres_db)):
     db_user = get_user_by_email(db, user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return create_user(db, user)
+    # Build the internal model ourselves: provider is always "local" here.
+    return create_user(
+        db,
+        UserCreate(
+            email=user.email,
+            full_name=user.full_name,
+            password=user.password,
+            provider="local",
+            provider_id=None,
+        ),
+    )
