@@ -23,6 +23,7 @@ from app.services.workflow_generator import (
     CURRENT_SCHEMA_VERSION,
 )
 from app.services.automation_preview_service import AutomationPreviewService
+from app.services.workflow_revision import unique_revision_name
 from app.compiler import (
     SuppliedParamProvider,
     build_param_form,
@@ -57,12 +58,15 @@ Domain = Literal["Corporate", "Education", "Finance"]
 #   unrelated scores:   max 0.672 (of the pairs that even placed in top-10;
 #                        most unrelated pairs didn't place at all, so the
 #                        real ceiling for "unrelated" is likely lower than this)
-#   -> 0.70 sits with margin below the true-match floor and above the
-#      highest confirmed unrelated score.
+#   -> 0.75 (chosen 2026-10-22) sits just below the true-match floor (0.793,
+#      ~0.04 margin) and well above the highest confirmed unrelated score.
+#      It is deliberately loose for recall while the index is small; the
+#      cost is that a small edit to a prompt still hits its own cached
+#      workflow, which is why edits bypass this check (see edit_of below).
 #
 # Re-run scripts/calibrate_threshold.py whenever EMBEDDING_MODEL or the
-# FAISS index changes -- do not raise this back toward 0.75+ without
-# re-measuring the true-match floor first.
+# FAISS index changes -- if the true-match floor drops below ~0.78, lower
+# this again rather than leaving it above the floor.
 SIMILARITY_THRESHOLD = 0.75
 
 
@@ -70,12 +74,19 @@ class WorkflowRequest(BaseModel):
     domain: Domain
     description: str = Field(..., min_length=3)
     top_k: int = 5
+    # automation_name of the workflow this request revises. Set by the wizard's
+    # "Edit prompt" loop; skips the FAISS cache and revises that workflow.
+    edit_of: Optional[str] = Field(default=None, min_length=1)
 
 
 class WorkflowResponse(BaseModel):
     workflow: dict
     integrations: list[dict]
     all_required_available: bool
+
+
+async def _preview_name_taken(name: str) -> bool:
+    return await AutomationPreviewService.get_by_name(name) is not None
 
 
 @router.post("/extract-workflow", response_model=WorkflowResponse)
@@ -86,13 +97,40 @@ async def extract_workflow(
 ):
     try:
 
-        docs = search_automations(
-            query=body.description,
-            category=body.domain,
-            top_k=body.top_k,
+        docs = (
+            []
+            if body.edit_of
+            else search_automations(
+                query=body.description,
+                category=body.domain,
+                top_k=body.top_k,
+            )
         )
 
-        if not docs:
+        if body.edit_of:
+            # Edit loop. Never serve the cache here: a small edit still scores
+            # >= SIMILARITY_THRESHOLD against the workflow it revises and would
+            # come back unchanged. Revise the previous preview instead.
+            previous = await AutomationPreviewService.get_by_name(body.edit_of)
+            if previous is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"No preview found for edit_of={body.edit_of!r}",
+                )
+            workflow = await generate_groq_workflow(
+                domain=body.domain,
+                description=body.description,
+                context="",
+                edit_base=previous,
+            )
+            # Unique name: automation_name has a UNIQUE index and previews are
+            # shared across users, so never reuse or overwrite the original's.
+            workflow["automation_name"] = await unique_revision_name(
+                previous["automation_name"], _preview_name_taken
+            )
+            # Mongo only: FAISS holds the seed knowledge base, not every revision.
+            await store_generated_workflow_mongo(workflow)
+        elif not docs:
 
             workflow = await generate_groq_workflow(
                 domain=body.domain,

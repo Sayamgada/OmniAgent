@@ -12,6 +12,7 @@ from app.core.n8n_operation_registry import (
     resolve_http_method,
 )
 from app.core.integration_catalog import INTEGRATION_CATALOG
+from app.services.workflow_revision import render_edit_section
 
 # Service keys the catalog carries for generic/abstract auth mechanisms, not
 # real external services (e.g. the raw "give me a header auth credential"
@@ -817,6 +818,7 @@ async def generate_groq_workflow(
     domain: str,
     description: str,
     context: str,
+    edit_base: dict | None = None,
 ):
 
     SYSTEM_INSTRUCTION = """
@@ -1410,6 +1412,11 @@ async def generate_groq_workflow(
         Similar Automations:
         {context if context else "None"}
     """
+
+    # Edit loop: only when revising a previous preview. A normal request builds
+    # exactly the same user_content as before.
+    if edit_base is not None:
+        user_content += "\n" + render_edit_section(edit_base)
 
     system_instruction = SYSTEM_INSTRUCTION.replace(
         "{SERVICE_WHITELIST}", _service_whitelist_text()
