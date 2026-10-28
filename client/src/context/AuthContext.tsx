@@ -1,9 +1,16 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 
 const STORAGE_KEY = "omniagent_session";
-const TOKEN_KEY = "omniagent_token";  // New: store JWT
-const USER_KEY = "omniagent_user";   // optional user payload cache
+const TOKEN_KEY = "omniagent_token"; // New: store JWT
+const USER_KEY = "omniagent_user"; // optional user payload cache
 
 type User = {
   id?: string;
@@ -14,7 +21,7 @@ type User = {
 type AuthContextValue = {
   isLoggedIn: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;  // Updated signature
+  login: (email: string, password: string) => Promise<void>; // Updated signature
   loginWithToken: (token: string) => void;
   logout: () => void;
   token: string | null;
@@ -35,7 +42,7 @@ const getStoredUser = (): User | null => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split(".")[1]));
       return {
         id: payload.sub ?? payload.user_id,
         email: payload.email,
@@ -57,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       return payload.exp * 1000 > Date.now();
-
     } catch {
       return false;
     }
@@ -95,56 +101,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", sync);
   }, []);
 
-  const value = useMemo(() => ({
-    isLoggedIn,
-    user,
-    token: localStorage.getItem(TOKEN_KEY),
-    loginWithToken: (token: string) => {
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(STORAGE_KEY, "1");
+  const value = useMemo(
+    () => ({
+      isLoggedIn,
+      user,
+      token: localStorage.getItem(TOKEN_KEY),
+      loginWithToken: (token: string) => {
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(STORAGE_KEY, "1");
 
-      const decoded = (() => {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          return {
-            id: payload.sub ?? payload.user_id,
-            email: payload.email ?? payload.sub,
-            ...payload,
-          };
-        } catch {
-          return null;
+        const decoded = (() => {
+          try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            return {
+              id: payload.sub ?? payload.user_id,
+              email: payload.email ?? payload.sub,
+              ...payload,
+            };
+          } catch {
+            return null;
+          }
+        })();
+
+        if (decoded) {
+          localStorage.setItem(USER_KEY, JSON.stringify(decoded));
         }
-      })();
 
-      if (decoded) {
-        localStorage.setItem(USER_KEY, JSON.stringify(decoded));
-      }
+        setIsLoggedIn(true);
+        setUser(decoded);
+      },
+      login: async (email: string, password: string) => {
+        const formData = new FormData();
+        formData.append("username", email);
+        formData.append("password", password);
 
-      setIsLoggedIn(true);
-      setUser(decoded);
-    },
-    login: async (email: string, password: string) => {
-      const formData = new FormData();
-      formData.append('username', email);
-      formData.append('password', password);
-
-      try {
-        const response = await fetch('http://localhost:8000/auth/signin', {
-          method: 'POST',
-          body: formData,
-        });
+        let response: Response;
+        try {
+          response = await fetch("http://localhost:8000/auth/signin", {
+            method: "POST",
+            body: formData,
+          });
+        } catch (error) {
+          toast.error("Cannot reach the server. Please try again.");
+          throw error;
+        }
 
         if (!response.ok) {
-          throw new Error('Login failed');
+          const err = await response.json().catch(() => ({}));
+          // 404 "no account", 400 "uses Google", 401 "wrong password", 403 "deactivated"
+          const message =
+            typeof err.detail === "string" ? err.detail : "Sign in failed";
+          toast.error(message);
+          throw new Error(message);
         }
 
         const data = await response.json();
         localStorage.setItem(TOKEN_KEY, data.access_token);
-        localStorage.setItem(STORAGE_KEY, "1");  // Keep your flag
+        localStorage.setItem(STORAGE_KEY, "1");
 
         const decoded = (() => {
           try {
-            const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+            const payload = JSON.parse(atob(data.access_token.split(".")[1]));
             return {
               id: payload.sub ?? payload.user_id,
               email: payload.email ?? email,
@@ -156,25 +173,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })();
 
         localStorage.setItem(USER_KEY, JSON.stringify(decoded));
-
         setIsLoggedIn(true);
         setUser(decoded);
-        toast.success('Welcome back! Your workspace is ready.');
-      } catch (error) {
-        toast.error('Invalid email or password');
-        console.error('Login error:', error);
-        throw error;  // Re-throw for handleSubmit catch
-      }
-    },
-    logout: () => {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-      setIsLoggedIn(false);
-      setUser(null);
-      toast.success('Logged out');
-    },
-  }), [isLoggedIn, user]);
+        toast.success("Welcome back! Your workspace is ready.");
+      },
+      logout: () => {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setIsLoggedIn(false);
+        setUser(null);
+        toast.success("Logged out");
+      },
+    }),
+    [isLoggedIn, user],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

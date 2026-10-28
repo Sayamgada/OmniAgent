@@ -1,5 +1,5 @@
-import { type FormEvent, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,13 +9,14 @@ import AuthPageShell from "../components/auth/AuthPageShell";
 import GoogleIcon from "../components/auth/GoogleIcon";
 import Navbar from "../components/landing/Navbar";
 import { Button } from "../components/ui/button";
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from "../context/AuthContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const SignIn = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState({ email: false, password: false });
@@ -24,6 +25,17 @@ const SignIn = () => {
   const emailValid = EMAIL_RE.test(email.trim());
   const passwordValid = password.length >= 8;
   const canSubmit = emailValid && passwordValid;
+
+  // Google sign-in errors arrive from the backend as /sign-in?error=...
+  useEffect(() => {
+    const err = searchParams.get("error");
+    if (err) {
+      // fixed id prevents React StrictMode from showing the toast twice in dev
+      toast.error(err, { id: "oauth-error" });
+      // clear ?error= so a refresh doesn't repeat the toast
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const emailError = useMemo(() => {
     if (!touched.email) return undefined;
@@ -40,25 +52,24 @@ const SignIn = () => {
     return undefined;
   }, [password, touched.password]);
 
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setTouched({ email: true, password: true });
 
-  
-const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setTouched({ email: true, password: true });
-  
-  if (!canSubmit) return;
-  
-  setSubmitting(true);
-  
-  try {
-    await login(email, password);  // Now calls backend!
-    navigate('/dashboard');
-  } catch (error) {
-    // Error already toasted by AuthContext
-  } finally {
-    setSubmitting(false);
-  }
-};
+    if (!canSubmit) return;
+
+    setSubmitting(true);
+
+    try {
+      await login(email.trim(), password);
+      navigate("/dashboard");
+    } catch {
+      // AuthContext.login already shows the backend's error message as a toast
+      // (e.g. "No account found with this email", "Incorrect password").
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleGoogle = () => {
     window.location.href = "http://localhost:8000/auth/google/login";
@@ -111,7 +122,12 @@ const handleSubmit = async (e: FormEvent) => {
               <button
                 type="button"
                 className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-[#007BFF] hover:underline"
-                onClick={() => toast("Password reset", { description: "Check your email when this flow is connected." })}
+                onClick={() =>
+                  toast("Password reset", {
+                    description:
+                      "Check your email when this flow is connected.",
+                  })
+                }
               >
                 Forgot password?
               </button>
@@ -137,7 +153,9 @@ const handleSubmit = async (e: FormEvent) => {
                 <span className="w-full border-t border-[#2A2A2A]" />
               </div>
               <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-                <span className="bg-[#1E1E1E]/95 px-3 text-muted-foreground">or</span>
+                <span className="bg-[#1E1E1E]/95 px-3 text-muted-foreground">
+                  or
+                </span>
               </div>
             </div>
 
@@ -164,7 +182,9 @@ const handleSubmit = async (e: FormEvent) => {
           </form>
         </AuthCard>
 
-        <p className="mt-10 max-w-md text-center text-xs text-muted-foreground/80">No coding required — describe what you need in plain language.</p>
+        <p className="mt-10 max-w-md text-center text-xs text-muted-foreground/80">
+          No coding required — describe what you need in plain language.
+        </p>
       </main>
     </AuthPageShell>
   );
