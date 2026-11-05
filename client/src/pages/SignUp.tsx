@@ -1,5 +1,5 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Lock, Mail, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,7 +15,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
+  const intent = searchParams.get("intent")?.trim() ?? "";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,7 +80,11 @@ const SignUp = () => {
 
       // Auto-login new user
       await login(email.trim(), password);
-      navigate('/dashboard');
+      navigate(
+        intent
+          ? `/new-agent?intent=${encodeURIComponent(intent)}`
+          : "/dashboard",
+      );
 
     } catch (error) {
       toast.error('Signup failed. Try again.');

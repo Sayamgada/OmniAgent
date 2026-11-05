@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
@@ -117,11 +118,14 @@ const stepMotion = {
 
 const NewAgentCreation = () => {
   const { token, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");
   const [agentName, setAgentName] = useState("Omni Ops Assistant");
   const [description, setDescription] = useState(
-    "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities.",
+    () =>
+      searchParams.get("intent")?.trim() ||
+      "Create an AI assistant that helps draft professional emails and schedule meetings with clear priorities.",
   );
 
   const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(
