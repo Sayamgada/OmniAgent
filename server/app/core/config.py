@@ -45,6 +45,8 @@ class Settings(BaseSettings):
 
     FRONTEND_BASE_URL: str
 
+    N8N_ALLOW_PRIVATE_HOSTS: bool = True
+
     class Config:
         env_file = ".env"
         extra = "ignore"

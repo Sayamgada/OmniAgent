@@ -5,15 +5,20 @@ verified). Creates a throwaway hourly-schedule workflow, walks it through
 get -> activate -> executions -> deactivate -> delete, prints what n8n
 returns at each step, and always tries to delete it at the end.
 
-    python -m scripts.verify_n8n_lifecycle
+    python -m scripts.verify_n8n_lifecycle --user-email you@example.com
 
-Run from server/. Needs N8N_BASE_URL / N8N_API_KEY in your env as usual.
+Run from server/. Uses that user's own n8n connection (PUT /users/me/n8n).
 """
 
+import argparse
 import asyncio
 import json
 
-from app.services import n8n_client
+from cryptography.fernet import InvalidToken
+
+from app.database import get_postgres_db
+from app.models.user import User
+from app.services.n8n_client import N8nNotConfigured, get_n8n_client
 
 WORKFLOW = {
     "name": "omniagent-lifecycle-check (safe to delete)",
@@ -57,40 +62,50 @@ async def step(label, coro):
         return None
 
 
-async def main():
-    wf = await step("create_workflow", n8n_client.create_workflow(WORKFLOW))
+async def main(n8n):
+    wf = await step("create_workflow", n8n.create_workflow(WORKFLOW))
     if not wf:
         return
     wf_id = wf["id"]
     try:
-        got = await step(
-            "get_workflow (expect active=False)", n8n_client.get_workflow(wf_id)
-        )
+        got = await step("get_workflow (expect active=False)", n8n.get_workflow(wf_id))
         print("     active =", (got or {}).get("active"))
-        await step("activate_workflow", n8n_client.activate_workflow(wf_id))
-        got = await step(
-            "get_workflow (expect active=True)", n8n_client.get_workflow(wf_id)
-        )
+        await step("activate_workflow", n8n.activate_workflow(wf_id))
+        got = await step("get_workflow (expect active=True)", n8n.get_workflow(wf_id))
         print("     active =", (got or {}).get("active"))
-        ex = await step("list_executions", n8n_client.list_executions(wf_id, 5))
+        ex = await step("list_executions", n8n.list_executions(wf_id, 5))
         if ex is not None:
             print(
                 "     keys =", list(ex.keys()), "| count =", len(ex.get("data") or [])
             )
             if ex.get("data"):
                 print("     sample =", json.dumps(ex["data"][0])[:300])
-        await step("deactivate_workflow", n8n_client.deactivate_workflow(wf_id))
-        got = await step(
-            "get_workflow (expect active=False)", n8n_client.get_workflow(wf_id)
-        )
+        await step("deactivate_workflow", n8n.deactivate_workflow(wf_id))
+        got = await step("get_workflow (expect active=False)", n8n.get_workflow(wf_id))
         print("     active =", (got or {}).get("active"))
     finally:
-        await step("delete_workflow", n8n_client.delete_workflow(wf_id))
+        await step("delete_workflow", n8n.delete_workflow(wf_id))
         await step(
             "get_workflow after delete (expect FAIL status=404)",
-            n8n_client.get_workflow(wf_id),
+            n8n.get_workflow(wf_id),
+        )
+
+
+def _client_for(email: str):
+    gen = get_postgres_db()
+    db = next(gen) if hasattr(gen, "__next__") else gen
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise SystemExit(f"No user with email {email!r}")
+    try:
+        return get_n8n_client(user)
+    except (N8nNotConfigured, InvalidToken):
+        raise SystemExit(
+            f"{email} has no usable n8n connection. Connect one first (PUT /users/me/n8n)."
         )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--user-email", required=True)
+    asyncio.run(main(_client_for(ap.parse_args().user_email)))

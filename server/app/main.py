@@ -15,6 +15,7 @@ from app.models.user import User  # noqa: F401
 from app.models.integration import Integration
 from fastapi import APIRouter, Depends
 from contextlib import asynccontextmanager
+from app.routers.n8n_settings import router as n8n_settings_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -47,6 +48,7 @@ app.include_router(auth_router)
 app.include_router(agent_router)
 app.include_router(agent_lifecycle_router)
 app.include_router(integration_router)
+app.include_router(n8n_settings_router)
 
 
 @app.get("/")

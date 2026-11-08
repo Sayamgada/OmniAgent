@@ -21,9 +21,13 @@ Usage (from server/):
     python scripts/eval_harness.py                       # offline stages, 1 run per prompt
     python scripts/eval_harness.py --runs 3              # numbers for the report
     python scripts/eval_harness.py --only C1,C2
-    python scripts/eval_harness.py --n8n                 # also create in n8n (dummy credentials), then delete
+    python scripts/eval_harness.py --n8n --user-email you@example.com    # also create in n8n (dummy credentials), then delete
     python scripts/eval_harness.py --n8n --activate --user-email you@example.com
-    python scripts/eval_harness.py --cleanup             # delete anything left in the ledger
+    python scripts/eval_harness.py --cleanup --user-email you@example.com  # delete anything left in the ledger
+
+--n8n, --activate and --cleanup run against THAT user's own n8n connection
+(PUT /users/me/n8n). Run --cleanup with the same --user-email that created the
+leftovers: the ledger stores workflow ids only, not which instance they are on.
 
 --activate uses YOUR real credentials, so a Gmail trigger could briefly poll
 your inbox; each workflow is deactivated and deleted straight after. It asks
@@ -116,7 +120,6 @@ def _load_app(need_resolver: bool) -> SimpleNamespace:
         compile as compile_workflow,
     )
     from app.compiler.loader import preview_to_steps
-    from app.services import n8n_client
     from app.services.vectorstore import search_automations
     from app.services.workflow_generator import (
         _collect_missing_branch_problems,
@@ -131,7 +134,7 @@ def _load_app(need_resolver: bool) -> SimpleNamespace:
         compile=compile_workflow,
         placeholder=PlaceholderParamProvider,
         dummy_resolver=DummyCredentialResolver,
-        n8n=n8n_client,
+        n8n=None,  # attached per user by _attach_n8n
         pg_resolver=None,
     )
     if need_resolver:
@@ -146,6 +149,31 @@ def _open_db():
 
     gen = get_postgres_db()
     return next(gen) if hasattr(gen, "__next__") else gen
+
+
+def _resolve_user(email: str):
+    from app.models.user import User
+
+    db = _open_db()
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise SystemExit(f"No user with email {email!r}")
+    return db, user
+
+
+def _attach_n8n(app, user) -> None:
+    """Puts the user's own N8nClient (their stored n8n connection) on the app namespace."""
+    from cryptography.fernet import InvalidToken
+
+    from app.services.n8n_client import N8nNotConfigured, get_n8n_client
+
+    try:
+        app.n8n = get_n8n_client(user)
+    except (N8nNotConfigured, InvalidToken):
+        raise SystemExit(
+            f"{user.email} has no usable n8n connection. "
+            "Connect one first (PUT /users/me/n8n)."
+        )
 
 
 # --------------------------------------------------------------------------
@@ -602,13 +630,9 @@ async def run_all(args) -> list[dict]:
         raise SystemExit("No prompts selected.")
 
     ctx = {}
-    if args.activate:
-        db = _open_db()
-        from app.models.user import User
-
-        user = db.query(User).filter(User.email == args.user_email).first()
-        if user is None:
-            raise SystemExit(f"No user with email {args.user_email!r}")
+    if args.n8n:  # --activate implies --n8n
+        db, user = _resolve_user(args.user_email)
+        _attach_n8n(app, user)
         ctx = {"db": db, "user": user}
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -650,7 +674,7 @@ def parse_args(argv=None):
     )
     ap.add_argument(
         "--user-email",
-        help="OmniAgent user whose connected credentials to use with --activate",
+        help="OmniAgent user whose n8n instance to use (and, with --activate, whose connected credentials)",
     )
     ap.add_argument(
         "--yes", action="store_true", help="skip the --activate confirmation"
@@ -663,15 +687,18 @@ def parse_args(argv=None):
     args = ap.parse_args(argv)
     if args.activate:
         args.n8n = True
-        if not args.user_email:
-            ap.error("--activate requires --user-email")
+    if (args.n8n or args.cleanup) and not args.user_email:
+        ap.error("--n8n, --activate and --cleanup require --user-email")
     return args
 
 
 def main() -> None:
     args = parse_args()
     if args.cleanup:
-        asyncio.run(cleanup(_load_app(need_resolver=False)))
+        app = _load_app(need_resolver=False)
+        _, user = _resolve_user(args.user_email)
+        _attach_n8n(app, user)
+        asyncio.run(cleanup(app))
         return
     if args.activate and not args.yes:
         ans = input(

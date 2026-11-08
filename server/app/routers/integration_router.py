@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
+from app.core.n8n_gate import require_n8n
+from app.services.n8n_client import N8nClient
 from app.schemas.integration import (
     ConnectTextFieldsRequest,
     CatalogEntryOut,
@@ -32,6 +34,7 @@ async def connect_text_fields(
     body: ConnectTextFieldsRequest,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """
     Text-fields (pattern 1) auth options only -- covers a plain single-method service (e.g. Stripe)
@@ -41,7 +44,7 @@ async def connect_text_fields(
     /integrations/oauth/connect (not built yet -- next step).
     """
     row = await integration_service.connect_text_fields(
-        db, current_user.id, body.service, body.values, body.option_id
+        db, current_user.id, body.service, body.values, body.option_id, n8n=n8n
     )
     return {
         "service": row.service,
@@ -56,8 +59,11 @@ async def disconnect_integration(
     service: str,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
-    await integration_service.disconnect_integration(db, current_user.id, service)
+    await integration_service.disconnect_integration(
+        db, current_user.id, service, n8n=n8n
+    )
     return {"service": service, "disconnected": True}
 
 
@@ -68,7 +74,9 @@ def check_integrations(
     current_user: User = Depends(get_current_user),
 ):
     required = [r.model_dump() for r in body.required_integrations]
-    return integration_service.check_required_integrations(db, current_user.id, required)
+    return integration_service.check_required_integrations(
+        db, current_user.id, required
+    )
 
 
 @router.post("/oauth/connect", response_model=OAuthConnectInitResponse)
@@ -76,6 +84,7 @@ async def connect_oauth(
     body: OAuthConnectInitRequest,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """
     Pattern 2/4 only. Creates the n8n credential shell with the user's own client_id/client_secret
@@ -91,6 +100,7 @@ async def connect_oauth(
         body.client_secret,
         body.extra_fields,
         body.option_id,
+        n8n=n8n,
     )
 
 
@@ -99,5 +109,8 @@ async def oauth_status(
     service: str,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
-    return await integration_service.check_oauth_status(db, current_user.id, service)
+    return await integration_service.check_oauth_status(
+        db, current_user.id, service, n8n=n8n
+    )

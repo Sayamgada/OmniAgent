@@ -7,7 +7,8 @@ from fastapi import HTTPException, status
 
 from app.models.integration import Integration
 from app.core.integration_catalog import INTEGRATION_CATALOG, get_auth_option
-from app.services import n8n_client
+from app.core.n8n_errors import N8N_ERRORS, n8n_http_error
+from app.services.n8n_client import N8nClient, N8nClientError
 
 PATTERN_LABELS = {1: "text_fields", 2: "oauth2", 3: "mcp_oauth", 4: "oauth2_extra"}
 
@@ -70,7 +71,7 @@ def _coerce_value(field: dict, raw):
     (and our registry's field defaults are strings too, for frontend
     rendering -- see generate_registry.py's _stringify_default). Coerce
     back to the type n8n actually expects before it ever reaches
-    n8n_client.create_credential, regardless of what the frontend sends.
+    n8n.create_credential, regardless of what the frontend sends.
     """
     t = field.get("type")
 
@@ -139,6 +140,8 @@ async def connect_text_fields(
     service: str,
     values: dict,
     option_id: str | None = None,
+    *,
+    n8n: N8nClient,
 ) -> Integration:
     entry = _get_catalog_entry(service)
     option = _get_option(service, option_id)
@@ -151,11 +154,16 @@ async def connect_text_fields(
     )
 
     credential_name = f"omniagent-{service}-{option['option_id']}-{str(user_id)[:8]}"
-    n8n_cred = await n8n_client.create_credential(
-        name=credential_name,
-        credential_type=option["n8n_credential_type"],
-        data=n8n_data,
-    )
+    try:
+        n8n_cred = await n8n.create_credential(
+            name=credential_name,
+            credential_type=option["n8n_credential_type"],
+            data=n8n_data,
+        )
+    except N8N_ERRORS as e:
+        raise n8n_http_error(
+            "create_credential", e, "Could not create the credential in n8n"
+        ) from None
     new_n8n_credential_id = n8n_cred["id"]
 
     if existing:
@@ -163,8 +171,8 @@ async def connect_text_fields(
         # Switching auth_option (e.g. api_key -> oauth2) on reconnect is allowed -- the row just
         # repoints to the new credential type.
         try:
-            await n8n_client.delete_credential(existing.n8n_credential_id)
-        except n8n_client.N8nClientError:
+            await n8n.delete_credential(existing.n8n_credential_id)
+        except N8nClientError:
             pass  # old credential may already be gone/invalid -- don't block the new save
         existing.n8n_credential_id = new_n8n_credential_id
         existing.n8n_credential_type = option["n8n_credential_type"]
@@ -192,7 +200,9 @@ async def connect_text_fields(
     return row
 
 
-async def disconnect_integration(db: Session, user_id: uuid.UUID, service: str) -> None:
+async def disconnect_integration(
+    db: Session, user_id: uuid.UUID, service: str, *, n8n: N8nClient
+) -> None:
     row = (
         db.query(Integration)
         .filter(Integration.user_id == user_id, Integration.service == service)
@@ -201,8 +211,8 @@ async def disconnect_integration(db: Session, user_id: uuid.UUID, service: str) 
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"'{service}' is not connected")
     try:
-        await n8n_client.delete_credential(row.n8n_credential_id)
-    except n8n_client.N8nClientError:
+        await n8n.delete_credential(row.n8n_credential_id)
+    except N8nClientError:
         pass  # already deleted on n8n's side -- don't block removing our own record
     db.delete(row)
     db.commit()
@@ -268,6 +278,8 @@ async def connect_oauth_init(
     client_secret: str,
     extra_fields: dict,
     option_id: str | None = None,
+    *,
+    n8n: N8nClient,
 ) -> dict:
     """
     Creates the n8n credential shell (clientId/clientSecret + any pattern-4 extras, no tokens),
@@ -321,17 +333,22 @@ async def connect_oauth_init(
     )
 
     credential_name = f"omniagent-{service}-{option['option_id']}-{str(user_id)[:8]}"
-    n8n_cred = await n8n_client.create_credential(
-        name=credential_name,
-        credential_type=option["n8n_credential_type"],
-        data=n8n_data,
-    )
+    try:
+        n8n_cred = await n8n.create_credential(
+            name=credential_name,
+            credential_type=option["n8n_credential_type"],
+            data=n8n_data,
+        )
+    except N8N_ERRORS as e:
+        raise n8n_http_error(
+            "create_credential", e, "Could not create the credential in n8n"
+        ) from None
     new_n8n_credential_id = n8n_cred["id"]
 
     if existing:
         try:
-            await n8n_client.delete_credential(existing.n8n_credential_id)
-        except n8n_client.N8nClientError:
+            await n8n.delete_credential(existing.n8n_credential_id)
+        except N8nClientError:
             pass
         existing.n8n_credential_id = new_n8n_credential_id
         existing.n8n_credential_type = option["n8n_credential_type"]
@@ -361,11 +378,15 @@ async def connect_oauth_init(
         db.refresh(existing)
 
     try:
-        auth_url = await n8n_client.get_oauth2_authorization_url(new_n8n_credential_id)
-    except n8n_client.N8nClientError:
+        auth_url = await n8n.get_oauth2_authorization_url(new_n8n_credential_id)
+    except N8N_ERRORS as e:
         # credential shell exists but we couldn't get the auth URL -- leave the pending row in
         # place (user can retry) rather than silently losing track of the half-created credential
-        raise
+        raise n8n_http_error(
+            "get_oauth2_authorization_url",
+            e,
+            "The credential was created but n8n did not return the authorization URL. Try again",
+        ) from None
 
     return {
         "service": service,
@@ -375,7 +396,9 @@ async def connect_oauth_init(
     }
 
 
-async def check_oauth_status(db: Session, user_id: uuid.UUID, service: str) -> dict:
+async def check_oauth_status(
+    db: Session, user_id: uuid.UUID, service: str, *, n8n: N8nClient
+) -> dict:
     """
     Polls n8n for whether the pending OAuth connection has completed. Call this from the
     frontend while the consent popup is open (or once it closes) -- there is no push-based
@@ -394,7 +417,14 @@ async def check_oauth_status(db: Session, user_id: uuid.UUID, service: str) -> d
     if not row.oauth_pending:
         return {"service": service, "connected": row.is_active, "pending": False}
 
-    connected = await n8n_client.is_oauth_credential_connected(row.n8n_credential_id)
+    try:
+        connected = await n8n.is_oauth_credential_connected(row.n8n_credential_id)
+    except N8N_ERRORS as e:
+        raise n8n_http_error(
+            "is_oauth_credential_connected",
+            e,
+            "Could not check the connection status in n8n",
+        ) from None
     if connected:
         row.oauth_pending = False
         row.is_active = True

@@ -38,7 +38,9 @@ from app.routers.agent_lifecycle import (
     name_conflict_detail,
     remove_n8n_workflow_best_effort,
 )
-from app.services import n8n_client
+from app.core.n8n_errors import N8N_ERRORS, describe_n8n_error, n8n_http_error
+from app.core.n8n_gate import require_n8n
+from app.services.n8n_client import N8nClient
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -350,6 +352,7 @@ async def create_workflow(
     body: CreateWorkflowRequest,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """
     Compiles the preview, and -- ONLY if the result is deployable -- pushes
@@ -357,6 +360,10 @@ async def create_workflow(
     compile (missing params / unresolved operations) returns exactly what
     it did before this stage: no n8n call, no Agent row, same
     needs_user_input shape the frontend already handles.
+
+    Gated by require_n8n: a user with no connected n8n gets 409
+    n8n_not_configured before any compile work, even if the compile would
+    not have been deployable (the credential resolver is per-instance too).
     """
     try:
         steps = await _load_steps_for(automation_name)
@@ -395,15 +402,15 @@ async def create_workflow(
             )
 
         try:
-            n8n_workflow = await n8n_client.create_workflow(result.workflow_json)
-        except n8n_client.N8nClientError as e:
-            # The compiled JSON itself was rejected by n8n -- nothing was
-            # created there, so there's no Agent row to write; surface the
-            # real n8n validation error rather than a generic 502.
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"n8n rejected the workflow: {e}",
-            )
+            n8n_workflow = await n8n.create_workflow(result.workflow_json)
+        except N8N_ERRORS as e:
+            # n8n refused the compiled JSON (or was unreachable) -- nothing was
+            # created there, so there's no Agent row to write. The response is a
+            # fixed message: n8n's body comes from a user-controlled host and is
+            # never echoed (see app/core/n8n_errors.py).
+            raise n8n_http_error(
+                "create_workflow", e, "Could not create the workflow in n8n"
+            ) from None
 
         n8n_workflow_id = n8n_workflow["id"]
 
@@ -427,7 +434,7 @@ async def create_workflow(
             db.commit()
         except IntegrityError:
             db.rollback()
-            await remove_n8n_workflow_best_effort(n8n_workflow_id)
+            await remove_n8n_workflow_best_effort(n8n, n8n_workflow_id)
             existing = find_name_conflict(db, current_user.id, body.workflow_name)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -435,12 +442,13 @@ async def create_workflow(
             )
 
         try:
-            await n8n_client.activate_workflow(n8n_workflow_id)
+            await n8n.activate_workflow(n8n_workflow_id)
             agent_row.status = "active"
-        except n8n_client.N8nClientError as e:
-            agent_row.last_error = str(e)[:_LAST_ERROR_MAX]
+        except N8N_ERRORS as e:
+            msg = describe_n8n_error("activate_workflow", e)
+            agent_row.last_error = msg[:_LAST_ERROR_MAX]
             response["warnings"].append(
-                f"workflow created in n8n but activation failed: {e}"
+                f"workflow created in n8n but activation failed: {msg}"
             )
         db.commit()
         db.refresh(agent_row)
@@ -472,6 +480,7 @@ async def activate_agent(
     agent_id: uuid.UUID,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """
     Retry activation for an agent whose n8n workflow exists but never went
@@ -492,14 +501,12 @@ async def activate_agent(
         )
 
     try:
-        await n8n_client.activate_workflow(agent.n8n_workflow_id)
-    except n8n_client.N8nClientError as e:
-        agent.last_error = str(e)[:_LAST_ERROR_MAX]
+        await n8n.activate_workflow(agent.n8n_workflow_id)
+    except N8N_ERRORS as e:
+        err = n8n_http_error("activate_workflow", e, "n8n activation failed")
+        agent.last_error = str(err.detail)[:_LAST_ERROR_MAX]
         db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"n8n activation failed: {e}",
-        )
+        raise err from None
 
     agent.status = "active"
     agent.last_error = None

@@ -19,24 +19,32 @@ endpoint reads the DB by default (fast) and re-syncs from n8n with
 from __future__ import annotations
 
 import asyncio
-import traceback
+import logging
 import uuid
 from typing import Any, Optional
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.n8n_errors import (
+    N8N_ERRORS,
+    is_n8n_not_found,
+    n8n_http_error,
+    n8n_status,
+)
+from app.core.n8n_gate import optional_n8n, require_n8n
 from app.database import get_postgres_db
 from app.models.agent import Agent
 from app.models.user import User
-from app.services import n8n_client
+from app.services.n8n_client import N8nClient
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agents", tags=["agent-lifecycle"])
 
 _LAST_ERROR_MAX = 1000
-_N8N_ERRORS = (n8n_client.N8nClientError, httpx.HTTPError)
+_N8N_ERRORS = N8N_ERRORS  # alias kept for existing imports
 
 
 # ---------------- helpers (also used by agent_router.create_workflow) ----------------
@@ -75,7 +83,7 @@ def name_conflict_detail(existing: Optional[Agent]) -> dict[str, Any]:
     }
 
 
-async def remove_n8n_workflow_best_effort(n8n_workflow_id: str) -> bool:
+async def remove_n8n_workflow_best_effort(n8n: N8nClient, n8n_workflow_id: str) -> bool:
     """
     Compensation for a workflow created in n8n whose Agent row could not be
     saved. Never raises: the caller is already on an error path. Returns
@@ -83,13 +91,16 @@ async def remove_n8n_workflow_best_effort(n8n_workflow_id: str) -> bool:
     visible in the server log with its id.
     """
     try:
-        await n8n_client.delete_workflow(n8n_workflow_id)
+        await n8n.delete_workflow(n8n_workflow_id)
         return True
-    except _N8N_ERRORS:
-        print(
-            f"[agent-lifecycle] ORPHANED n8n workflow {n8n_workflow_id}: cleanup failed"
+    except N8N_ERRORS as e:
+        # Step + status only: the exception text can carry n8n's response body.
+        logger.error(
+            "ORPHANED n8n workflow %s (user %s): cleanup failed, status=%s",
+            n8n_workflow_id,
+            n8n.user_id,
+            n8n_status(e),
         )
-        traceback.print_exc()
         return False
 
 
@@ -105,7 +116,7 @@ def _owned_agent(db: Session, agent_id: uuid.UUID, user: User) -> Agent:
 
 
 def _is_not_found(exc: Exception) -> bool:
-    return isinstance(exc, n8n_client.N8nClientError) and exc.status_code == 404
+    return is_n8n_not_found(exc)
 
 
 def _mark_missing(agent: Agent) -> None:
@@ -113,13 +124,13 @@ def _mark_missing(agent: Agent) -> None:
     agent.last_error = "Workflow no longer exists in n8n"
 
 
-async def _sync_from_n8n(agent: Agent) -> None:
+async def _sync_from_n8n(n8n: N8nClient, agent: Agent) -> None:
     """Mutates `agent` from n8n's live state; the caller commits. Errors other
     than 'not found' leave the row untouched (n8n briefly unreachable must not
     rewrite statuses)."""
     try:
-        wf = await n8n_client.get_workflow(agent.n8n_workflow_id)
-    except _N8N_ERRORS as e:
+        wf = await n8n.get_workflow(agent.n8n_workflow_id)
+    except N8N_ERRORS as e:
         if _is_not_found(e):
             _mark_missing(agent)
         return
@@ -144,9 +155,12 @@ async def list_agents(
         .order_by(Agent.created_at.desc())
         .all()
     )
-    if refresh and agents:
+    # Listing never needs n8n (a new user must still be able to open My Agents). A live
+    # re-sync only happens when n8n is connected; otherwise the DB state is returned as-is.
+    n8n = optional_n8n(current_user) if refresh and agents else None
+    if n8n is not None:
         await asyncio.gather(
-            *(_sync_from_n8n(a) for a in agents), return_exceptions=True
+            *(_sync_from_n8n(n8n, a) for a in agents), return_exceptions=True
         )
         db.commit()
     return {"agents": [agent_to_dict(a) for a in agents]}
@@ -157,17 +171,17 @@ async def deactivate_agent(
     agent_id: uuid.UUID,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """Stops the workflow but keeps it. POST /agents/{id}/activate turns it back on."""
     agent = _owned_agent(db, agent_id, current_user)
     try:
-        await n8n_client.deactivate_workflow(agent.n8n_workflow_id)
-    except _N8N_ERRORS as e:
+        await n8n.deactivate_workflow(agent.n8n_workflow_id)
+    except N8N_ERRORS as e:
         if not _is_not_found(e):
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"n8n deactivation failed: {e}",
-            )
+            raise n8n_http_error(
+                "deactivate_workflow", e, "n8n deactivation failed"
+            ) from None
         _mark_missing(agent)
         db.commit()
         db.refresh(agent)
@@ -185,6 +199,7 @@ async def delete_agent(
     agent_id: uuid.UUID,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """
     Deletes the n8n workflow FIRST, then the row. If n8n fails for any reason
@@ -195,21 +210,21 @@ async def delete_agent(
 
     if agent.status == "active":
         try:
-            await n8n_client.deactivate_workflow(agent.n8n_workflow_id)
-        except _N8N_ERRORS as e:
+            await n8n.deactivate_workflow(agent.n8n_workflow_id)
+        except N8N_ERRORS as e:
             if not _is_not_found(e):
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"n8n deactivation failed, agent not deleted: {e}",
-                )
+                raise n8n_http_error(
+                    "deactivate_workflow",
+                    e,
+                    "n8n deactivation failed, agent not deleted",
+                ) from None
     try:
-        await n8n_client.delete_workflow(agent.n8n_workflow_id)
-    except _N8N_ERRORS as e:
+        await n8n.delete_workflow(agent.n8n_workflow_id)
+    except N8N_ERRORS as e:
         if not _is_not_found(e):
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"n8n deletion failed, agent not deleted: {e}",
-            )
+            raise n8n_http_error(
+                "delete_workflow", e, "n8n deletion failed, agent not deleted"
+            ) from None
 
     db.delete(agent)
     db.commit()
@@ -222,16 +237,16 @@ async def agent_runs(
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
+    n8n: N8nClient = Depends(require_n8n),
 ):
     """Recent n8n executions, newest first. Not copied into Postgres."""
     agent = _owned_agent(db, agent_id, current_user)
     try:
-        raw = await n8n_client.list_executions(agent.n8n_workflow_id, limit)
-    except _N8N_ERRORS as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"n8n executions lookup failed: {e}",
-        )
+        raw = await n8n.list_executions(agent.n8n_workflow_id, limit)
+    except N8N_ERRORS as e:
+        raise n8n_http_error(
+            "list_executions", e, "n8n executions lookup failed"
+        ) from None
     runs = [
         {
             "id": str(ex.get("id")),
