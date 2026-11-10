@@ -1,6 +1,7 @@
 # app/services/credential_checker.py
 import uuid
 from sqlalchemy.orm import Session
+from app.core.n8n_stale import fresh_clause
 from app.models.integration import Integration
 
 
@@ -8,6 +9,8 @@ def check_required_integrations(
     db: Session,
     user_id: uuid.UUID,
     required_integrations: list[dict],
+    *,
+    n8n_connection_id: uuid.UUID | None,
 ) -> list[dict]:
     services_needed = [item["service"] for item in required_integrations]
     if not services_needed:
@@ -19,6 +22,8 @@ def check_required_integrations(
             Integration.user_id == user_id,
             Integration.service.in_(services_needed),
             Integration.is_active.is_(True),
+            # only credentials saved for the user's CURRENT n8n instance count (see n8n_stale.py)
+            fresh_clause(Integration.n8n_connection_id, n8n_connection_id),
         )
         .all()
     )

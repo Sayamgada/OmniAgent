@@ -420,7 +420,7 @@ async def _n8n_stages(app, row, steps, result, wf_name, args, ctx) -> None:
             real = app.compile(
                 steps,
                 app.placeholder(),
-                app.pg_resolver(ctx["db"]),
+                app.pg_resolver(ctx["db"], n8n_connection_id=ctx["user"].n8n_connection_id),
                 user_id=str(ctx["user"].id),
                 workflow_name=wf_name,
             )

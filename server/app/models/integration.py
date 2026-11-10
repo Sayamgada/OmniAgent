@@ -19,22 +19,39 @@ class Integration(Base):
     why there's no separate "pending connection" table: the Integration row IS the pending
     record, with oauth_pending=True until a status poll confirms n8n attached real tokens.
     """
+
     __tablename__ = "integrations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
 
-    service = Column(String(100), nullable=False, index=True)  # catalog key, e.g. "stripe", "gmail"
+    service = Column(
+        String(100), nullable=False, index=True
+    )  # catalog key, e.g. "stripe", "gmail"
     display_name = Column(String(255))
 
-    n8n_credential_id = Column(String(100), nullable=False)  # id returned by n8n's POST /api/v1/credentials
-    n8n_credential_type = Column(String(100), nullable=False)  # e.g. "stripeApi" -- n8n's own type slug
+    n8n_credential_id = Column(
+        String(100), nullable=False
+    )  # id returned by n8n's POST /api/v1/credentials
+    n8n_credential_type = Column(
+        String(100), nullable=False
+    )  # e.g. "stripeApi" -- n8n's own type slug
+
+    # users.n8n_connection_id at the moment this row was written, i.e. WHICH n8n instance
+    # n8n_credential_id belongs to. NULL (unstamped) or different from the user's current id
+    # means the row is stale: its credential id means nothing on the instance the user is
+    # connected to now. See app/core/n8n_stale.py. NULL in the DB is deliberate (legacy rows).
+    n8n_connection_id = Column(UUID(as_uuid=True), nullable=True)
 
     # which catalog auth_option the user actually chose, e.g. "api_key" vs "oauth2" for services
     # (Notion, Slack, GitHub, ...) that support more than one method -- see integration_catalog.py
     auth_option_id = Column(String(50), nullable=False)
 
-    connection_pattern = Column(String(20), nullable=False)  # "text_fields" | "oauth2" | "oauth2_extra"
+    connection_pattern = Column(
+        String(20), nullable=False
+    )  # "text_fields" | "oauth2" | "oauth2_extra"
 
     # True from the moment the n8n credential shell is created until a status poll confirms
     # the user completed the provider's consent screen. Always False for text-field (pattern 1)
@@ -43,7 +60,9 @@ class Integration(Base):
 
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     __table_args__ = (
         UniqueConstraint("user_id", "service", name="uq_integrations_user_service"),

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
-from app.core.n8n_gate import require_n8n
+from app.core.n8n_gate import optional_n8n, require_n8n
 from app.services.n8n_client import N8nClient
 from app.schemas.integration import (
     ConnectTextFieldsRequest,
@@ -26,7 +26,9 @@ def list_integrations(
     current_user: User = Depends(get_current_user),
 ):
     """Full catalog merged with this user's connected/configured status."""
-    return integration_service.list_integrations_with_status(db, current_user.id)
+    return integration_service.list_integrations_with_status(
+        db, current_user.id, n8n_connection_id=current_user.n8n_connection_id
+    )
 
 
 @router.post("/connect/text-fields")
@@ -59,10 +61,19 @@ async def disconnect_integration(
     service: str,
     db: Session = Depends(get_postgres_db),
     current_user: User = Depends(get_current_user),
-    n8n: N8nClient = Depends(require_n8n),
 ):
+    """
+    Deliberately NOT behind require_n8n: a credential saved for a previous n8n instance
+    (stale) must stay removable even with no n8n connected. The service layer deletes a stale
+    row from Postgres only, and still requires the client (409 n8n_not_configured) for a
+    fresh one.
+    """
     await integration_service.disconnect_integration(
-        db, current_user.id, service, n8n=n8n
+        db,
+        current_user.id,
+        service,
+        n8n=optional_n8n(current_user),
+        n8n_connection_id=current_user.n8n_connection_id,
     )
     return {"service": service, "disconnected": True}
 
@@ -75,7 +86,10 @@ def check_integrations(
 ):
     required = [r.model_dump() for r in body.required_integrations]
     return integration_service.check_required_integrations(
-        db, current_user.id, required
+        db,
+        current_user.id,
+        required,
+        n8n_connection_id=current_user.n8n_connection_id,
     )
 
 

@@ -5,6 +5,7 @@ threshold against the workflow it revises and would come back unchanged).
 """
 
 import asyncio
+import uuid
 from types import SimpleNamespace
 
 import pytest
@@ -34,15 +35,16 @@ def _body(**kw):
     return r.WorkflowRequest(**data)
 
 
-def _call(body):
-    return asyncio.run(
-        r.extract_workflow(body, db=None, current_user=SimpleNamespace(id="u1"))
-    )
+def _call(body, n8n_connection_id=None):
+    user = SimpleNamespace(id="u1", n8n_connection_id=n8n_connection_id)
+    return asyncio.run(r.extract_workflow(body, db=None, current_user=user))
 
 
 @pytest.fixture
 def wired(monkeypatch):
-    calls = SimpleNamespace(search=[], generate=[], store_mongo=[], store_full=[])
+    calls = SimpleNamespace(
+        search=[], generate=[], store_mongo=[], store_full=[], checks=[]
+    )
 
     def search(**kw):
         calls.search.append(kw)
@@ -89,7 +91,12 @@ def wired(monkeypatch):
     monkeypatch.setattr(r, "store_generated_workflow_mongo", store_mongo)
     monkeypatch.setattr(r, "store_generated_workflow", store_full)
     monkeypatch.setattr(r, "fetch_mongo_workflow", fetch_cached)
-    monkeypatch.setattr(r, "check_required_integrations", lambda **kw: [])
+
+    def check(**kw):
+        calls.checks.append(kw)
+        return []
+
+    monkeypatch.setattr(r, "check_required_integrations", check)
     return calls
 
 
@@ -121,6 +128,15 @@ def test_without_edit_of_a_cache_hit_is_still_served_from_mongo(wired):
     assert len(wired.search) == 1
     assert wired.generate == []  # Groq NOT called: existing behaviour unchanged
     assert resp.workflow["automation_name"] == PREVIOUS["automation_name"]
+
+
+def test_integration_check_uses_the_users_current_n8n_connection(wired):
+    conn = uuid.uuid4()
+    _call(_body(), n8n_connection_id=conn)
+    # credentials saved for a previous n8n instance must not read as "connected" in the preview
+    assert len(wired.checks) == 1
+    assert wired.checks[0]["n8n_connection_id"] == conn
+    assert wired.checks[0]["user_id"] == "u1"
 
 
 def test_blank_edit_of_is_rejected_by_the_request_model():

@@ -9,6 +9,8 @@ from app.models.integration import Integration
 from app.core.integration_catalog import INTEGRATION_CATALOG, get_auth_option
 from app.core.n8n_errors import N8N_ERRORS, n8n_http_error
 from app.services.n8n_client import N8nClient, N8nClientError
+from app.core.n8n_gate import N8N_NOT_CONFIGURED_DETAIL
+from app.core.n8n_stale import fresh_clause, is_stale
 
 PATTERN_LABELS = {1: "text_fields", 2: "oauth2", 3: "mcp_oauth", 4: "oauth2_extra"}
 
@@ -134,6 +136,21 @@ def _validate_text_fields(service: str, option: dict, values: dict) -> dict:
     }
 
 
+async def _drop_previous_credential(existing: Integration, n8n: N8nClient) -> None:
+    """
+    Best-effort delete of the credential a reconnect is replacing. Skipped for a STALE row:
+    its n8n_credential_id belongs to a previous instance, and on the current one the same id
+    could be a different credential (older n8n versions hand out sequential ids). The orphan
+    on the old instance is unreachable from here anyway.
+    """
+    if is_stale(existing.n8n_connection_id, n8n.connection_id):
+        return
+    try:
+        await n8n.delete_credential(existing.n8n_credential_id)
+    except N8nClientError:
+        pass  # old credential may already be gone/invalid -- don't block the new save
+
+
 async def connect_text_fields(
     db: Session,
     user_id: uuid.UUID,
@@ -170,12 +187,10 @@ async def connect_text_fields(
         # replace: delete the old n8n credential first (best-effort), then point at the new one.
         # Switching auth_option (e.g. api_key -> oauth2) on reconnect is allowed -- the row just
         # repoints to the new credential type.
-        try:
-            await n8n.delete_credential(existing.n8n_credential_id)
-        except N8nClientError:
-            pass  # old credential may already be gone/invalid -- don't block the new save
+        await _drop_previous_credential(existing, n8n)
         existing.n8n_credential_id = new_n8n_credential_id
         existing.n8n_credential_type = option["n8n_credential_type"]
+        existing.n8n_connection_id = n8n.connection_id
         existing.auth_option_id = option["option_id"]
         existing.display_name = entry["display_name"]
         existing.connection_pattern = PATTERN_LABELS[option["connection_pattern"]]
@@ -190,6 +205,7 @@ async def connect_text_fields(
         display_name=entry["display_name"],
         n8n_credential_id=new_n8n_credential_id,
         n8n_credential_type=option["n8n_credential_type"],
+        n8n_connection_id=n8n.connection_id,
         auth_option_id=option["option_id"],
         connection_pattern=PATTERN_LABELS[option["connection_pattern"]],
         is_active=True,
@@ -201,8 +217,20 @@ async def connect_text_fields(
 
 
 async def disconnect_integration(
-    db: Session, user_id: uuid.UUID, service: str, *, n8n: N8nClient
+    db: Session,
+    user_id: uuid.UUID,
+    service: str,
+    *,
+    n8n: N8nClient | None,
+    n8n_connection_id: uuid.UUID | None,
 ) -> None:
+    """
+    `n8n` is None when the user has no usable n8n connection; `n8n_connection_id` is their
+    current one (None when not connected). A STALE row (stamped for a previous instance) is
+    removed from Postgres only: its credential id means nothing on the instance reachable now,
+    so no n8n call is made -- which also lets a user clear stale rows with no n8n connected.
+    A fresh row still needs the client (409 n8n_not_configured without one).
+    """
     row = (
         db.query(Integration)
         .filter(Integration.user_id == user_id, Integration.service == service)
@@ -210,15 +238,20 @@ async def disconnect_integration(
     )
     if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"'{service}' is not connected")
-    try:
-        await n8n.delete_credential(row.n8n_credential_id)
-    except N8nClientError:
-        pass  # already deleted on n8n's side -- don't block removing our own record
+    if not is_stale(row.n8n_connection_id, n8n_connection_id):
+        if n8n is None:
+            raise HTTPException(status.HTTP_409_CONFLICT, N8N_NOT_CONFIGURED_DETAIL)
+        try:
+            await n8n.delete_credential(row.n8n_credential_id)
+        except N8nClientError:
+            pass  # already deleted on n8n's side -- don't block removing our own record
     db.delete(row)
     db.commit()
 
 
-def list_integrations_with_status(db: Session, user_id: uuid.UUID) -> list[dict]:
+def list_integrations_with_status(
+    db: Session, user_id: uuid.UUID, *, n8n_connection_id: uuid.UUID | None
+) -> list[dict]:
     connected_rows = {
         r.service: r
         for r in db.query(Integration).filter(Integration.user_id == user_id).all()
@@ -226,6 +259,9 @@ def list_integrations_with_status(db: Session, user_id: uuid.UUID) -> list[dict]
     out = []
     for service, entry in INTEGRATION_CATALOG.items():
         row = connected_rows.get(service)
+        # A row stamped for a previous n8n instance is not usable: report it configured (so the
+        # user can still see/reconnect/remove it) but never connected.
+        stale = row is not None and is_stale(row.n8n_connection_id, n8n_connection_id)
         out.append(
             {
                 "service": entry["service"],
@@ -233,21 +269,31 @@ def list_integrations_with_status(db: Session, user_id: uuid.UUID) -> list[dict]
                 "category": entry["category"],
                 "default_option": entry["default_option"],
                 "auth_options": entry["auth_options"],
-                "connected": bool(row and row.is_active),
+                "connected": bool(row and row.is_active and not stale),
                 "configured": row is not None,
-                "connected_option": row.auth_option_id if row else None,
+                "connected_option": row.auth_option_id if row and not stale else None,
+                "stale": stale,
             }
         )
     return out
 
 
 def check_required_integrations(
-    db: Session, user_id: uuid.UUID, required: list[dict]
+    db: Session,
+    user_id: uuid.UUID,
+    required: list[dict],
+    *,
+    n8n_connection_id: uuid.UUID | None,
 ) -> dict:
+    # Only rows stamped for the user's CURRENT n8n instance count as connected.
     connected_services = {
         r.service
         for r in db.query(Integration)
-        .filter(Integration.user_id == user_id, Integration.is_active == True)
+        .filter(
+            Integration.user_id == user_id,
+            Integration.is_active == True,
+            fresh_clause(Integration.n8n_connection_id, n8n_connection_id),
+        )
         .all()
     }
     statuses = []
@@ -346,12 +392,10 @@ async def connect_oauth_init(
     new_n8n_credential_id = n8n_cred["id"]
 
     if existing:
-        try:
-            await n8n.delete_credential(existing.n8n_credential_id)
-        except N8nClientError:
-            pass
+        await _drop_previous_credential(existing, n8n)
         existing.n8n_credential_id = new_n8n_credential_id
         existing.n8n_credential_type = option["n8n_credential_type"]
+        existing.n8n_connection_id = n8n.connection_id
         existing.auth_option_id = option["option_id"]
         existing.display_name = entry["display_name"]
         existing.connection_pattern = PATTERN_LABELS[option["connection_pattern"]]
@@ -368,6 +412,7 @@ async def connect_oauth_init(
             display_name=entry["display_name"],
             n8n_credential_id=new_n8n_credential_id,
             n8n_credential_type=option["n8n_credential_type"],
+            n8n_connection_id=n8n.connection_id,
             auth_option_id=option["option_id"],
             connection_pattern=PATTERN_LABELS[option["connection_pattern"]],
             oauth_pending=True,
@@ -413,6 +458,10 @@ async def check_oauth_status(
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, f"'{service}' has no connection in progress"
         )
+
+    if is_stale(row.n8n_connection_id, n8n.connection_id):
+        # Pending on an instance the user has since replaced: nothing to poll here.
+        return {"service": service, "connected": False, "pending": False}
 
     if not row.oauth_pending:
         return {"service": service, "connected": row.is_active, "pending": False}

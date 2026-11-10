@@ -11,8 +11,8 @@ class IntegrationFieldOut(BaseModel):
 
 
 class AuthOptionOut(BaseModel):
-    option_id: str          # e.g. "api_key", "oauth2", "personal_access_token"
-    label: str               # human-readable, e.g. "Notion OAuth2 API"
+    option_id: str  # e.g. "api_key", "oauth2", "personal_access_token"
+    label: str  # human-readable, e.g. "Notion OAuth2 API"
     connection_pattern: int  # 1=text_fields, 2=oauth2, 4=oauth2_extra
     auth_type: str
     fields: list[IntegrationFieldOut]
@@ -25,6 +25,7 @@ class CatalogEntryOut(BaseModel):
     n8n itself supports; default_option is the one the UI should preselect (simplest non-OAuth
     method where one exists, since it needs no app registration).
     """
+
     service: str
     display_name: str
     category: str
@@ -32,11 +33,18 @@ class CatalogEntryOut(BaseModel):
     auth_options: list[AuthOptionOut]
     connected: bool = False
     configured: bool = False
-    connected_option: Optional[str] = None  # which auth_option this user actually connected with
+    connected_option: Optional[str] = (
+        None  # which auth_option this user actually connected with
+    )
+    # True when the user's saved credential belongs to a previous n8n instance. Such an entry is
+    # reported connected=False / configured=True so it stays visible: reconnect replaces it,
+    # disconnect removes it (Postgres only).
+    stale: bool = False
 
 
 class ConnectTextFieldsRequest(BaseModel):
     """Pattern 1 (or pattern 1 branch of a multi-option service): user pastes raw values."""
+
     service: str
     option_id: Optional[str] = None  # omit to use the catalog's default_option
     values: dict[str, str]  # field name (camelCase, matching catalog) -> value
@@ -76,6 +84,7 @@ class CheckIntegrationsResponse(BaseModel):
 
 # ---------------- OAuth2 (pattern 2 / pattern 4) ----------------
 
+
 class OAuthConnectInitRequest(BaseModel):
     """
     Kicks off an OAuth2 connection. client_id/client_secret are the user's OWN OAuth app
@@ -83,6 +92,7 @@ class OAuthConnectInitRequest(BaseModel):
     callback URL as the authorized redirect URI -- see N8N_OAUTH_REDIRECT_URI). extra_fields
     covers pattern-4 non-secret extras (e.g. GitHub's "server", Salesforce's "environment").
     """
+
     service: str
     option_id: Optional[str] = None  # omit to use the catalog's default_option
     client_id: str
@@ -94,7 +104,9 @@ class OAuthConnectInitResponse(BaseModel):
     service: str
     auth_option: str
     n8n_credential_id: str
-    authorization_url: str  # frontend should send the user's browser here (new tab/popup)
+    authorization_url: (
+        str  # frontend should send the user's browser here (new tab/popup)
+    )
 
 
 class OAuthStatusResponse(BaseModel):

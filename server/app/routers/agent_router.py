@@ -34,6 +34,7 @@ from app.compiler.loader import preview_to_steps
 from app.compiler.models import Overrides, StepOverride
 from app.models.agent import Agent
 from app.routers.agent_lifecycle import (
+    ensure_not_stale,
     find_name_conflict,
     name_conflict_detail,
     remove_n8n_workflow_best_effort,
@@ -200,6 +201,7 @@ async def extract_workflow(
             db=db,
             user_id=current_user.id,
             required_integrations=workflow["required_integrations"],
+            n8n_connection_id=current_user.n8n_connection_id,
         )
         print(workflow)
         return WorkflowResponse(
@@ -373,7 +375,7 @@ async def create_workflow(
         result = compile_workflow(
             steps,
             SuppliedParamProvider(body.params),
-            PostgresCredentialResolver(db),
+            PostgresCredentialResolver(db, n8n_connection_id=n8n.connection_id),
             user_id=str(current_user.id),
             workflow_name=body.workflow_name,
             overrides=overrides or None,
@@ -398,7 +400,7 @@ async def create_workflow(
         if existing is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=name_conflict_detail(existing),
+                detail=name_conflict_detail(existing, n8n.connection_id),
             )
 
         try:
@@ -426,6 +428,7 @@ async def create_workflow(
             automation_name=automation_name,
             workflow_name=body.workflow_name,
             n8n_workflow_id=n8n_workflow_id,
+            n8n_connection_id=n8n.connection_id,
             status="created",
             last_error=None,
         )
@@ -438,7 +441,7 @@ async def create_workflow(
             existing = find_name_conflict(db, current_user.id, body.workflow_name)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=name_conflict_detail(existing),
+                detail=name_conflict_detail(existing, n8n.connection_id),
             )
 
         try:
@@ -499,6 +502,9 @@ async def activate_agent(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found"
         )
+    ensure_not_stale(
+        agent, n8n
+    )  # 409 agent_stale: its workflow id belongs to another instance
 
     try:
         await n8n.activate_workflow(agent.n8n_workflow_id)

@@ -45,6 +45,11 @@ class Agent(Base):
 
     n8n_workflow_id = Column(String(100), nullable=False, unique=True)
 
+    # users.n8n_connection_id when this workflow was created: WHICH n8n instance
+    # n8n_workflow_id lives on. NULL or != the user's current id => stale (see
+    # app/core/n8n_stale.py). Run scripts/sql/add_n8n_connection_id_stamp.sql once.
+    n8n_connection_id = Column(UUID(as_uuid=True), nullable=True)
+
     # "created"    -- n8n accepted the workflow but it isn't active yet
     # "active"     -- n8n confirmed activation succeeded
     # "failed"     -- n8n rejected creation or activation; see last_error

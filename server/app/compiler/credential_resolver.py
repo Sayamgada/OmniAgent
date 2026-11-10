@@ -18,6 +18,11 @@ in integration_service.check_oauth_status() confirms n8n attached real
 tokens (see Integration's docstring) -- filtering on is_active == True
 here means an in-progress OAuth connection is correctly treated as "not
 yet available," the same way check_required_integrations() already does.
+
+Rows are also filtered to the user's CURRENT n8n instance (n8n_connection_id): a credential
+saved for a previous instance has an id that means nothing on the instance the workflow will
+be deployed to, so it is treated as "not connected" and the compiler reports it as missing.
+The id is a required keyword so a call site cannot forget the filter.
 """
 
 from __future__ import annotations
@@ -27,13 +32,15 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.core.n8n_stale import fresh_clause
 from app.models.integration import Integration
 from .interfaces import CredentialResolver
 
 
 class PostgresCredentialResolver(CredentialResolver):
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, *, n8n_connection_id: Optional[uuid.UUID]):
         self._db = db
+        self._n8n_connection_id = n8n_connection_id
 
     def resolve(
         self, user_id: str, service: str, n8n_credential_type: str
@@ -44,6 +51,7 @@ class PostgresCredentialResolver(CredentialResolver):
                 Integration.user_id == uuid.UUID(str(user_id)),
                 Integration.service == service,
                 Integration.is_active == True,  # noqa: E712 -- SQLAlchemy filter
+                fresh_clause(Integration.n8n_connection_id, self._n8n_connection_id),
             )
             .first()
         )
