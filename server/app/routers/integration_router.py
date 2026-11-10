@@ -5,6 +5,7 @@ from app.database import get_postgres_db
 from app.core.auth import get_current_user
 from app.models.user import User
 from app.core.n8n_gate import optional_n8n, require_n8n
+from app.core.n8n_url import oauth_callback_url
 from app.services.n8n_client import N8nClient
 from app.schemas.integration import (
     ConnectTextFieldsRequest,
@@ -103,10 +104,12 @@ async def connect_oauth(
     """
     Pattern 2/4 only. Creates the n8n credential shell with the user's own client_id/client_secret
     and returns an authorization_url. The frontend should open that URL in a new tab/popup for the
-    user to complete the provider's consent screen -- n8n's own fixed callback handles everything
-    after that. Poll GET /integrations/oauth/status/{service} to find out when it's done.
+    user to complete the provider's consent screen -- the callback on the user's own n8n handles
+    everything after that. The response also carries oauth_callback_url, the redirect URI the user
+    must have registered in their OAuth app. Poll GET /integrations/oauth/status/{service} to find
+    out when it's done.
     """
-    return await integration_service.connect_oauth_init(
+    result = await integration_service.connect_oauth_init(
         db,
         current_user.id,
         body.service,
@@ -115,6 +118,12 @@ async def connect_oauth(
         body.extra_fields,
         body.option_id,
         n8n=n8n,
+    )
+    # require_n8n guarantees the user has a stored base URL.
+    return OAuthConnectInitResponse.model_validate(
+        result, from_attributes=True
+    ).model_copy(
+        update={"oauth_callback_url": oauth_callback_url(current_user.n8n_base_url)}
     )
 
 

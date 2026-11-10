@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.core.n8n_url import N8nUrlError, validate_n8n_url
+from app.core.n8n_url import N8nUrlError, oauth_callback_url, validate_n8n_url
 from app.database import get_postgres_db
 from app.models.user import User
 from app.schemas.n8n import N8nConnectRequest, N8nStatus
@@ -27,7 +27,7 @@ def _status(user: User) -> N8nStatus:
         base_url=user.n8n_base_url,
         email=user.n8n_email,
         connected_at=user.n8n_connected_at,
-        oauth_callback_url=f"{user.n8n_base_url}/rest/oauth2-credential/callback",
+        oauth_callback_url=oauth_callback_url(user.n8n_base_url),
     )
 
 

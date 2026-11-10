@@ -4,6 +4,7 @@ import os
 
 load_dotenv()
 
+
 class Settings(BaseSettings):
     POSTGRE_DB_URL: str
     SECRET_KEY: str
@@ -14,7 +15,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
 
     EMBEDDING_MODEL: str = "BAAI/bge-base-en-v1.5"
-    FAISS_INDEX_PATH: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "faiss_index"))
+    FAISS_INDEX_PATH: str = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "faiss_index")
+    )
     GROQ_API_KEY: str
 
     GEMINI_API_KEY: str
@@ -27,12 +30,11 @@ class Settings(BaseSettings):
     # Integration rows anymore -- those store only n8n_credential_id, no raw secrets.
     FERNET_SECRET_KEY: str
 
-    # n8n instance OmniAgent talks to via its Credentials API. Not provider-specific --
-    # every OAuth2 credential in n8n (Google, GitHub, Slack, ...) uses this same fixed
-    # self-hosted callback route, since it's n8n's own route, not each provider's.
+    # n8n instance OmniAgent talks to via its Credentials API. (Legacy global settings; being
+    # retired in favour of the per-user connection. The OAuth callback is now per-user:
+    # <user's n8n_base_url>/rest/oauth2-credential/callback, see app.core.n8n_url.)
     N8N_BASE_URL: str
     N8N_API_KEY: str
-    N8N_OAUTH_REDIRECT_URI: str
 
     # n8n owner account credentials. OmniAgent logs in as this account ONCE and caches the
     # resulting session cookie, then reuses it to call n8n's internal (non-public-API) OAuth2
@@ -50,5 +52,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         extra = "ignore"
+
 
 settings = Settings()

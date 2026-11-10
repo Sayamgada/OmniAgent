@@ -89,7 +89,8 @@ class OAuthConnectInitRequest(BaseModel):
     """
     Kicks off an OAuth2 connection. client_id/client_secret are the user's OWN OAuth app
     credentials (registered by them on the provider's developer console, with n8n's fixed
-    callback URL as the authorized redirect URI -- see N8N_OAUTH_REDIRECT_URI). extra_fields
+    callback URL as the authorized redirect URI -- the per-user oauth_callback_url returned by
+    GET /users/me/n8n and by this endpoint). extra_fields
     covers pattern-4 non-secret extras (e.g. GitHub's "server", Salesforce's "environment").
     """
 
@@ -107,6 +108,9 @@ class OAuthConnectInitResponse(BaseModel):
     authorization_url: (
         str  # frontend should send the user's browser here (new tab/popup)
     )
+    # This user's own n8n callback (<their n8n_base_url>/rest/oauth2-credential/callback), the
+    # redirect URI to register in their OAuth app. Filled in by the router, not the service.
+    oauth_callback_url: Optional[str] = None
 
 
 class OAuthStatusResponse(BaseModel):

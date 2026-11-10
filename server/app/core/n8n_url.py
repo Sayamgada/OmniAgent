@@ -40,6 +40,18 @@ def _is_public(addr: str) -> bool:
     return ip.is_global and not ip.is_multicast
 
 
+OAUTH_CALLBACK_PATH = "/rest/oauth2-credential/callback"
+
+
+def oauth_callback_url(base_url: str) -> str:
+    """
+    The redirect URI a user registers in their own Google/GitHub/... OAuth app: n8n's fixed
+    callback route on THEIR instance. validate_n8n_url already stores the base URL without a
+    trailing slash; stripping here as well keeps this safe for any value that reaches it.
+    """
+    return f"{base_url.rstrip('/')}{OAUTH_CALLBACK_PATH}"
+
+
 async def validate_n8n_url(raw: str) -> str:
     """Returns the normalized base URL (no trailing slash) or raises N8nUrlError."""
     allow_private = bool(getattr(settings, "N8N_ALLOW_PRIVATE_HOSTS", False))
