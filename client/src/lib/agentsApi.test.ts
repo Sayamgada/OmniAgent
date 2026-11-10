@@ -4,11 +4,15 @@ import {
   ApiError,
   checkIntegrations,
   createWorkflow,
+  deactivateAgent,
   deleteAgent,
   detailToMessage,
   extractWorkflow,
+  isStaleAgentError,
+  isStaleNameClash,
   listAgents,
   requiredIntegrationsOf,
+  setN8nGateHandler,
 } from "./agentsApi";
 
 const json = (body: unknown, status: number) =>
@@ -17,7 +21,10 @@ const json = (body: unknown, status: number) =>
     headers: { "Content-Type": "application/json" },
   });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  setN8nGateHandler(null);
+});
 
 describe("detailToMessage", () => {
   it("passes plain string details through", () => {
@@ -236,5 +243,150 @@ describe("integration re-check", () => {
         available: false,
       },
     ]);
+  });
+});
+
+const NOT_CONFIGURED = {
+  detail: { code: "n8n_not_configured", message: "Connect your n8n first." },
+};
+
+describe("n8n gate (409 n8n_not_configured)", () => {
+  it("prompts once, then retries the original request and returns its result", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(NOT_CONFIGURED, 409))
+      .mockResolvedValueOnce(json({ agents: [{ id: "a1" }] }, 200));
+    vi.stubGlobal("fetch", fetchMock);
+    const handler = vi.fn().mockResolvedValue(true);
+    setN8nGateHandler(handler);
+
+    expect(await listAgents("tok")).toEqual([{ id: "a1" }]);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws the original error, with no retry, when the user does not connect", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(NOT_CONFIGURED, 409));
+    vi.stubGlobal("fetch", fetchMock);
+    setN8nGateHandler(vi.fn().mockResolvedValue(false));
+
+    const err = (await listAgents("tok").catch((e: unknown) => e)) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("n8n_not_configured");
+    expect(err.message).toBe("Connect your n8n first.");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not loop: a second 409 after the retry is thrown", async () => {
+    // fresh Response per call: a body can only be read once
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => json(NOT_CONFIGURED, 409));
+    vi.stubGlobal("fetch", fetchMock);
+    const handler = vi.fn().mockResolvedValue(true);
+    setN8nGateHandler(handler);
+
+    const err = (await listAgents("tok").catch((e: unknown) => e)) as ApiError;
+    expect(err.code).toBe("n8n_not_configured");
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws immediately when no handler is registered", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(NOT_CONFIGURED, 409));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const err = (await listAgents("tok").catch((e: unknown) => e)) as ApiError;
+    expect(err.code).toBe("n8n_not_configured");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats a handler that throws as 'not connected'", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(NOT_CONFIGURED, 409));
+    vi.stubGlobal("fetch", fetchMock);
+    setN8nGateHandler(vi.fn().mockRejectedValue(new Error("modal crashed")));
+
+    const err = (await listAgents("tok").catch((e: unknown) => e)) as ApiError;
+    expect(err.code).toBe("n8n_not_configured");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("concurrent 409s share a single prompt", async () => {
+    let n = 0;
+    const fetchMock = vi.fn().mockImplementation(async () =>
+      // first two calls (the concurrent originals) fail; the retries succeed
+      ++n <= 2 ? json(NOT_CONFIGURED, 409) : json({ agents: [] }, 200),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    let release!: (ok: boolean) => void;
+    const handler = vi
+      .fn()
+      .mockImplementation(
+        () => new Promise<boolean>((resolve) => (release = resolve)),
+      );
+    setN8nGateHandler(handler);
+
+    const a = listAgents("tok");
+    const b = listAgents("tok");
+    await vi.waitFor(() => expect(handler).toHaveBeenCalled());
+    release(true);
+
+    expect(await Promise.all([a, b])).toEqual([[], []]);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it("does not prompt for other 409 codes (agent_stale)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          json({ detail: { code: "agent_stale", message: "Old n8n." } }, 409),
+        ),
+    );
+    const handler = vi.fn().mockResolvedValue(true);
+    setN8nGateHandler(handler);
+
+    const err = await deactivateAgent("tok", "a1").catch((e: unknown) => e);
+    expect(isStaleAgentError(err)).toBe(true);
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+describe("stale helpers", () => {
+  const clash = (stale: unknown) =>
+    new ApiError("Name taken", 409, {
+      code: "agent_name_taken",
+      message: "Name taken",
+      agent_id: "a1",
+      ...(stale === undefined ? {} : { stale }),
+    });
+
+  it("isStaleNameClash is true only for agent_name_taken with stale: true", () => {
+    expect(isStaleNameClash(clash(true))).toBe(true);
+    expect(isStaleNameClash(clash(false))).toBe(false);
+    expect(isStaleNameClash(clash(undefined))).toBe(false);
+    expect(isStaleNameClash(clash("true"))).toBe(false);
+  });
+
+  it("isStaleNameClash ignores other errors", () => {
+    expect(
+      isStaleNameClash(
+        new ApiError("x", 409, { code: "agent_stale", stale: true }),
+      ),
+    ).toBe(false);
+    expect(isStaleNameClash(new Error("boom"))).toBe(false);
+    expect(isStaleNameClash(null)).toBe(false);
+  });
+
+  it("isStaleAgentError matches only agent_stale", () => {
+    expect(
+      isStaleAgentError(new ApiError("x", 409, { code: "agent_stale" })),
+    ).toBe(true);
+    expect(isStaleAgentError(new ApiError("x", 409, { code: "other" }))).toBe(
+      false,
+    );
+    expect(isStaleAgentError("agent_stale")).toBe(false);
   });
 });

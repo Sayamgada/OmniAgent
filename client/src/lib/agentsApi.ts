@@ -131,6 +131,60 @@ export class ApiError extends Error {
   }
 }
 
+/** 409 codes the frontend branches on (see the backend's n8n_gate / agent_router). */
+export const N8N_NOT_CONFIGURED = "n8n_not_configured";
+export const AGENT_STALE = "agent_stale";
+export const AGENT_NAME_TAKEN = "agent_name_taken";
+
+/** True for a 409 saying the agent belongs to a previous n8n instance. */
+export function isStaleAgentError(err: unknown): boolean {
+  return err instanceof ApiError && err.code === AGENT_STALE;
+}
+
+/**
+ * True for a create-workflow 409 whose name clash is with a STALE agent (one on a
+ * previous n8n instance). The fix is different: delete that agent first.
+ */
+export function isStaleNameClash(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.code !== AGENT_NAME_TAKEN) return false;
+  const d = err.detail;
+  return (
+    !!d &&
+    typeof d === "object" &&
+    !Array.isArray(d) &&
+    (d as { stale?: unknown }).stale === true
+  );
+}
+
+// ---------- n8n gate ----------
+// A request the backend refuses with 409 `n8n_not_configured` is not a failure the
+// user can do anything about in place -- they need to connect their n8n first. The
+// app registers one handler (N8nContext) that opens the connect modal and resolves
+// true once connected; request() then retries the original call exactly once.
+
+export type N8nGateHandler = () => Promise<boolean>;
+
+let n8nGateHandler: N8nGateHandler | null = null;
+let gateInFlight: Promise<boolean> | null = null;
+
+export function setN8nGateHandler(handler: N8nGateHandler | null): void {
+  n8nGateHandler = handler;
+}
+
+/** Concurrent 409s share ONE prompt instead of stacking modals. */
+function askToConnectN8n(): Promise<boolean> {
+  const handler = n8nGateHandler;
+  if (!handler) return Promise.resolve(false);
+  if (!gateInFlight) {
+    gateInFlight = handler()
+      .catch(() => false)
+      .finally(() => {
+        gateInFlight = null;
+      });
+  }
+  return gateInFlight;
+}
+
 export function detailToMessage(detail: unknown, fallback: string): string {
   if (typeof detail === "string" && detail) return detail;
   if (Array.isArray(detail)) {
@@ -154,11 +208,19 @@ export function detailToMessage(detail: unknown, fallback: string): string {
   return fallback;
 }
 
-async function request<T>(
+export interface RequestOptions {
+  /** Set false to surface `n8n_not_configured` as an error instead of prompting
+   *  the user to connect (e.g. for background polling). Default true. */
+  gate?: boolean;
+}
+
+export async function request<T>(
   path: string,
   token: string | null,
   init?: RequestInit,
+  options: RequestOptions = {},
 ): Promise<T> {
+  const { gate = true } = options;
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
@@ -173,11 +235,16 @@ async function request<T>(
       body && typeof body === "object"
         ? (body as { detail?: unknown }).detail
         : undefined;
-    throw new ApiError(
+    const err = new ApiError(
       detailToMessage(detail, `Request failed (${res.status})`),
       res.status,
       detail,
     );
+    if (gate && err.code === N8N_NOT_CONFIGURED && (await askToConnectN8n())) {
+      // Retry once with the gate off, so a second 409 surfaces instead of looping.
+      return request<T>(path, token, init, { gate: false });
+    }
+    throw err;
   }
   if (res.status === 204) return undefined as T; // DELETE /agents/{id}
   return (await res.json()) as T;
@@ -258,6 +325,10 @@ export interface Agent {
   last_error: string | null;
   created_at: string | null;
   updated_at: string | null;
+  /** True when the agent was deployed to an n8n instance the user is no longer
+   *  connected to. Only deleting it is possible; activate/deactivate/runs answer
+   *  409 `agent_stale`. Optional so an older backend degrades to "not stale". */
+  stale?: boolean;
 }
 
 /** One n8n execution. Field names follow agent_lifecycle.agent_runs but are

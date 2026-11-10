@@ -1,3 +1,5 @@
+import { request } from "../agentsApi";
+
 export type IntegrationField = {
   name: string; // camelCase, matches n8n's own field name -- send back exactly as-is
   display_name: string | null;
@@ -23,55 +25,61 @@ export type IntegrationCatalogItem = {
   connected: boolean;
   configured: boolean;
   connected_option: string | null;
+  // True when the saved credential belongs to a previous n8n instance. Such an entry is
+  // connected=false / configured=true: reconnecting replaces it, deleting removes it.
+  // Optional so an older backend degrades to "not stale".
+  stale?: boolean;
 };
 
-const API_BASE = "http://127.0.0.1:8000";
+// All calls below go through the shared request() so they get the same API base URL,
+// structured error handling (ApiError.message, never "[object Object]") and the
+// n8n_not_configured gate.
 
-function authHeaders(token: string | null) {
-  return { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-}
-
-export async function fetchIntegrations(token: string | null): Promise<IntegrationCatalogItem[]> {
-  const res = await fetch(`${API_BASE}/integrations`, { headers: authHeaders(token) });
-  if (!res.ok) throw new Error("Failed to load integrations");
-  return res.json();
+export function fetchIntegrations(
+  token: string | null,
+): Promise<IntegrationCatalogItem[]> {
+  return request("/integrations", token);
 }
 
 // Pattern 1 (text fields) connect -- covers plain single-method services (Stripe, Groq, ...)
 // and the api_key/personal_access_token branch of multi-option services (Notion, GitHub, ...).
-export async function connectTextFields(
+export function connectTextFields(
   token: string | null,
   service: string,
   optionId: string,
-  values: Record<string, string>
-): Promise<{ service: string; auth_option: string; connected: boolean; n8n_credential_id: string }> {
-  const res = await fetch(`${API_BASE}/integrations/connect/text-fields`, {
+  values: Record<string, string>,
+): Promise<{
+  service: string;
+  auth_option: string;
+  connected: boolean;
+  n8n_credential_id: string;
+}> {
+  return request("/integrations/connect/text-fields", token, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ service, option_id: optionId, values }),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to save integration");
-  }
-  return res.json();
 }
 
 // Pattern 2/4 (OAuth2) connect -- works for ANY oauth service, not just Google. The user
-// supplies their own client_id/client_secret (registered with n8n's fixed callback URL as
-// the redirect URI). Returns an authorization_url; caller opens it in a popup and polls
-// checkOAuthStatus until it reports connected.
-export async function connectOAuthInit(
+// supplies their own client_id/client_secret (registered with THEIR n8n's callback URL as
+// the redirect URI -- returned here as oauth_callback_url). Returns an authorization_url;
+// caller opens it in a popup and polls checkOAuthStatus until it reports connected.
+export function connectOAuthInit(
   token: string | null,
   service: string,
   optionId: string,
   clientId: string,
   clientSecret: string,
-  extraFields: Record<string, string> = {}
-): Promise<{ service: string; auth_option: string; n8n_credential_id: string; authorization_url: string }> {
-  const res = await fetch(`${API_BASE}/integrations/oauth/connect`, {
+  extraFields: Record<string, string> = {},
+): Promise<{
+  service: string;
+  auth_option: string;
+  n8n_credential_id: string;
+  authorization_url: string;
+  oauth_callback_url?: string | null;
+}> {
+  return request("/integrations/oauth/connect", token, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({
       service,
       option_id: optionId,
@@ -80,40 +88,29 @@ export async function connectOAuthInit(
       extra_fields: extraFields,
     }),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to start OAuth connect");
-  }
-  return res.json();
 }
 
-export async function checkOAuthStatus(
+// Polled every couple of seconds during the OAuth popup, so it must never open the
+// "connect n8n" modal mid-flow: gate is off and a 409 is just a failed poll.
+export function checkOAuthStatus(
   token: string | null,
-  service: string
+  service: string,
 ): Promise<{ service: string; connected: boolean; pending: boolean }> {
-  const res = await fetch(`${API_BASE}/integrations/oauth/status/${service}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to check OAuth status");
-  }
-  return res.json();
+  return request(
+    `/integrations/oauth/status/${encodeURIComponent(service)}`,
+    token,
+    undefined,
+    { gate: false },
+  );
 }
 
-export async function deleteIntegration(
+export function deleteIntegration(
   token: string | null,
-  service: string
+  service: string,
 ): Promise<{ service: string; disconnected: boolean }> {
-  const res = await fetch(`${API_BASE}/integrations/${service}`, {
+  return request(`/integrations/${encodeURIComponent(service)}`, token, {
     method: "DELETE",
-    headers: authHeaders(token),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Failed to remove integration");
-  }
-  return res.json();
 }
 
 // Opens the OAuth consent screen in a popup and polls status until it resolves.
@@ -122,10 +119,17 @@ export function runOAuthPopupFlow(
   token: string | null,
   service: string,
   authorizationUrl: string,
-  { pollIntervalMs = 2000, timeoutMs = 5 * 60 * 1000 }: { pollIntervalMs?: number; timeoutMs?: number } = {}
+  {
+    pollIntervalMs = 2000,
+    timeoutMs = 5 * 60 * 1000,
+  }: { pollIntervalMs?: number; timeoutMs?: number } = {},
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    const popup = window.open(authorizationUrl, "omniagent-oauth", "width=520,height=680");
+    const popup = window.open(
+      authorizationUrl,
+      "omniagent-oauth",
+      "width=520,height=680",
+    );
     if (!popup) {
       reject(new Error("Popup blocked -- please allow popups for this site"));
       return;
