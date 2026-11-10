@@ -33,6 +33,7 @@ import {
   createWorkflow,
   extractWorkflow,
   getParamSchema,
+  isStaleNameClash,
   requiredIntegrationsOf,
   type CreateWorkflowResponse,
   type CredentialIssue,
@@ -163,6 +164,9 @@ const NewAgentCreation = () => {
   const [nameTaken, setNameTaken] = useState<{
     name: string;
     message: string;
+    // The clash is with an agent on a previous n8n instance: it must be deleted
+    // from My Agents (renaming also works).
+    stale: boolean;
   } | null>(null);
   // The domain + description the current `workflow` was generated from. Lets
   // step 2's Continue tell "nothing changed" (keep the workflow) from "edited"
@@ -293,8 +297,13 @@ const NewAgentCreation = () => {
       if (err instanceof ApiError && err.code === "agent_name_taken") {
         // Stay on step 3 so the typed answers survive; the rename field is
         // shown above the form.
-        setNameTaken({ name: workflowName, message: err.message });
-        toast.error("You already have an agent with this name");
+        const stale = isStaleNameClash(err);
+        setNameTaken({ name: workflowName, message: err.message, stale });
+        toast.error(
+          stale
+            ? "That name belongs to an agent on a previous n8n instance"
+            : "You already have an agent with this name",
+        );
         return;
       }
       throw err;
@@ -765,6 +774,22 @@ const NewAgentCreation = () => {
                       {agentName.trim() === nameTaken.name ? (
                         <p className="text-xs text-destructive">
                           {nameTaken.message}
+                          {nameTaken.stale && (
+                            <>
+                              {" "}
+                              Delete it from{" "}
+                              <a
+                                href="/agents"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline"
+                              >
+                                My Agents
+                              </a>{" "}
+                              (opens in a new tab, your answers here are kept),
+                              or choose another name.
+                            </>
+                          )}
                         </p>
                       ) : (
                         <p className="text-xs text-muted-foreground">

@@ -6,23 +6,35 @@ import { toast } from "sonner";
 import { IntegrationCard } from "../../components/dashboard/IntegrationCard";
 import { IntegrationModal } from "../../components/dashboard/IntegrationModal";
 import { IntegrationPickerModal } from "../../components/dashboard/IntegrationPickerModal";
+import { N8nRequiredBanner } from "../../components/n8n/N8nRequiredBanner";
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
+import { useN8n } from "../../context/N8nContext";
 import { fetchIntegrations } from "../../lib/api/integrations.ts";
 import type { IntegrationCatalogItem } from "../../lib/api/integrations.ts";
 
-export default function Integrations() {  
+// Catalog entries that no longer make sense now that each user connects their own n8n
+// (see Settings, n8n tab). The backend entry is retired separately.
+const HIDDEN_SERVICES = new Set(["n8n_workflow_engine"]);
+
+export default function Integrations() {
   const { token } = useAuth();
-  const [integrations, setIntegrations] = useState<IntegrationCatalogItem[]>([]);
+  const { version: n8nVersion } = useN8n();
+  const [integrations, setIntegrations] = useState<IntegrationCatalogItem[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
-  const [configureTarget, setConfigureTarget] = useState<IntegrationCatalogItem | null>(null);
+  const [configureTarget, setConfigureTarget] =
+    useState<IntegrationCatalogItem | null>(null);
   const [configureOpen, setConfigureOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const load = () => {
     fetchIntegrations(token)
-      .then(setIntegrations)
+      .then((items) =>
+        setIntegrations(items.filter((i) => !HIDDEN_SERVICES.has(i.service))),
+      )
       .catch((err) => toast.error(err.message || "Failed to load integrations"))
       .finally(() => setLoading(false));
   };
@@ -30,11 +42,12 @@ export default function Integrations() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, n8nVersion]);
 
   const yourIntegrations = integrations.filter((i) => i.configured);
   const addableIntegrations = integrations.filter((i) => !i.configured);
   const connectedCount = yourIntegrations.filter((i) => i.connected).length;
+  const staleCount = yourIntegrations.filter((i) => i.stale).length;
 
   const openConfigure = (integration: IntegrationCatalogItem) => {
     setConfigureTarget(integration);
@@ -56,6 +69,8 @@ export default function Integrations() {
         </Button>
       </div>
 
+      <N8nRequiredBanner />
+
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -66,11 +81,19 @@ export default function Integrations() {
         </div>
         <div>
           <p className="font-semibold">
-            {connectedCount} of {yourIntegrations.length} added integrations connected
+            {connectedCount} of {yourIntegrations.length} added integrations
+            connected
           </p>
           <p className="text-sm text-muted-foreground">
-            {integrations.length - yourIntegrations.length} more services available to add
+            {integrations.length - yourIntegrations.length} more services
+            available to add
           </p>
+          {staleCount > 0 && (
+            <p className="mt-1 text-sm text-amber-500">
+              {staleCount} saved for a previous n8n instance. Reconnect or
+              delete them.
+            </p>
+          )}
         </div>
       </motion.div>
 
@@ -97,9 +120,15 @@ export default function Integrations() {
                 setIntegrations((prev) =>
                   prev.map((it) =>
                     it.service === service
-                      ? { ...it, connected: false, configured: false, connected_option: null }
-                      : it
-                  )
+                      ? {
+                          ...it,
+                          connected: false,
+                          configured: false,
+                          connected_option: null,
+                          stale: false,
+                        }
+                      : it,
+                  ),
                 )
               }
               onConfigure={openConfigure}
@@ -121,7 +150,11 @@ export default function Integrations() {
         onOpenChange={setConfigureOpen}
         onSaved={(service) =>
           setIntegrations((prev) =>
-            prev.map((it) => (it.service === service ? { ...it, connected: true, configured: true } : it))
+            prev.map((it) =>
+              it.service === service
+                ? { ...it, connected: true, configured: true, stale: false }
+                : it,
+            ),
           )
         }
       />

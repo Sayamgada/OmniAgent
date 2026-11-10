@@ -13,66 +13,174 @@ import { useAuth } from "../../context/AuthContext";
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Mail, MessageSquare, MessageCircle, Send, Users, Smartphone,
-  Calendar, CalendarDays, Contact, CheckSquare, FileText, Trello,
-  CheckCircle2, LayoutGrid, ListChecks, HardDrive, Cloud, Package,
-  Database, FolderInput, Table, Flame, FileSpreadsheet, BookOpen,
-  Github, Gitlab, GitBranch, Settings, Wallet, CreditCard, Receipt,
-  TrendingUp, Magnet, Twitter, Linkedin, Facebook, Instagram, Youtube,
-  ClipboardList, Globe, Share2, Webhook, Rss, Search, Map, CloudSun,
-  ShieldCheck, Boxes, Workflow, Sparkles, Zap, Wind, Route, Cpu, Link2,
+  Mail,
+  MessageSquare,
+  MessageCircle,
+  Send,
+  Users,
+  Smartphone,
+  Calendar,
+  CalendarDays,
+  Contact,
+  CheckSquare,
+  FileText,
+  Trello,
+  CheckCircle2,
+  LayoutGrid,
+  ListChecks,
+  HardDrive,
+  Cloud,
+  Package,
+  Database,
+  FolderInput,
+  Table,
+  Flame,
+  FileSpreadsheet,
+  BookOpen,
+  Github,
+  Gitlab,
+  GitBranch,
+  Settings,
+  Wallet,
+  CreditCard,
+  Receipt,
+  TrendingUp,
+  Magnet,
+  Twitter,
+  Linkedin,
+  Facebook,
+  Instagram,
+  Youtube,
+  ClipboardList,
+  Globe,
+  Share2,
+  Webhook,
+  Rss,
+  Search,
+  Map,
+  CloudSun,
+  ShieldCheck,
+  Boxes,
+  Workflow,
+  Sparkles,
+  Zap,
+  Wind,
+  Route,
+  Cpu,
+  Link2,
 } from "lucide-react";
 
 export const integrationIcons: Record<string, LucideIcon> = {
-  gmail: Mail, outlook: Mail, smtp_email: Send, slack: MessageSquare,
-  microsoft_teams: Users, discord: MessageCircle, telegram: Send,
-  twilio_sms: Smartphone, whatsapp: MessageCircle,
+  gmail: Mail,
+  outlook: Mail,
+  smtp_email: Send,
+  slack: MessageSquare,
+  microsoft_teams: Users,
+  discord: MessageCircle,
+  telegram: Send,
+  twilio_sms: Smartphone,
+  whatsapp: MessageCircle,
 
-  google_calendar: Calendar, outlook_calendar: CalendarDays,
-  google_contacts: Contact, google_tasks: CheckSquare, notion: FileText,
-  trello: Trello, asana: CheckCircle2, clickup: CheckSquare,
-  monday: LayoutGrid, todoist: ListChecks,
+  google_calendar: Calendar,
+  outlook_calendar: CalendarDays,
+  google_contacts: Contact,
+  google_tasks: CheckSquare,
+  notion: FileText,
+  trello: Trello,
+  asana: CheckCircle2,
+  clickup: CheckSquare,
+  monday: LayoutGrid,
+  todoist: ListChecks,
 
-  drive: HardDrive, dropbox: Package, onedrive: Cloud, box: Package,
-  amazon_s3: Database, ftp_sftp: FolderInput,
+  drive: HardDrive,
+  dropbox: Package,
+  onedrive: Cloud,
+  box: Package,
+  amazon_s3: Database,
+  ftp_sftp: FolderInput,
 
-  postgresql: Database, mysql: Database, mongodb: Database, redis: Database,
-  sqlite: Database, supabase: Database, airtable: Table, firebase: Flame,
+  postgresql: Database,
+  mysql: Database,
+  mongodb: Database,
+  redis: Database,
+  sqlite: Database,
+  supabase: Database,
+  airtable: Table,
+  firebase: Flame,
 
-  google_docs: FileText, google_sheets: FileSpreadsheet,
-  microsoft_excel_online: FileSpreadsheet, microsoft_word_online: FileText,
-  confluence: BookOpen, gitbook: BookOpen,
+  google_docs: FileText,
+  google_sheets: FileSpreadsheet,
+  microsoft_excel_online: FileSpreadsheet,
+  microsoft_word_online: FileText,
+  confluence: BookOpen,
+  gitbook: BookOpen,
 
-  github: Github, gitlab: Gitlab, bitbucket: GitBranch, jira: Trello,
-  jenkins: Settings, azure_devops: Cloud, docker: Package,
+  github: Github,
+  gitlab: Gitlab,
+  bitbucket: GitBranch,
+  jira: Trello,
+  jenkins: Settings,
+  azure_devops: Cloud,
+  docker: Package,
 
-  salesforce: Cloud, hubspot: Magnet, zoho_crm: Users, pipedrive: TrendingUp,
+  salesforce: Cloud,
+  hubspot: Magnet,
+  zoho_crm: Users,
+  pipedrive: TrendingUp,
   freshsales: Users,
 
-  stripe: CreditCard, razorpay: CreditCard, paypal: Wallet,
-  quickbooks: Receipt, xero: Receipt,
+  stripe: CreditCard,
+  razorpay: CreditCard,
+  paypal: Wallet,
+  quickbooks: Receipt,
+  xero: Receipt,
 
-  x_twitter: Twitter, linkedin: Linkedin, facebook: Facebook,
-  instagram_business: Instagram, youtube: Youtube, reddit: MessageCircle,
+  x_twitter: Twitter,
+  linkedin: Linkedin,
+  facebook: Facebook,
+  instagram_business: Instagram,
+  youtube: Youtube,
+  reddit: MessageCircle,
   pinterest: Share2,
 
-  google_forms: ClipboardList, typeform: ClipboardList, jotform: ClipboardList,
-  tally: ClipboardList, formstack: ClipboardList,
+  google_forms: ClipboardList,
+  typeform: ClipboardList,
+  jotform: ClipboardList,
+  tally: ClipboardList,
+  formstack: ClipboardList,
 
-  http: Globe, graphql: Share2, webhook: Webhook, rss_feed: Rss,
-  serpapi: Search, tavily: Search, brave_search: Search,
+  http: Globe,
+  graphql: Share2,
+  webhook: Webhook,
+  rss_feed: Rss,
+  serpapi: Search,
+  tavily: Search,
+  brave_search: Search,
   google_custom_search: Search,
 
-  google_maps: Map, mapbox: Map, openweather: CloudSun, weatherapi: CloudSun,
+  google_maps: Map,
+  mapbox: Map,
+  openweather: CloudSun,
+  weatherapi: CloudSun,
 
-  auth0: ShieldCheck, clerk: ShieldCheck, firebase_authentication: ShieldCheck,
-  keycloak: ShieldCheck, okta: ShieldCheck,
+  auth0: ShieldCheck,
+  clerk: ShieldCheck,
+  firebase_authentication: ShieldCheck,
+  keycloak: ShieldCheck,
+  okta: ShieldCheck,
 
-  faiss_vector_store: Boxes, n8n_workflow_engine: Workflow,
+  faiss_vector_store: Boxes,
+  n8n_workflow_engine: Workflow,
 
-  openai: Sparkles, anthropic: Sparkles, gemini: Sparkles, groq: Zap,
-  cohere: Sparkles, mistral: Wind, huggingface: Smartphone,
-  openrouter: Route, ollama: Cpu,
+  openai: Sparkles,
+  anthropic: Sparkles,
+  gemini: Sparkles,
+  groq: Zap,
+  cohere: Sparkles,
+  mistral: Wind,
+  huggingface: Smartphone,
+  openrouter: Route,
+  ollama: Cpu,
 };
 
 export const DefaultIntegrationIcon = Link2;
@@ -84,7 +192,12 @@ type IntegrationCardProps = {
   onConfigure: (integration: IntegrationCatalogItem) => void;
 };
 
-export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure }: IntegrationCardProps) {
+export function IntegrationCard({
+  integration,
+  index = 0,
+  onDeleted,
+  onConfigure,
+}: IntegrationCardProps) {
   const { token } = useAuth();
   const Icon = integrationIcons[integration.service] ?? DefaultIntegrationIcon;
   const [deleting, setDeleting] = useState(false);
@@ -107,8 +220,12 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
   // Catalog has no free-text "description" field -- use the connected auth method (or the
   // default one, if not yet connected) as the subtitle instead.
   const activeOption =
-    integration.auth_options.find((o) => o.option_id === integration.connected_option) ??
-    integration.auth_options.find((o) => o.option_id === integration.default_option) ??
+    integration.auth_options.find(
+      (o) => o.option_id === integration.connected_option,
+    ) ??
+    integration.auth_options.find(
+      (o) => o.option_id === integration.default_option,
+    ) ??
     integration.auth_options[0];
 
   return (
@@ -118,7 +235,8 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
       transition={{ delay: index * 0.06, duration: 0.3 }}
       className={cn(
         "glass-card-hover rounded-2xl p-5 transition-all duration-300",
-        integration.connected && "border-primary/20 shadow-[0_0_24px_hsl(211_100%_50%_/_0.12)]"
+        integration.connected &&
+          "border-primary/20 shadow-[0_0_24px_hsl(211_100%_50%_/_0.12)]",
       )}
     >
       <div className="flex items-start justify-between gap-4">
@@ -128,30 +246,47 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
           </div>
           <div>
             <h3 className="font-semibold">{integration.display_name}</h3>
-            <p className="text-xs text-muted-foreground">{integration.category}</p>
+            <p className="text-xs text-muted-foreground">
+              {integration.category}
+            </p>
           </div>
         </div>
         <Badge
           variant="outline"
           className={cn(
             "text-xs",
-            integration.connected
-              ? "border-secondary/40 bg-secondary/10 text-secondary"
-              : "border-muted-foreground/30 text-muted-foreground"
+            integration.stale
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+              : integration.connected
+                ? "border-secondary/40 bg-secondary/10 text-secondary"
+                : "border-muted-foreground/30 text-muted-foreground",
           )}
         >
-          {integration.connected ? "Connected" : "Disconnected"}
+          {integration.stale
+            ? "Needs reconnect"
+            : integration.connected
+              ? "Connected"
+              : "Disconnected"}
         </Badge>
       </div>
 
       <p className="mt-3 text-sm text-muted-foreground">
-        {integration.connected ? `Connected via ${activeOption.label}` : activeOption.label}
+        {integration.stale
+          ? "Saved for a previous n8n instance. Reconnect to use it again."
+          : integration.connected
+            ? `Connected via ${activeOption.label}`
+            : activeOption.label}
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => onConfigure(integration)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => onConfigure(integration)}
+        >
           <Key className="h-3.5 w-3.5" />
-          Edit Keys
+          {integration.stale ? "Reconnect" : "Edit Keys"}
         </Button>
         <Button variant="outline" size="sm" className="gap-1.5">
           <Settings2 className="h-3.5 w-3.5" />
@@ -173,7 +308,11 @@ export function IntegrationCard({ integration, index = 0, onDeleted, onConfigure
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={`Disconnect ${integration.display_name}?`}
-        description="This removes the credential from n8n too, not just from OmniAgent."
+        description={
+          integration.stale
+            ? "This credential belonged to a previous n8n instance, so only OmniAgent's saved copy is removed."
+            : "This removes the credential from n8n too, not just from OmniAgent."
+        }
         confirmLabel="Disconnect"
         destructive
         loading={deleting}

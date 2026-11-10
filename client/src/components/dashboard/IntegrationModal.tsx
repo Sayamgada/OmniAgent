@@ -4,14 +4,25 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../ui/dialog";
 import { useAuth } from "../../context/AuthContext";
+import { useN8n } from "../../context/N8nContext";
+import { CopyableUrl } from "../n8n/CopyableUrl";
 import {
   connectTextFields,
   connectOAuthInit,
   runOAuthPopupFlow,
 } from "../../lib/api/integrations.ts";
-import type { IntegrationCatalogItem, AuthOption } from "../../lib/api/integrations.ts";
+import type {
+  IntegrationCatalogItem,
+  AuthOption,
+} from "../../lib/api/integrations.ts";
 
 type IntegrationModalProps = {
   integration: IntegrationCatalogItem | null;
@@ -27,11 +38,19 @@ type IntegrationModalProps = {
 // evaluator treating the literal text "false" as truthy. Simplest safe choice is to omit them
 // entirely and let n8n apply its own default (proven to work correctly for Gmail already).
 function visibleFields(option: AuthOption) {
-  return option.fields.filter((f) => f.type !== "hidden" && f.type !== "boolean");
+  return option.fields.filter(
+    (f) => f.type !== "hidden" && f.type !== "boolean",
+  );
 }
 
-export function IntegrationModal({ integration, open, onOpenChange, onSaved }: IntegrationModalProps) {
+export function IntegrationModal({
+  integration,
+  open,
+  onOpenChange,
+  onSaved,
+}: IntegrationModalProps) {
   const { token } = useAuth();
+  const { status: n8nStatus, requestConnection } = useN8n();
   const [selectedOptionId, setSelectedOptionId] = useState<string>("");
   const [values, setValues] = useState<Record<string, string>>({});
   const [clientId, setClientId] = useState("");
@@ -43,8 +62,9 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
   useEffect(() => {
     if (integration) {
       const opt =
-        integration.auth_options.find((o) => o.option_id === integration.default_option) ??
-        integration.auth_options[0];
+        integration.auth_options.find(
+          (o) => o.option_id === integration.default_option,
+        ) ?? integration.auth_options[0];
       setSelectedOptionId(opt.option_id);
       // Pre-fill any field that has a known default (e.g. GitHub's "server" ->
       // https://api.github.com, Salesforce's "environment" -> production) so the user can
@@ -61,12 +81,17 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
 
   if (!integration) return null;
 
+  // The user's OWN n8n callback; null until they have connected an n8n.
+  const callbackUrl = n8nStatus?.oauth_callback_url ?? null;
+
   const selectedOption =
     integration.auth_options.find((o) => o.option_id === selectedOptionId) ??
     integration.auth_options[0];
 
   const isTextFields = selectedOption.connection_pattern === 1;
-  const isOAuth = selectedOption.connection_pattern === 2 || selectedOption.connection_pattern === 4;
+  const isOAuth =
+    selectedOption.connection_pattern === 2 ||
+    selectedOption.connection_pattern === 4;
   const oauthExtraFields = isOAuth ? visibleFields(selectedOption) : [];
 
   const handleSaveTextFields = async () => {
@@ -78,7 +103,12 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
     }
     setSaving(true);
     try {
-      await connectTextFields(token, integration.service, selectedOption.option_id, values);
+      await connectTextFields(
+        token,
+        integration.service,
+        selectedOption.option_id,
+        values,
+      );
       toast.success(`Connected to ${integration.display_name}`);
       onSaved(integration.service);
       onOpenChange(false);
@@ -110,10 +140,16 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
         selectedOption.option_id,
         clientId,
         clientSecret,
-        extraFields
+        extraFields,
       );
-      toast.info(`Complete the ${integration.display_name} sign-in in the popup window`);
-      const connected = await runOAuthPopupFlow(token, integration.service, authorization_url);
+      toast.info(
+        `Complete the ${integration.display_name} sign-in in the popup window`,
+      );
+      const connected = await runOAuthPopupFlow(
+        token,
+        integration.service,
+        authorization_url,
+      );
       if (connected) {
         toast.success(`Connected to ${integration.display_name}`);
         onSaved(integration.service);
@@ -144,7 +180,9 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 value={selectedOption.option_id}
                 onChange={(e) => {
-                  const opt = integration.auth_options.find((o) => o.option_id === e.target.value)!;
+                  const opt = integration.auth_options.find(
+                    (o) => o.option_id === e.target.value,
+                  )!;
                   setSelectedOptionId(opt.option_id);
                   const prefill: Record<string, string> = {};
                   for (const f of visibleFields(opt)) {
@@ -165,13 +203,22 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
           {isTextFields &&
             visibleFields(selectedOption).map((field) => (
               <div key={field.name} className="space-y-1.5">
-                <Label htmlFor={field.name}>{field.display_name ?? field.name}</Label>
+                <Label htmlFor={field.name}>
+                  {field.display_name ?? field.name}
+                </Label>
                 <Input
                   id={field.name}
                   type={field.secret ? "password" : "text"}
                   value={values[field.name] ?? ""}
-                  onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
-                  placeholder={field.default ?? field.display_name ?? field.name}
+                  onChange={(e) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [field.name]: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    field.default ?? field.display_name ?? field.name
+                  }
                 />
               </div>
             ))}
@@ -179,15 +226,34 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
           {isOAuth && (
             <>
               <p className="text-sm text-muted-foreground">
-                Register your own {integration.display_name} OAuth app and enter its credentials
-                below. Use this redirect URI when registering it:
-                <code className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs">
-                  http://localhost:5678/rest/oauth2-credential/callback
-                </code>
+                Register your own {integration.display_name} OAuth app and enter
+                its credentials below. Use this redirect URI when registering
+                it:
               </p>
+              {callbackUrl ? (
+                <CopyableUrl value={callbackUrl} />
+              ) : (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                  <p className="text-xs text-amber-500">
+                    Connect your n8n to get the redirect URI for your instance.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void requestConnection()}
+                  >
+                    Connect n8n
+                  </Button>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="client-id">Client ID</Label>
-                <Input id="client-id" value={clientId} onChange={(e) => setClientId(e.target.value)} />
+                <Input
+                  id="client-id"
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="client-secret">Client Secret</Label>
@@ -200,19 +266,28 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
               </div>
               {oauthExtraFields.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Optional advanced settings -- leave blank to use {integration.display_name}'s
-                  defaults.
+                  Optional advanced settings -- leave blank to use{" "}
+                  {integration.display_name}'s defaults.
                 </p>
               )}
               {oauthExtraFields.map((field) => (
                 <div key={field.name} className="space-y-1.5">
-                  <Label htmlFor={field.name}>{field.display_name ?? field.name}</Label>
+                  <Label htmlFor={field.name}>
+                    {field.display_name ?? field.name}
+                  </Label>
                   <Input
                     id={field.name}
                     type={field.secret ? "password" : "text"}
                     value={values[field.name] ?? ""}
-                    onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
-                    placeholder={field.default ?? field.display_name ?? field.name}
+                    onChange={(e) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        [field.name]: e.target.value,
+                      }))
+                    }
+                    placeholder={
+                      field.default ?? field.display_name ?? field.name
+                    }
                   />
                 </div>
               ))}
@@ -221,7 +296,11 @@ export function IntegrationModal({ integration, open, onOpenChange, onSaved }: I
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
             Cancel
           </Button>
           {isTextFields && (

@@ -6,6 +6,7 @@ import {
   Shield,
   Sliders,
   User,
+  Workflow,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,17 +24,43 @@ import {
 } from "../../components/ui/select";
 import { Slider } from "../../components/ui/slider";
 import { Switch } from "../../components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import { N8nConnectionPanel } from "../../components/n8n/N8nConnectionPanel";
 import { useAuth } from "../../context/AuthContext";
 
 const sessions = [
-  { id: "1", device: "Chrome on Windows", location: "New York, US", current: true, lastActive: "Active now" },
-  { id: "2", device: "Safari on iPhone", location: "New York, US", current: false, lastActive: "2 days ago" },
+  {
+    id: "1",
+    device: "Chrome on Windows",
+    location: "New York, US",
+    current: true,
+    lastActive: "Active now",
+  },
+  {
+    id: "2",
+    device: "Safari on iPhone",
+    location: "New York, US",
+    current: false,
+    lastActive: "2 days ago",
+  },
 ];
 
 const activityLogs = [
-  { action: "Agent created", detail: "HR Policy Assistant", time: "2 hours ago" },
-  { action: "API key rotated", detail: "OpenAI integration", time: "1 day ago" },
+  {
+    action: "Agent created",
+    detail: "HR Policy Assistant",
+    time: "2 hours ago",
+  },
+  {
+    action: "API key rotated",
+    detail: "OpenAI integration",
+    time: "1 day ago",
+  },
   { action: "Login", detail: "Chrome on Windows", time: "3 days ago" },
 ];
 
@@ -67,13 +94,26 @@ export default function Settings() {
 
       <Tabs defaultValue="user" className="space-y-6">
         <TabsList className="glass-card h-auto flex-wrap gap-1 rounded-xl p-1">
-          <TabsTrigger value="user" className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+          <TabsTrigger
+            value="user"
+            className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary"
+          >
             <User className="h-4 w-4" />
             User
           </TabsTrigger>
-          <TabsTrigger value="ai" className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+          <TabsTrigger
+            value="ai"
+            className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary"
+          >
             <Sliders className="h-4 w-4" />
             AI
+          </TabsTrigger>
+          <TabsTrigger
+            value="n8n"
+            className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary"
+          >
+            <Workflow className="h-4 w-4" />
+            n8n
           </TabsTrigger>
           {/* <TabsTrigger value="security" className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <Shield className="h-4 w-4" />
@@ -105,15 +145,29 @@ export default function Settings() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue={displayName} className="bg-muted/30" />
+                <Input
+                  id="name"
+                  defaultValue={displayName}
+                  className="bg-muted/30"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={email} className="bg-muted/30" />
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue={email}
+                  className="bg-muted/30"
+                />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="password">New Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" className="bg-muted/30" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="bg-muted/30"
+                />
               </div>
             </div>
 
@@ -141,11 +195,19 @@ export default function Settings() {
               </h3>
               <div className="flex items-center justify-between">
                 <Label htmlFor="email-notif">Email notifications</Label>
-                <Switch id="email-notif" checked={emailNotif} onCheckedChange={setEmailNotif} />
+                <Switch
+                  id="email-notif"
+                  checked={emailNotif}
+                  onCheckedChange={setEmailNotif}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="push-notif">Push notifications</Label>
-                <Switch id="push-notif" checked={pushNotif} onCheckedChange={setPushNotif} />
+                <Switch
+                  id="push-notif"
+                  checked={pushNotif}
+                  onCheckedChange={setPushNotif}
+                />
               </div>
             </div>
 
@@ -176,7 +238,9 @@ export default function Settings() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <Label>Temperature</Label>
-                <span className="text-sm text-muted-foreground">{temperature[0]}</span>
+                <span className="text-sm text-muted-foreground">
+                  {temperature[0]}
+                </span>
               </div>
               <Slider
                 value={temperature}
@@ -190,7 +254,9 @@ export default function Settings() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <Label>Token Limit</Label>
-                <span className="text-sm text-muted-foreground">{tokenLimit[0]}</span>
+                <span className="text-sm text-muted-foreground">
+                  {tokenLimit[0]}
+                </span>
               </div>
               <Slider
                 value={tokenLimit}
@@ -217,6 +283,10 @@ export default function Settings() {
 
             <Button onClick={handleSave}>Save AI Settings</Button>
           </motion.div>
+        </TabsContent>
+
+        <TabsContent value="n8n">
+          <N8nConnectionPanel />
         </TabsContent>
 
         {/* <TabsContent value="security">

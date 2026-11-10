@@ -1,10 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
+import { N8nProvider } from "./context/N8nContext.tsx";
 import DashboardLayout from "./layouts/DashboardLayout.tsx";
 import Index from "./pages/Index.tsx";
 import NewAgentCreation from "./pages/NewAgentCreation.tsx";
@@ -31,36 +38,43 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="omniagent-theme">
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem
+      storageKey="omniagent-theme"
+    >
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/oauth/callback" element={<OAuthCallback />} />
+        <N8nProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-              <Route element={<GuestRoute />}>
-                <Route path="/sign-in" element={<SignIn />} />
-                <Route path="/sign-up" element={<SignUp />} />
-              </Route>
-
-              <Route element={<PrivateRoute />}>
-                <Route element={<DashboardLayout />}>
-                  <Route path="/dashboard" element={<DashboardHome />} />
-                  <Route path="/agents" element={<MyAgents />} />
-                  <Route path="/agents/:id/edit" element={<EditAgent />} />
-                  <Route path="/integrations" element={<Integrations />} />
-                  <Route path="/settings" element={<Settings />} />
+                <Route element={<GuestRoute />}>
+                  <Route path="/sign-in" element={<SignIn />} />
+                  <Route path="/sign-up" element={<SignUp />} />
                 </Route>
-                <Route path="/new-agent" element={<NewAgentCreation />} />
-              </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                <Route element={<PrivateRoute />}>
+                  <Route element={<DashboardLayout />}>
+                    <Route path="/dashboard" element={<DashboardHome />} />
+                    <Route path="/agents" element={<MyAgents />} />
+                    <Route path="/agents/:id/edit" element={<EditAgent />} />
+                    <Route path="/integrations" element={<Integrations />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
+                  <Route path="/new-agent" element={<NewAgentCreation />} />
+                </Route>
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </N8nProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

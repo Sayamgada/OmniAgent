@@ -25,6 +25,7 @@ import {
 } from "../../components/ui/alert-dialog";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { N8nRequiredBanner } from "../../components/n8n/N8nRequiredBanner";
 import { Input } from "../../components/ui/input";
 import {
   Select,
@@ -42,10 +43,12 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { useAuth } from "../../context/AuthContext";
+import { useN8n } from "../../context/N8nContext";
 import {
   activateAgent,
   deactivateAgent,
   deleteAgent,
+  isStaleAgentError,
   listAgentRuns,
   listAgents,
   type Agent,
@@ -78,9 +81,22 @@ const STATUS_META: Record<string, { label: string; className: string }> = {
     label: "Missing in n8n",
     className: "border-amber-500/40 bg-amber-500/10 text-amber-500",
   },
+  // Deployed to an n8n instance the user is no longer connected to. Not a real status:
+  // it overrides the row's status while `agent.stale` is true.
+  stale: {
+    label: "Stale",
+    className: "border-amber-500/40 bg-amber-500/10 text-amber-500",
+  },
 };
 const STATUS_FALLBACK = STATUS_META.inactive;
-const STATUS_FILTERS = ["active", "created", "inactive", "failed", "missing"];
+const STATUS_FILTERS = [
+  "active",
+  "created",
+  "inactive",
+  "failed",
+  "missing",
+  "stale",
+];
 
 const RUN_OK = new Set(["success"]);
 const RUN_BAD = new Set(["error", "crashed", "failed"]);
@@ -103,6 +119,7 @@ type RunsState = {
 
 export default function MyAgents() {
   const { token } = useAuth();
+  const { version: n8nVersion } = useN8n();
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +158,7 @@ export default function MyAgents() {
   useEffect(() => {
     void load(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, n8nVersion]);
 
   const patchAgent = (id: string, patch: Partial<Agent>) =>
     setAgents((prev) =>
@@ -158,7 +175,9 @@ export default function MyAgents() {
           a.automation_name.toLowerCase().includes(q),
       );
     }
-    if (status !== "all") result = result.filter((a) => a.status === status);
+    if (status === "stale") result = result.filter((a) => a.stale);
+    else if (status !== "all")
+      result = result.filter((a) => a.status === status);
     if (sort === "name") {
       result.sort((a, b) => a.workflow_name.localeCompare(b.workflow_name));
     } else {
@@ -181,6 +200,8 @@ export default function MyAgents() {
         toast.success("Agent activated");
       }
     } catch (err) {
+      // Lost a race with a reconnect elsewhere: the row is stale now.
+      if (isStaleAgentError(err)) patchAgent(agent.id, { stale: true });
       toast.error(errMessage(err));
     } finally {
       setBusyId(null);
@@ -216,6 +237,7 @@ export default function MyAgents() {
         [id]: { loading: false, error: null, runs },
       }));
     } catch (err) {
+      if (isStaleAgentError(err)) patchAgent(id, { stale: true });
       setRunsById((prev) => ({
         ...prev,
         [id]: { loading: false, error: errMessage(err), runs: null },
@@ -261,6 +283,8 @@ export default function MyAgents() {
           </Button>
         </div>
       </div>
+
+      <N8nRequiredBanner />
 
       <div className="glass-card flex flex-col gap-4 rounded-2xl p-4 lg:flex-row lg:items-center">
         <div className="relative flex-1">
@@ -351,12 +375,13 @@ export default function MyAgents() {
             </TableHeader>
             <TableBody>
               {filtered.map((agent) => {
-                const meta = STATUS_META[agent.status] ?? STATUS_FALLBACK;
+                const statusKey = agent.stale ? "stale" : agent.status;
+                const meta = STATUS_META[statusKey] ?? STATUS_FALLBACK;
                 const rowBusy = busyId === agent.id;
                 const runs = runsById[agent.id];
                 const isActive = agent.status === "active";
                 // A workflow that no longer exists in n8n can only be deleted.
-                const canToggle = agent.status !== "missing";
+                const canToggle = agent.status !== "missing" && !agent.stale;
 
                 return (
                   <Fragment key={agent.id}>
@@ -366,15 +391,19 @@ export default function MyAgents() {
                         <p className="text-xs text-muted-foreground">
                           {agent.automation_name}
                         </p>
+                        {agent.stale && (
+                          <p className="mt-1 text-xs text-amber-500">
+                            Deployed to a previous n8n instance. It can only be
+                            deleted.
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
                           className={cn("text-xs", meta.className)}
                         >
-                          {agent.status in STATUS_META
-                            ? meta.label
-                            : agent.status}
+                          {statusKey in STATUS_META ? meta.label : agent.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
@@ -414,17 +443,19 @@ export default function MyAgents() {
                               {isActive ? "Deactivate" : "Activate"}
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant={
-                              openRunsId === agent.id ? "secondary" : "ghost"
-                            }
-                            className="h-8 gap-1.5 text-xs"
-                            onClick={() => toggleRuns(agent.id)}
-                          >
-                            <History className="size-3.5" />
-                            Runs
-                          </Button>
+                          {!agent.stale && (
+                            <Button
+                              size="sm"
+                              variant={
+                                openRunsId === agent.id ? "secondary" : "ghost"
+                              }
+                              className="h-8 gap-1.5 text-xs"
+                              onClick={() => toggleRuns(agent.id)}
+                            >
+                              <History className="size-3.5" />
+                              Runs
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -467,8 +498,9 @@ export default function MyAgents() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this agent?</AlertDialogTitle>
             <AlertDialogDescription>
-              “{deleteTarget?.workflow_name}” will be stopped and its n8n
-              workflow deleted. This can’t be undone.
+              {deleteTarget?.stale
+                ? `“${deleteTarget.workflow_name}” was deployed to a previous n8n instance. Deleting it removes it from OmniAgent. This can’t be undone.`
+                : `“${deleteTarget?.workflow_name}” will be stopped and its n8n workflow deleted. This can’t be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
