@@ -30,21 +30,6 @@ class Settings(BaseSettings):
     # Integration rows anymore -- those store only n8n_credential_id, no raw secrets.
     FERNET_SECRET_KEY: str
 
-    # n8n instance OmniAgent talks to via its Credentials API. (Legacy global settings; being
-    # retired in favour of the per-user connection. The OAuth callback is now per-user:
-    # <user's n8n_base_url>/rest/oauth2-credential/callback, see app.core.n8n_url.)
-    N8N_BASE_URL: str
-    N8N_API_KEY: str
-
-    # n8n owner account credentials. OmniAgent logs in as this account ONCE and caches the
-    # resulting session cookie, then reuses it to call n8n's internal (non-public-API) OAuth2
-    # endpoints -- /rest/oauth2-credential/auth (get the authorization URL for a credential) and
-    # /rest/credentials/{id}?includeData=true (poll whether that credential now has tokens).
-    # These internal routes are what n8n's own frontend uses; they are NOT part of the public
-    # /api/v1 surface and are NOT reachable with N8N_API_KEY -- they require a real session.
-    N8N_OWNER_EMAIL: str
-    N8N_OWNER_PASSWORD: str
-
     FRONTEND_BASE_URL: str
 
     N8N_ALLOW_PRIVATE_HOSTS: bool = True
