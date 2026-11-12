@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.routers.agent_router import router as agent_router
 from app.routers.agent_lifecycle import router as agent_lifecycle_router
 from app.routers.integration_router import router as integration_router
+from app.routers.ai_provider_router import router as ai_provider_router
 from app.services.vectorstore import search_automations, printVectorStore
 from app.models.user import User  # noqa: F401
 from app.models.integration import Integration
@@ -48,6 +49,7 @@ app.include_router(auth_router)
 app.include_router(agent_router)
 app.include_router(agent_lifecycle_router)
 app.include_router(integration_router)
+app.include_router(ai_provider_router)
 app.include_router(n8n_settings_router)
 
 

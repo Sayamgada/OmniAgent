@@ -278,15 +278,15 @@ def list_integrations_with_status(
     return out
 
 
-def check_required_integrations(
-    db: Session,
-    user_id: uuid.UUID,
-    required: list[dict],
-    *,
-    n8n_connection_id: uuid.UUID | None,
-) -> dict:
-    # Only rows stamped for the user's CURRENT n8n instance count as connected.
-    connected_services = {
+def get_connected_services(
+    db: Session, user_id: uuid.UUID, *, n8n_connection_id: uuid.UUID | None
+) -> set[str]:
+    """
+    Services this user counts as connected: active rows stamped for the user's CURRENT n8n
+    instance. Single source of truth for "connected" -- used by check_required_integrations
+    and GET /ai-providers so the two can never disagree.
+    """
+    return {
         r.service
         for r in db.query(Integration)
         .filter(
@@ -296,6 +296,18 @@ def check_required_integrations(
         )
         .all()
     }
+
+
+def check_required_integrations(
+    db: Session,
+    user_id: uuid.UUID,
+    required: list[dict],
+    *,
+    n8n_connection_id: uuid.UUID | None,
+) -> dict:
+    connected_services = get_connected_services(
+        db, user_id, n8n_connection_id=n8n_connection_id
+    )
     statuses = []
     all_available = True
     for req in required:
