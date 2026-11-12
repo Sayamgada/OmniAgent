@@ -32,6 +32,12 @@ class User(Base):
     n8n_connection_id = Column(UUID(as_uuid=True), nullable=True)
     n8n_connected_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Saved default AI provider/model for new agents (Task B), pre-selected on
+    # the Preview Screen. NULL -> groq and its default model. Run
+    # scripts/sql/add_ai_selection_columns.sql once (create_all won't alter).
+    default_ai_provider = Column(String(50), nullable=True)
+    default_ai_model = Column(String(255), nullable=True)
+
     @property
     def n8n_configured(self) -> bool:
         return all(

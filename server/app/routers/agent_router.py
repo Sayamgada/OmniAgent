@@ -23,7 +23,11 @@ from app.services.workflow_generator import (
     CURRENT_SCHEMA_VERSION,
 )
 from app.services.automation_preview_service import AutomationPreviewService
-from app.services.ai_selection import apply_ai_selection, default_selection
+from app.services.ai_selection import (
+    AISelectionError,
+    apply_ai_selection,
+    selection_for,
+)
 from app.services.workflow_revision import unique_revision_name
 from app.compiler import (
     SuppliedParamProvider,
@@ -87,6 +91,62 @@ class WorkflowResponse(BaseModel):
     workflow: dict
     integrations: list[dict]
     all_required_available: bool
+
+
+# ---------------------------------------------------------------------------
+# AI provider/model selection (Task B). Cached previews are provider-agnostic
+# (their AI step uses the placeholder provider); the user's choice is applied
+# on every load and never written back, since previews are shared between
+# users. workflow["ai_selection"] = {"provider", "model"} is present only when
+# the workflow has an AI step, which is how the Preview Screen knows whether
+# to show the provider picker.
+# ---------------------------------------------------------------------------
+
+
+class AISelectionFields(BaseModel):
+    ai_provider: Optional[str] = Field(default=None, max_length=50)
+    ai_model: Optional[str] = Field(default=None, max_length=255)
+
+
+def _with_ai_selection(
+    workflow: dict, user: User, provider: Optional[str], model: Optional[str]
+) -> dict:
+    """apply_ai_selection with the precedence of selection_for (request, then
+    the user's saved default, then groq). Invalid choice -> 422."""
+    try:
+        chosen_provider, chosen_model = selection_for(user, provider, model)
+        return apply_ai_selection(workflow, chosen_provider, chosen_model)
+    except AISelectionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+        ) from None
+
+
+def _integration_status(db: Session, user: User, workflow: dict) -> WorkflowResponse:
+    integration_status = check_required_integrations(
+        db=db,
+        user_id=user.id,
+        required_integrations=workflow["required_integrations"],
+        n8n_connection_id=user.n8n_connection_id,
+    )
+    return WorkflowResponse(
+        workflow=workflow,
+        integrations=integration_status,
+        all_required_available=all(
+            r["available"] for r in integration_status if r["required"]
+        ),
+    )
+
+
+# Same projection as workflow_generator.fetch_mongo_workflow: what the Preview
+# Screen receives (no Mongo _id, which is not JSON-serialisable).
+_PREVIEW_KEYS = (
+    "schema_version",
+    "automation_name",
+    "automation_description",
+    "preview_json",
+    "required_integrations",
+)
 
 
 async def _preview_name_taken(name: str) -> bool:
@@ -198,20 +258,12 @@ async def extract_workflow(
                 detail="Workflow generation returned no result",
             )
 
-        integration_status = check_required_integrations(
-            db=db,
-            user_id=current_user.id,
-            required_integrations=workflow["required_integrations"],
-            n8n_connection_id=current_user.n8n_connection_id,
-        )
+        # Everything above stored the provider-agnostic preview. What the
+        # Preview Screen gets uses the user's saved default (else groq), so
+        # the connection check names the right AI provider from the start.
+        workflow = _with_ai_selection(workflow, current_user, None, None)
         print(workflow)
-        return WorkflowResponse(
-            workflow=workflow,
-            integrations=integration_status,
-            all_required_available=all(
-                r["available"] for r in integration_status if r["required"]
-            ),
-        )
+        return _integration_status(db, current_user, workflow)
     except HTTPException:
         raise
 
@@ -257,25 +309,36 @@ def _to_plain(obj: Any) -> Any:
     return obj
 
 
-async def _load_steps_for(automation_name: str) -> list:
+async def _load_preview(automation_name: str) -> dict:
     preview = await AutomationPreviewService.get_by_name(automation_name)
     if preview is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No preview found for automation_name={automation_name!r}",
         )
-    # The cached preview is provider-agnostic (decision D7): its AI step uses
-    # the placeholder provider. Apply the provider/model selection on every
-    # load, before the loader, so param-schema and create-workflow compile
-    # the same thing. Task B Session C will pass the user's own choice here;
-    # until then it is the default (groq + its default model).
-    provider, model = default_selection()
-    preview = apply_ai_selection(preview, provider, model)
+    return preview
+
+
+async def _load_steps_for(
+    automation_name: str,
+    user: User,
+    ai_provider: Optional[str] = None,
+    ai_model: Optional[str] = None,
+) -> tuple[list, Optional[dict]]:
+    """
+    (steps, ai_selection). The cached preview is provider-agnostic (decision
+    D7), so the provider/model selection is applied on every load, before
+    the loader -- param-schema and create-workflow must be sent the same
+    choice so they compile the same thing. ai_selection is None when the
+    workflow has no AI step.
+    """
+    preview = await _load_preview(automation_name)
+    preview = _with_ai_selection(preview, user, ai_provider, ai_model)
     # loader.preview_to_steps expects the wrapper dict containing
     # preview_json -- the Mongo doc IS that wrapper as stored (see
     # workflow_storage.py); the leftover _id is harmless, the loader
     # never reads it.
-    return preview_to_steps(preview)
+    return preview_to_steps(preview), preview.get("ai_selection")
 
 
 class StepOverrideRequest(BaseModel):
@@ -283,7 +346,7 @@ class StepOverrideRequest(BaseModel):
     target: Optional[str] = None
 
 
-class ParamSchemaRequest(BaseModel):
+class ParamSchemaRequest(AISelectionFields):
     # Same override shape create-workflow takes, so the picker's choices can
     # be replayed here to get the form for the operations the user picked.
     overrides: dict[int, StepOverrideRequest] = Field(default_factory=dict)
@@ -302,7 +365,7 @@ def _to_overrides(raw: dict[int, StepOverrideRequest]) -> Overrides:
 _LAST_ERROR_MAX = 1000
 
 
-class CreateWorkflowRequest(BaseModel):
+class CreateWorkflowRequest(AISelectionFields):
     # keyed by step number, matching Overrides/SuppliedParamProvider's own
     # shape -- lets the frontend resubmit exactly what param-schema asked
     # for, plus optional operation/target picks for any step that came
@@ -312,13 +375,47 @@ class CreateWorkflowRequest(BaseModel):
     workflow_name: str = "Generated Workflow"
 
 
+@router.post("/preview/{automation_name}/ai-selection", response_model=WorkflowResponse)
+async def select_ai_provider(
+    automation_name: str,
+    body: AISelectionFields,
+    db: Session = Depends(get_postgres_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    The Preview Screen's provider/model picker. Returns the same shape as
+    extract-workflow, with the AI step and required_integrations rewritten
+    for the chosen provider and the connection check re-run -- no
+    regeneration. Nothing is saved (use PUT /ai-providers/default for that).
+    """
+    try:
+        preview = await _load_preview(automation_name)
+        workflow = {k: preview[k] for k in _PREVIEW_KEYS if k in preview}
+        workflow = _with_ai_selection(
+            workflow, current_user, body.ai_provider, body.ai_model
+        )
+        return _integration_status(db, current_user, workflow)
+    except HTTPException:
+        raise
+    except Exception:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Error applying the AI provider selection",
+        )
+
+
 @router.get("/preview/{automation_name}/param-schema")
 async def get_param_schema(
     automation_name: str,
+    ai_provider: Optional[str] = None,
+    ai_model: Optional[str] = None,
     current_user: User = Depends(get_current_user),
 ):
     try:
-        steps = await _load_steps_for(automation_name)
+        steps, _ = await _load_steps_for(
+            automation_name, current_user, ai_provider, ai_model
+        )
         result = build_param_form(steps)
         return _to_plain(result)
     except HTTPException:
@@ -343,7 +440,9 @@ async def post_param_schema(
     the real forms. With an empty `overrides` this is identical to the GET.
     """
     try:
-        steps = await _load_steps_for(automation_name)
+        steps, _ = await _load_steps_for(
+            automation_name, current_user, body.ai_provider, body.ai_model
+        )
         result = build_param_form(steps, _to_overrides(body.overrides) or None)
         return _to_plain(result)
     except HTTPException:
@@ -376,7 +475,9 @@ async def create_workflow(
     not have been deployable (the credential resolver is per-instance too).
     """
     try:
-        steps = await _load_steps_for(automation_name)
+        steps, ai_selection = await _load_steps_for(
+            automation_name, current_user, body.ai_provider, body.ai_model
+        )
 
         overrides: Overrides = _to_overrides(body.overrides)
 
@@ -439,6 +540,8 @@ async def create_workflow(
             n8n_connection_id=n8n.connection_id,
             status="created",
             last_error=None,
+            ai_provider=(ai_selection or {}).get("provider"),
+            ai_model=(ai_selection or {}).get("model"),
         )
         try:
             db.add(agent_row)
@@ -483,6 +586,8 @@ def _agent_to_dict(agent: Agent) -> dict[str, Any]:
         "status": agent.status,
         "workflow_name": agent.workflow_name,
         "last_error": agent.last_error,
+        "ai_provider": agent.ai_provider,
+        "ai_model": agent.ai_model,
     }
 
 

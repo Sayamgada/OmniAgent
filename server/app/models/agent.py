@@ -58,6 +58,13 @@ class Agent(Base):
     status = Column(String(20), nullable=False, default="created")
     last_error = Column(String(1000), nullable=True)
 
+    # AI provider/model the agent's AI step was compiled with (Task B). NULL
+    # for an agent with no AI step, and for agents created before Task B.
+    # create_all() does NOT add these to an existing table -- run
+    # scripts/sql/add_ai_selection_columns.sql once.
+    ai_provider = Column(String(50), nullable=True)
+    ai_model = Column(String(255), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

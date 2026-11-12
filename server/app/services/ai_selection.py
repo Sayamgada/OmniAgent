@@ -26,6 +26,7 @@ from app.core.ai_providers import get_ai_provider, model_parameters
 
 AI_PLACEHOLDER_SERVICE = "groq"
 _AI_STEP_KIND = "ai_subnode"
+MAX_MODEL_LENGTH = 255  # agents.ai_model / users.default_ai_model column size
 
 
 class AISelectionError(ValueError):
@@ -37,6 +38,44 @@ def default_selection() -> tuple[str, str]:
     """(provider, model) used when the request carries no choice."""
     provider = get_ai_provider(AI_PLACEHOLDER_SERVICE)
     return provider.key, provider.default_model
+
+
+def selection_for(
+    user=None, provider: str | None = None, model: str | None = None
+) -> tuple[str, str]:
+    """
+    The (provider, model) to use, in order of precedence:
+
+      1. the request's provider (with the request's model, else the user's
+         saved model if the saved provider is the same one, else the
+         provider's default model);
+      2. the user's saved default (users.default_ai_provider/_model);
+      3. the placeholder provider (groq) and its default model.
+
+    A saved default that no longer exists in the catalog is ignored, not an
+    error; an unknown provider in the REQUEST raises AISelectionError.
+    """
+    provider = (provider or "").strip() or None
+    model = (model or "").strip() or None
+    saved_provider = (getattr(user, "default_ai_provider", None) or "").strip() or None
+    saved_model = (getattr(user, "default_ai_model", None) or "").strip() or None
+    if saved_provider and get_ai_provider(saved_provider) is None:
+        saved_provider = saved_model = None
+
+    if provider is None:
+        provider = saved_provider or AI_PLACEHOLDER_SERVICE
+    if model is None and provider == saved_provider:
+        model = saved_model
+
+    p = get_ai_provider(provider)
+    if p is None:
+        raise AISelectionError(f"Unknown AI provider {provider!r}")
+    model = model or p.default_model
+    if len(model) > MAX_MODEL_LENGTH:
+        raise AISelectionError(f"Model ID longer than {MAX_MODEL_LENGTH} characters")
+    if not p.allow_custom_model and model not in p.models:
+        raise AISelectionError(f"Model {model!r} is not offered for {provider!r}")
+    return p.key, model
 
 
 def is_ai_step(step) -> bool:
