@@ -25,7 +25,8 @@ what nodes.json cannot give us:
 
 Model IDs are stored WITHOUT any provider prefix. Gemini's node wants
 "models/<id>"; full_model_id() adds it, so a user typing a custom
-"gemini-2.5-flash" works the same as a curated entry.
+"gemini-2.5-flash" works the same as a curated entry. model_parameters()
+builds the node's full model parameter (name + shape) from that.
 """
 
 from dataclasses import dataclass
@@ -34,6 +35,11 @@ from app.core.n8n_operation_registry import get_chat_model_node
 
 SHAPE_STRING = "string"
 SHAPE_RESOURCE_LOCATOR = "resource_locator"
+
+# Resource-locator mode used for the model value. "id" (not "list") so any
+# model ID works, curated or custom, without n8n's runtime dropdown.
+# tests/test_ai_providers.py checks the node actually offers this mode.
+RESOURCE_LOCATOR_MODE = "id"
 
 
 @dataclass(frozen=True)
@@ -124,3 +130,23 @@ def full_model_id(provider_key: str, model: str) -> str:
         return model
     prefix = provider.model_param.prefix
     return model if model.startswith(prefix) else prefix + model
+
+
+def model_parameters(provider_key: str, model: str) -> dict:
+    """
+    The chat-model node's model parameter for `model`, in the exact shape the
+    node expects at the emitted typeVersion:
+
+        string            -> {"model": "openai/gpt-oss-20b"}
+                             {"modelName": "models/gemini-3-flash-preview"}
+        resource_locator  -> {"model": {"__rl": True, "mode": "id", "value": "gpt-5-mini"}}
+
+    The resource-locator dict is the same {"__rl", "mode", "value"} shape
+    app/compiler/param_schema.normalize_param_values already sends to n8n.
+    Raises KeyError for an unknown provider.
+    """
+    provider = AI_PROVIDERS[provider_key]
+    value = full_model_id(provider_key, model.strip())
+    if provider.model_param.shape == SHAPE_RESOURCE_LOCATOR:
+        value = {"__rl": True, "mode": RESOURCE_LOCATOR_MODE, "value": value}
+    return {provider.model_param.name: value}

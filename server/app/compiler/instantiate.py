@@ -35,9 +35,11 @@ server-side before the compiler ever sees a step:
 
 from __future__ import annotations
 
+import copy
 from typing import Optional
 
 from app.core.n8n_operation_registry import (
+    get_chat_model_node,
     get_service_entry,
     list_families,
     resolve_ai_subnode_family,
@@ -54,15 +56,6 @@ _HTTP_REQUEST_VERSION = (
 # Confirmed empirically against a live nodes.json (realignment plan §1d/§4):
 # Agent root has version list [3, 3.1], defaultVersion 3.1.
 _AGENT_ROOT_TYPE_VERSION = 3.1
-
-# Per-provider chat-model typeVersion. Only lmChatGroq is confirmed
-# (version 1, scalar — no defaultVersion key). Any provider added to
-# workflow_generator.py's _AI_SUBNODE_CHAT_MODEL_TYPES needs its own
-# entry here, confirmed the same empirical way before trusting it
-# (realignment plan §4, open question 2).
-_CHAT_MODEL_TYPE_VERSIONS: dict[str, float] = {
-    "@n8n/n8n-nodes-langchain.lmChatGroq": 1,
-}
 
 
 def _unique_name(base: str, used: set[str]) -> str:
@@ -105,10 +98,32 @@ def _instantiate_trigger(step: Step, used_names: set[str]) -> ResolvedNode:
     return resolved
 
 
+def _chat_model_type_version(step: Step, chat_model_type: str):
+    """
+    typeVersion of the chat-model node: from step.n8n_subnode (written by the
+    enrichment and by ai_selection.apply_ai_selection), else from the registry
+    for previews cached before that key existed. The registry fallback is
+    used only when it describes the same node type.
+    """
+    version = (step.n8n_subnode or {}).get("chat_model_type_version")
+    if version is not None:
+        return version
+    node = get_chat_model_node(step.service) if step.service else None
+    if node and node.get("type") == chat_model_type:
+        return node.get("typeVersion")
+    return None
+
+
 def _instantiate_agent(step: Step, used_names: set[str]) -> ResolvedNode:
     """
     ai_subnode step -> the Agent root node (main-chain position) plus its
-    chat-model subnode, per step.n8n_subnode (already resolved server-side).
+    chat-model subnode, per step.n8n_subnode (already resolved server-side,
+    and rewritten to the user's provider/model by ai_selection).
+
+    The chat model's parameters are step.n8n_subnode["model_parameters"]
+    (the selected model in the node's own shape). A preview that never went
+    through apply_ai_selection has none, so the node falls back to n8n's own
+    default model, exactly as before.
     """
     subnode_info = step.n8n_subnode or {}
     root_type = subnode_info.get("root_node_type")
@@ -127,7 +142,8 @@ def _instantiate_agent(step: Step, used_names: set[str]) -> ResolvedNode:
 
     chat_model = ResolvedNode(step=step.step, kind="ai_subnode")
     chat_model.node_type = chat_model_type
-    chat_model.type_version = _CHAT_MODEL_TYPE_VERSIONS.get(chat_model_type)
+    chat_model.type_version = _chat_model_type_version(step, chat_model_type)
+    chat_model.fixed_params = copy.deepcopy(subnode_info.get("model_parameters") or {})
     chat_model.ai_connection_type = connection_type
     chat_model.n8n_credential_type = _credential_type_for(step.service)
     chat_model.name = _unique_name(f"{step.service} (Chat Model)", used_names)

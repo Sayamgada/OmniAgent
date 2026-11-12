@@ -23,6 +23,7 @@ from app.services.workflow_generator import (
     CURRENT_SCHEMA_VERSION,
 )
 from app.services.automation_preview_service import AutomationPreviewService
+from app.services.ai_selection import apply_ai_selection, default_selection
 from app.services.workflow_revision import unique_revision_name
 from app.compiler import (
     SuppliedParamProvider,
@@ -263,6 +264,13 @@ async def _load_steps_for(automation_name: str) -> list:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No preview found for automation_name={automation_name!r}",
         )
+    # The cached preview is provider-agnostic (decision D7): its AI step uses
+    # the placeholder provider. Apply the provider/model selection on every
+    # load, before the loader, so param-schema and create-workflow compile
+    # the same thing. Task B Session C will pass the user's own choice here;
+    # until then it is the default (groq + its default model).
+    provider, model = default_selection()
+    preview = apply_ai_selection(preview, provider, model)
     # loader.preview_to_steps expects the wrapper dict containing
     # preview_json -- the Mongo doc IS that wrapper as stored (see
     # workflow_storage.py); the leftover _id is harmless, the loader

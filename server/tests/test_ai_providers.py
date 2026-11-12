@@ -205,3 +205,23 @@ def test_default_model_matches_n8n_default_at_emitted_version(key, resolved):
     if prefix and isinstance(default, str) and default.startswith(prefix):
         default = default[len(prefix) :]
     assert default == provider.default_model
+
+
+@pytest.mark.parametrize("key", D4_KEYS)
+def test_model_parameters_fit_the_node_at_emitted_version(key, resolved):
+    """model_parameters() must produce exactly the node's model param, and for
+    a resource locator, a mode the node actually offers."""
+    provider, node, entry = resolved(key)
+    (param,) = _model_params_at(entry, node["typeVersion"])
+    params = ap.model_parameters(key, provider.default_model)
+    assert list(params) == [param["name"]]
+    value = params[param["name"]]
+    if provider.model_param.shape == ap.SHAPE_RESOURCE_LOCATOR:
+        assert value["__rl"] is True and value["value"]
+        modes = {m.get("name") for m in param.get("modes") or []}
+        assert value["mode"] in modes, (
+            f"{key}: node offers modes {sorted(modes)}, model_parameters uses "
+            f"{value['mode']!r}"
+        )
+    else:
+        assert isinstance(value, str) and value

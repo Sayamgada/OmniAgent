@@ -5,6 +5,11 @@ Golden snapshot tests for the three live-validated previews:
     branching-> ... -> AI Agent -> Switch (approved/rejected) -> two Gmail sends
     fan-in   -> Gmail getAll + Slack search -> Merge -> AI Agent -> Gmail Send
 
+plus linear_<provider> for each AI provider (Task B): the linear preview run
+through apply_ai_selection() with that provider's default model, the same
+path agent_router._load_steps_for() takes. The four raw cases above do NOT
+go through apply_ai_selection, so their snapshots must stay unchanged.
+
 Each fixture is compiled with PlaceholderParamProvider + DummyCredentialResolver
 and compared to a stored expected workflow (tests/fixtures/expected/*.json).
 Node ids are normalised (they are not meaningful), everything else -- node
@@ -31,6 +36,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from app.compiler import DummyCredentialResolver, PlaceholderParamProvider, compile
 from app.compiler.loader import preview_to_steps
+from app.core.ai_providers import get_ai_provider, list_ai_providers, model_parameters
+from app.core.n8n_operation_registry import get_chat_model_node
+from app.services.ai_selection import apply_ai_selection
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 EXPECTED = FIXTURES / "expected"
@@ -42,17 +50,31 @@ CASES = {
     "leave_chained": "test_preview_leave_chained.json",
 }
 
+# case name -> (fixture, AI provider applied via apply_ai_selection)
+AI_PROVIDER_KEYS = [p.key for p in list_ai_providers()]
+PROVIDER_CASES = {f"linear_{k}": ("test_preview.json", k) for k in AI_PROVIDER_KEYS}
+ALL_CASES = list(CASES) + list(PROVIDER_CASES)
 
-def _load_steps(fixture_name: str):
+
+def _load_steps(fixture_name: str, provider: str | None = None):
     p = json.loads((FIXTURES / fixture_name).read_text(encoding="utf-8"))
     if "preview_json" not in p:  # accept a bare inner preview_json too
         p = {"preview_json": p}
+    if provider is not None:
+        p = apply_ai_selection(p, provider)  # provider's default model
     return preview_to_steps(p)
+
+
+def _steps_for(case: str):
+    if case in PROVIDER_CASES:
+        fixture, provider = PROVIDER_CASES[case]
+        return _load_steps(fixture, provider)
+    return _load_steps(CASES[case])
 
 
 def _compile(case: str):
     result = compile(
-        _load_steps(CASES[case]),
+        _steps_for(case),
         PlaceholderParamProvider(),
         DummyCredentialResolver(),
         user_id="golden-user",
@@ -74,7 +96,7 @@ def _nodes_of(wf: dict, suffix: str):
     return [n for n in wf["nodes"] if n["type"].endswith(suffix)]
 
 
-@pytest.mark.parametrize("case", list(CASES))
+@pytest.mark.parametrize("case", ALL_CASES)
 def test_matches_golden_snapshot(case):
     actual = _normalise(_compile(case))
     path = EXPECTED / f"{case}.json"
@@ -95,7 +117,7 @@ def test_matches_golden_snapshot(case):
 # ---- structural assertions, independent of the snapshots ------------------
 
 
-@pytest.mark.parametrize("case", list(CASES))
+@pytest.mark.parametrize("case", ALL_CASES)
 def test_no_tool_variants_and_unique_ids(case):
     wf = _compile(case)
     assert not [n for n in wf["nodes"] if "Hitl" in n["type"]], (
@@ -151,6 +173,30 @@ def test_ai_agent_has_chat_model_wired_via_ai_language_model(case):
     assert len(agents) == 1 and len(chat_models) == 1
     conns = wf["connections"][chat_models[0]["name"]]
     assert conns["ai_languageModel"][0][0]["node"] == agents[0]["name"]
+
+
+@pytest.mark.parametrize("key", AI_PROVIDER_KEYS)
+def test_selected_provider_chat_model(key):
+    """The chat model is the selected provider's node, at the registry's
+    version, with the selected model in the node's own parameter shape,
+    wired into the AI Agent via ai_languageModel."""
+    wf = _compile(f"linear_{key}")
+    node = get_chat_model_node(key)
+    chats = [n for n in wf["nodes"] if n["type"] == node["type"]]
+    assert len(chats) == 1
+    chat = chats[0]
+    assert chat["typeVersion"] == node["typeVersion"]
+    assert chat["parameters"] == model_parameters(
+        key, get_ai_provider(key).default_model
+    )
+    assert chat["credentials"], f"{key}: chat model has no credential"
+    agents = _nodes_of(wf, ".agent")
+    assert len(agents) == 1
+    assert wf["connections"][chat["name"]]["ai_languageModel"][0][0]["node"] == (
+        agents[0]["name"]
+    )
+    # no other provider's chat model sneaks in
+    assert len([n for n in wf["nodes"] if ".lmChat" in n["type"]]) == 1
 
 
 def _reachable(wf: dict, start: str) -> set:

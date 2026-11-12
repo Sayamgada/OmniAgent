@@ -7,6 +7,7 @@ Postgres/n8n HTTP calls here (that's the caller's job).
 
 from __future__ import annotations
 
+import copy
 import uuid
 from typing import Any, Optional
 
@@ -368,7 +369,10 @@ def compile(
                         # flags this: "subnode_position in layout.py" still
                         # to be added).
                         position=[base_pos[0], base_pos[1] + 150 + i * 150],
-                        parameters={},  # model field is optional w/ a default
+                        # The selected model (instantiate.py fills this from
+                        # step.n8n_subnode["model_parameters"]); {} for a
+                        # preview with no AI selection -> n8n's own default.
+                        parameters=copy.deepcopy(sub.fixed_params),
                         credentials=sub_creds,
                     )
                 )

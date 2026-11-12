@@ -5,6 +5,7 @@ from functools import lru_cache
 from app.models.automation_preview_model import automation_preview_collection
 from app.services.llm_service import generate_workflow_from_prompt
 from app.core.n8n_operation_registry import (
+    get_chat_model_node,
     get_service_entry,
     get_trigger_node,
     resolve_operation,
@@ -13,6 +14,7 @@ from app.core.n8n_operation_registry import (
 )
 from app.core.integration_catalog import INTEGRATION_CATALOG
 from app.services.workflow_revision import render_edit_section
+from app.services.ai_selection import AI_PLACEHOLDER_SERVICE
 
 # Service keys the catalog carries for generic/abstract auth mechanisms, not
 # real external services (e.g. the raw "give me a header auth credential"
@@ -49,10 +51,12 @@ def _build_service_whitelist() -> dict:
     out of sync with the actual credential catalog again.
 
     AI provider services (kind == "ai_subnode" in generated_registry.json) are
-    excluded except "groq" - these are Chat Model / Vector Store / Tool
-    sub-nodes that can never be a standalone workflow step's service (see
-    n8n_operation_registry.py's `kind` docstring); "groq" stays as the one
-    hardcoded-supported AI provider per the existing RULE 3 convention.
+    excluded except AI_PLACEHOLDER_SERVICE ("groq") - these are Chat Model /
+    Vector Store / Tool sub-nodes that can never be a standalone workflow
+    step's service (see n8n_operation_registry.py's `kind` docstring). The
+    placeholder stays: the prompt writes every AI step with it, and
+    app/services/ai_selection.py rewrites it into the provider the user
+    picks (decision D7).
 
     Cached for the process lifetime - INTEGRATION_CATALOG and
     generated_registry.json are both static data loaded at import time, not
@@ -68,7 +72,7 @@ def _build_service_whitelist() -> dict:
     for service, entry in sorted(INTEGRATION_CATALOG.items()):
         if service in _EXCLUDED_SERVICE_KEYS:
             continue
-        if get_kind(service) == "ai_subnode" and service != "groq":
+        if get_kind(service) == "ai_subnode" and service != AI_PLACEHOLDER_SERVICE:
             continue
         by_category.setdefault(entry["category"], []).append(service)
 
@@ -260,7 +264,7 @@ def _check_routing_instructions(step: dict) -> None:
     """Non-fatal. Instructions of a conditioned AI step that dictate reply
     words (e.g. 'respond with "yes"') conflict with the routing marker the
     compiler appends."""
-    if not isinstance(step, dict) or step.get("service") != "groq":
+    if not isinstance(step, dict) or step.get("service") != AI_PLACEHOLDER_SERVICE:
         return
     if not isinstance(step.get("condition"), dict):
         return
@@ -451,7 +455,7 @@ def _check_target(step: dict) -> None:
 def _check_ai_instructions(step: dict) -> None:
     if not isinstance(step, dict):
         return
-    if step.get("service") != "groq":
+    if step.get("service") != AI_PLACEHOLDER_SERVICE:
         return
     instructions = step.get("instructions")
     if (
@@ -665,9 +669,6 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
     another service's operations and never guesses on ambiguity (see
     n8n_operation_registry.py's module docstring).
     """
-    _AI_SUBNODE_CHAT_MODEL_TYPES = {
-        "groq": "@n8n/n8n-nodes-langchain.lmChatGroq",
-    }
     _AI_AGENT_ROOT_NODE_TYPE = "@n8n/n8n-nodes-langchain.agent"
     _AI_LANGUAGE_MODEL_CONNECTION_TYPE = "ai_languageModel"
 
@@ -683,13 +684,20 @@ def _enrich_with_real_operations(preview_json: dict) -> dict:
         kind = entry.get("kind") if entry else None
 
         if kind == "ai_subnode":
+            # Chat-model node from the registry, never hardcoded. This is the
+            # placeholder provider's node; ai_selection.apply_ai_selection()
+            # swaps in the user's provider when the preview is loaded.
+            chat_node = get_chat_model_node(service)
             step["n8n_resolved"] = False
             step["n8n_operation"] = None
             step["n8n_resolution_kind"] = "ai_subnode"
             step["n8n_subnode"] = {
                 "root_node_type": _AI_AGENT_ROOT_NODE_TYPE,
                 "connection_type": _AI_LANGUAGE_MODEL_CONNECTION_TYPE,
-                "chat_model_node_type": _AI_SUBNODE_CHAT_MODEL_TYPES.get(service),
+                "chat_model_node_type": chat_node["type"] if chat_node else None,
+                "chat_model_type_version": (
+                    chat_node["typeVersion"] if chat_node else None
+                ),
                 "agent_instructions_source": "step.instructions",
             }
             continue
