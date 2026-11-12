@@ -449,3 +449,54 @@ def resolve_ai_subnode_family(service: str, universal_verb: str) -> str | None:
     if plain:
         return sorted(plain, key=len)[0]
     return None
+
+
+def _is_chat_model_type(node_type) -> bool:
+    """True for a LangChain chat-model node type, e.g.
+    '@n8n/n8n-nodes-langchain.lmChatGroq'. Deliberately excludes the plain
+    'lm*' completion nodes (lmCohere, lmOpenAi) and embeddings/rerankers."""
+    return isinstance(node_type, str) and ".lmChat" in node_type
+
+
+def get_chat_model_node(service: str) -> dict | None:
+    """
+    The chat-model node for an AI provider service, as
+    {"type", "typeVersion", "family"} ("family" is None for a non-hub
+    service), or None. Precision-first, same philosophy as resolve_operation:
+
+      * non-hub service -> nodes.standalone, but ONLY if its type is a
+        chat-model node (a standalone embeddings/reranker node is not one);
+      * multi_node_hub  -> the single family whose type is a chat-model node.
+        Zero OR several matches return None (needs review) rather than a
+        guess, since a hub's families span differently-purposed nodes.
+
+    Unknown services, non-AI services and anything ambiguous return None.
+    """
+    entry = get_service_entry(service)
+    if not entry:
+        return None
+    nodes = entry.get("nodes", {}) or {}
+
+    if entry.get("kind") == "multi_node_hub":
+        matches = [
+            (name, fam)
+            for name, fam in (nodes.get("families", {}) or {}).items()
+            if _is_chat_model_type(fam.get("type"))
+        ]
+        if len(matches) != 1:
+            return None
+        name, fam = matches[0]
+        return {
+            "type": fam["type"],
+            "typeVersion": fam.get("typeVersion"),
+            "family": name,
+        }
+
+    standalone = nodes.get("standalone")
+    if standalone and _is_chat_model_type(standalone.get("type")):
+        return {
+            "type": standalone["type"],
+            "typeVersion": standalone.get("typeVersion"),
+            "family": None,
+        }
+    return None
