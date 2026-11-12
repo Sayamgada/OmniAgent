@@ -60,8 +60,6 @@ import {
   Map,
   CloudSun,
   ShieldCheck,
-  Boxes,
-  Workflow,
   Sparkles,
   Zap,
   Wind,
@@ -168,9 +166,6 @@ export const integrationIcons: Record<string, LucideIcon> = {
   firebase_authentication: ShieldCheck,
   keycloak: ShieldCheck,
   okta: ShieldCheck,
-
-  faiss_vector_store: Boxes,
-  n8n_workflow_engine: Workflow,
 
   openai: Sparkles,
   anthropic: Sparkles,

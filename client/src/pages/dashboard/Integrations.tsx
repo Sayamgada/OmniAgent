@@ -13,10 +13,6 @@ import { useN8n } from "../../context/N8nContext";
 import { fetchIntegrations } from "../../lib/api/integrations.ts";
 import type { IntegrationCatalogItem } from "../../lib/api/integrations.ts";
 
-// Catalog entries that no longer make sense now that each user connects their own n8n
-// (see Settings, n8n tab). The backend entry is retired separately.
-const HIDDEN_SERVICES = new Set(["n8n_workflow_engine"]);
-
 export default function Integrations() {
   const { token } = useAuth();
   const { version: n8nVersion } = useN8n();
@@ -32,9 +28,7 @@ export default function Integrations() {
 
   const load = () => {
     fetchIntegrations(token)
-      .then((items) =>
-        setIntegrations(items.filter((i) => !HIDDEN_SERVICES.has(i.service))),
-      )
+      .then(setIntegrations)
       .catch((err) => toast.error(err.message || "Failed to load integrations"))
       .finally(() => setLoading(false));
   };
