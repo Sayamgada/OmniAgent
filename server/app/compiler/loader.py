@@ -23,7 +23,56 @@ from __future__ import annotations
 
 from typing import Any
 
-from .models import Step
+from .models import RULE_OPERATORS, BranchRule, ConditionBranch, Step
+
+
+def _parse_rule(when: Any) -> BranchRule | None:
+    """A branch's "when" object -> BranchRule, or None if it is unusable
+    (no field, unknown operator). None is not an error here: graph.py then
+    treats the branch as rule-less and warns, and the param form (Phase 3.1
+    Session C) asks the person for the rule."""
+    if not isinstance(when, dict):
+        return None
+    field_path = when.get("field")
+    operator = when.get("operator")
+    if not isinstance(field_path, str) or not field_path.strip():
+        return None
+    if operator not in RULE_OPERATORS:
+        return None
+    return BranchRule(field=field_path.strip(), operator=operator, value=when.get("value"))
+
+
+def _parse_condition(condition_raw: Any) -> list[ConditionBranch] | None:
+    """
+    preview "condition" -> [ConditionBranch], or None when there is none.
+
+    Real Groq output (schema_version <= 10) gives branches as plain label
+    strings, e.g. {"branches": ["approved", "rejected"]} -- no per-branch
+    logic, the decision comes from the AI step itself. Phase 3.1 adds an
+    object form for plain comparisons, decided by a Switch rule instead of
+    an AI step:
+
+        {"label": "high_value", "when": {"field": "amount", "operator": "gt", "value": 500}}
+        {"label": "standard_value", "otherwise": true}
+
+    {"label", "expression"} is still accepted (raw n8n boolean expression).
+    """
+    if not isinstance(condition_raw, dict) or "branches" not in condition_raw:
+        return None
+    branches: list[ConditionBranch] = []
+    for b in condition_raw.get("branches") or []:
+        if isinstance(b, str):
+            branches.append(ConditionBranch(label=b))
+        elif isinstance(b, dict):
+            branches.append(
+                ConditionBranch(
+                    label=b.get("label", ""),
+                    expression=b.get("expression") or "",
+                    rule=_parse_rule(b.get("when")),
+                    otherwise=b.get("otherwise") is True,
+                )
+            )
+    return branches or None
 
 
 def _build_trigger_step(preview_json: dict[str, Any]) -> Step | None:
@@ -41,6 +90,10 @@ def _build_trigger_step(preview_json: dict[str, Any]) -> Step | None:
         step=0,
         service=trigger.get("service") or "",
         depends_on=[],
+        # A trigger may fork on its own payload (Phase 3.1): the Switch then
+        # sits right after the trigger node, and branch steps with an empty
+        # depends_on (-> [0]) route through it like any other branching step.
+        condition=_parse_condition(trigger.get("condition")),
         is_trigger=True,
         n8n_resolution_kind=kind,
         n8n_trigger_node=trigger_node,
@@ -66,28 +119,6 @@ def preview_to_steps(preview_json: dict[str, Any]) -> list[Step]:
             # step rather than leaving it a disconnected root.
             depends_on = [0]
 
-        condition_raw = raw.get("condition")
-        condition = None
-        if isinstance(condition_raw, dict) and "branches" in condition_raw:
-            from .models import ConditionBranch
-
-            # Real Groq output gives branches as plain label strings, e.g.
-            # {"branches": ["approved", "rejected"]} -- confirmed against
-            # an actual generated preview_json. There is no per-branch
-            # expression at this stage (real condition logic is still
-            # deferred, same as every other step's params); keep the dict
-            # shape ({"label": ..., "expression": ...}) accepted too in
-            # case a future prompt version or another code path emits it,
-            # rather than assuming only one shape is ever possible.
-            condition = [
-                ConditionBranch(label=b, expression="")
-                if isinstance(b, str)
-                else ConditionBranch(
-                    label=b.get("label", ""), expression=b.get("expression", "")
-                )
-                for b in condition_raw.get("branches", [])
-            ]
-
         steps.append(
             Step(
                 step=raw["step"],
@@ -95,7 +126,7 @@ def preview_to_steps(preview_json: dict[str, Any]) -> list[Step]:
                 operation=raw.get("operation"),
                 target=raw.get("target") or None,
                 depends_on=depends_on,
-                condition=condition,
+                condition=_parse_condition(raw.get("condition")),
                 branch=raw.get("branch"),
                 instructions=raw.get("instructions"),
                 is_trigger=False,
@@ -106,4 +137,4 @@ def preview_to_steps(preview_json: dict[str, Any]) -> list[Step]:
                 raw=raw,
             )
         )
-    return steps
+    return steps

@@ -1,0 +1,52 @@
+{
+  "automation_name": "Payment Webhook Router",
+  "automation_description": "Routes incoming payment webhooks: large payments email the sales team, everything else emails the finance team.",
+  "schema_version": 11,
+  "preview_json": {
+    "title": "Payment Webhook Router",
+    "description": "Routes incoming payment webhooks by amount, with no AI step.",
+    "trigger": {
+      "type": "Webhook",
+      "service": "",
+      "description": "Fires when a payment webhook is received.",
+      "condition": {
+        "branches": [
+          {
+            "label": "high_value",
+            "when": {"field": "body.amount", "operator": "gt", "value": 500}
+          },
+          {"label": "standard_value", "otherwise": true}
+        ]
+      },
+      "n8n_trigger_resolved": true,
+      "n8n_trigger_node": {"type": "n8n-nodes-base.webhook", "typeVersion": 2}
+    },
+    "workflow": [
+      {
+        "step": 1,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [],
+        "branch": "high_value",
+        "n8n_resolved": true,
+        "n8n_operation": {"label": "Send", "value": "send", "action": "Send a message"},
+        "n8n_resolution_kind": "action_node"
+      },
+      {
+        "step": 2,
+        "service": "gmail",
+        "operation": "send",
+        "target": "message",
+        "parameters": {},
+        "depends_on": [],
+        "branch": "standard_value",
+        "n8n_resolved": true,
+        "n8n_operation": {"label": "Send", "value": "send", "action": "Send a message"},
+        "n8n_resolution_kind": "action_node"
+      }
+    ],
+    "output": "An email to sales for payments over 500, otherwise an email to finance."
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "connections": {
+    "Switch (step 0)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Gmail OAuth2 API 2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Switch (step 0)",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "golden-trigger_rules",
+  "nodes": [
+    {
+      "id": "<id>",
+      "name": "Trigger",
+      "parameters": {},
+      "position": [
+        0,
+        300
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API",
+      "parameters": {
+        "authentication": "serviceAccount",
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "operation": "send",
+        "resource": "message",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER"
+      },
+      "position": [
+        280,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      },
+      "id": "<id>",
+      "name": "Gmail OAuth2 API 2",
+      "parameters": {
+        "authentication": "serviceAccount",
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "operation": "send",
+        "resource": "message",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER"
+      },
+      "position": [
+        560,
+        300
+      ],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "<id>",
+      "name": "Switch (step 0)",
+      "parameters": {
+        "mode": "rules",
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "standard_value"
+        },
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.amount }}",
+                    "operator": {
+                      "operation": "gt",
+                      "type": "number"
+                    },
+                    "rightValue": 500
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                }
+              },
+              "outputKey": "high_value",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        140.0,
+        300.0
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    }
+  ],
+  "settings": {}
+}

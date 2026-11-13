@@ -47,12 +47,56 @@ ResolutionKind = Literal[
 ]
 
 
+# Operators a structured branch rule may use (Phase 3.1). The n8n shape each
+# one compiles to lives in graph.py (RULE_OPERATOR_SHAPES); this tuple is the
+# IR's vocabulary, shared by loader.py, param_form.py and the frontend.
+RULE_OPERATORS: tuple[str, ...] = (
+    "equals",
+    "not_equals",
+    "contains",
+    "gt",
+    "lt",
+    "is_empty",
+    "is_not_empty",
+    "is_true",
+    "is_false",
+)
+
+# Operators that compare against nothing (n8n "singleValue" operators).
+SINGLE_VALUE_OPERATORS: frozenset[str] = frozenset(
+    {"is_empty", "is_not_empty", "is_true", "is_false"}
+)
+
+
+@dataclass
+class BranchRule:
+    """A plain comparison on one field of the data reaching the Switch, e.g.
+    {field: "amount", operator: "gt", value: 500}. `field` is a path into the
+    branching node's output ("data.object.amount"); `value` is ignored for
+    SINGLE_VALUE_OPERATORS."""
+
+    field: str
+    operator: str  # one of RULE_OPERATORS
+    value: Any = None
+
+
 @dataclass
 class ConditionBranch:
-    """A single branch of a step's condition, if it has one."""
+    """A single branch of a step's condition, if it has one.
+
+    How the branch is decided, in graph.py's priority order:
+      rule       -- structured comparison (Phase 3.1)
+      expression -- raw n8n boolean expression (escape hatch)
+      (neither)  -- AI-routing marker when the branching step is an agent,
+                    otherwise a placeholder rule + warning
+    `otherwise` marks the catch-all branch: it gets no rule and is wired
+    from the Switch's fallback output.
+    """
 
     label: str
-    expression: str
+    expression: str = ""
+    rule: Optional[BranchRule] = None
+    otherwise: bool = False
 
 
 @dataclass

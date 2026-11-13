@@ -4,6 +4,7 @@ Golden snapshot tests for the three live-validated previews:
     linear   -> Gmail Trigger -> AI Agent (Groq) -> Gmail Send
     branching-> ... -> AI Agent -> Switch (approved/rejected) -> two Gmail sends
     fan-in   -> Gmail getAll + Slack search -> Merge -> AI Agent -> Gmail Send
+    trigger_rules -> Webhook -> Switch (rule + otherwise, no AI step) -> two Gmail sends
 
 plus linear_<provider> for each AI provider (Task B): the linear preview run
 through apply_ai_selection() with that provider's default model, the same
@@ -48,6 +49,7 @@ CASES = {
     "branching": "test_preview_branching.json",
     "fanin": "test_preview_fanin.json",
     "leave_chained": "test_preview_leave_chained.json",
+    "trigger_rules": "test_preview_trigger_rules.json",
 }
 
 # case name -> (fixture, AI provider applied via apply_ai_selection)
@@ -241,3 +243,34 @@ def test_leave_chained_nested_switch_wiring():
     sinks = {n["name"] for n in _nodes_of(wf, ".noOp")}
     f1, f2 = first[2][0]["node"], second[2][0]["node"]
     assert {f1, f2} <= sinks and f1 != f2
+
+
+def test_trigger_rules_switch_right_after_trigger_without_ai():
+    """Phase 3.1: a fork on the trigger's own payload compiles to a Switch
+    straight after the trigger -- no AI Agent -- with the "otherwise" branch
+    on the fallback output and no NoOp sink."""
+    wf = _compile("trigger_rules")
+    assert not _nodes_of(wf, ".agent")
+    assert not _nodes_of(wf, ".noOp")
+    (trigger,) = _nodes_of(wf, ".webhook")
+    (switch,) = _nodes_of(wf, ".switch")
+    assert wf["connections"][trigger["name"]]["main"] == [
+        [{"node": switch["name"], "type": "main", "index": 0}]
+    ]
+
+    rules = switch["parameters"]["rules"]["values"]
+    assert [r["outputKey"] for r in rules] == ["high_value"]
+    cond = rules[0]["conditions"]["conditions"][0]
+    assert cond["leftValue"] == "={{ $json.body.amount }}"
+    assert cond["operator"] == {"type": "number", "operation": "gt"}
+    assert cond["rightValue"] == 500
+    assert switch["parameters"]["options"] == {
+        "fallbackOutput": "extra",
+        "renameFallbackOutput": "standard_value",
+    }
+
+    main = wf["connections"][switch["name"]]["main"]
+    assert len(main) == 2  # 1 rule + the fallback ("otherwise") output
+    gmail = {n["name"] for n in _nodes_of(wf, ".gmail")}
+    targets = [branch[0]["node"] for branch in main]
+    assert set(targets) == gmail and len(set(targets)) == 2

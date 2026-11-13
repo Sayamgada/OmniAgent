@@ -45,11 +45,23 @@ one that doesn't match any of that step's condition labels) is NOT
 silently guessed at — it logs a warning and falls back to the old direct
 wiring, same needs-review-not-a-guess philosophy as resolve_operation().
 
-Placeholder condition/rule content (Switch's `fixed_params`) mirrors
-n8n's own documented default for a blank Routing Rule (confirmed via
-nodes.json's `rules` property `default` key) rather than inventing a
-shape -- real condition expressions are still deferred, same as every
-other step's real parameters.
+Each branch's rule comes from, in priority order: a structured rule
+(Phase 3.1: field / operator / value, typed n8n operators -- see
+RULE_OPERATOR_SHAPES), a raw boolean expression, the AI-routing marker
+when the branching step is an agent, else a placeholder that mirrors
+n8n's own documented default for a blank Routing Rule (nodes.json's
+`rules` property `default` key) plus a warning.
+
+An "otherwise" branch gets no rule: it owns the Switch's fallback output
+(index = number of rules), so its steps are wired from there and no NoOp
+sink is added. Without one, the fallback output goes to a visible NoOp
+sink so an unrecognised decision is never dropped silently. Output
+indexes come from switch_routing() -- one helper for both the Switch
+itself and the branch steps routed off it.
+
+The branching step may be the synthetic trigger step 0 (Phase 3.1): a
+fork on the trigger's own payload puts the Switch right after the
+trigger node, with no AI step.
 
 Both synthesis paths fall back to the pre-existing "warn and wire
 directly" behavior if the registry has no matching utility-node entry
@@ -60,7 +72,15 @@ never crashes.
 from __future__ import annotations
 
 from ..core.n8n_operation_registry import get_utility_node
-from .models import CompileReport, N8nConnection, ResolvedNode, Step
+from .models import (
+    SINGLE_VALUE_OPERATORS,
+    BranchRule,
+    CompileReport,
+    ConditionBranch,
+    N8nConnection,
+    ResolvedNode,
+    Step,
+)
 
 # ---------------------------------------------------------------------------
 # Aggregate synthesis (Stage 3.2). UNVALIDATED against live n8n until the
@@ -163,10 +183,134 @@ def _rule(label: str, left: str, operator: dict, right=None, case_sensitive=True
     }
 
 
+# ---------------------------------------------------------------------------
+# Structured branch rules (Phase 3.1). Shapes confirmed against a hand-built
+# Switch 3.4 exported from n8n 2.43.7 (gt / equals / empty / true); the other
+# five use n8n's standard filter operation names and are confirmed by the
+# Session E live run -- edit ONLY this table if that run says otherwise.
+# Validation stays "loose" (unlike the UI's "strict" default) so a number
+# that arrives as text ("600") still compares as a number.
+# ---------------------------------------------------------------------------
+RULE_OPERATOR_SHAPES: dict[str, dict] = {
+    "equals": {"type": "string", "operation": "equals"},
+    "not_equals": {"type": "string", "operation": "notEquals"},
+    "contains": {"type": "string", "operation": "contains"},
+    "gt": {"type": "number", "operation": "gt"},
+    "lt": {"type": "number", "operation": "lt"},
+    "is_empty": {"type": "string", "operation": "empty", "singleValue": True},
+    "is_not_empty": {"type": "string", "operation": "notEmpty", "singleValue": True},
+    "is_true": {"type": "boolean", "operation": "true", "singleValue": True},
+    "is_false": {"type": "boolean", "operation": "false", "singleValue": True},
+}
+
+
+def field_expression(field_path: str) -> str:
+    """A rule's field -> n8n expression reading it from the item that reaches
+    the Switch. The Switch sits directly after the branching node, so $json
+    IS that node's output. "data.object.amount" -> ={{ $json.data.object.amount }};
+    a segment that is not a plain identifier uses bracket access. A field
+    already written as an expression ("={{ ... }}" / "{{ ... }}") is kept."""
+    f = field_path.strip()
+    if f.startswith("=") or f.startswith("{{"):
+        return _as_n8n_expression(f)
+    for prefix in ("$json.", "json."):
+        if f.startswith(prefix):
+            f = f[len(prefix):]
+            break
+    path = "$json"
+    for seg in (s.strip() for s in f.split(".")):
+        if not seg:
+            continue
+        if seg.isdigit():
+            path += f"[{seg}]"
+        elif seg.isidentifier():
+            path += f".{seg}"
+        else:
+            safe = seg.replace("\\", "\\\\").replace("'", "\\'")
+            path += f"['{safe}']"
+    return "={{ " + path + " }}"
+
+
+def _number_value(value):
+    """500 / 500.0 / "500" -> 500; "2.5" -> 2.5; anything else -> None."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        n = value
+    elif isinstance(value, str):
+        try:
+            n = float(value.strip())
+        except ValueError:
+            return None
+    else:
+        return None
+    if n != n or n in (float("inf"), float("-inf")):
+        return None
+    return int(n) if float(n).is_integer() else n
+
+
+def _string_value(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _structured_rule(label: str, rule: BranchRule):
+    """One Switch rule from a BranchRule, or None if the rule is unusable
+    (unknown operator, or a non-numeric value for gt/lt)."""
+    shape = RULE_OPERATOR_SHAPES.get(rule.operator)
+    if shape is None:
+        return None
+    if rule.operator in SINGLE_VALUE_OPERATORS:
+        right = ""  # what n8n itself stores for singleValue operators
+    elif shape["type"] == "number":
+        right = _number_value(rule.value)
+        if right is None:
+            return None
+    else:
+        right = _string_value(rule.value)
+    return _rule(label, field_expression(rule.field), dict(shape), right=right)
+
+
+def switch_routing(condition: list[ConditionBranch]) -> tuple[list[ConditionBranch], dict[str, int], str | None]:
+    """
+    (rule_branches, label -> Switch output index, otherwise_label).
+
+    Only non-"otherwise" branches get a rule, in condition order, so their
+    output index = position among rule branches. The (first) otherwise
+    branch maps to the fallback output, index len(rule_branches). A second
+    "otherwise" is treated as an ordinary branch (graph warns about it).
+    """
+    rule_branches: list[ConditionBranch] = []
+    otherwise_label: str | None = None
+    for b in condition:
+        if b.otherwise and otherwise_label is None:
+            otherwise_label = b.label
+        else:
+            rule_branches.append(b)
+    index = {b.label: i for i, b in enumerate(rule_branches)}
+    if otherwise_label is not None:
+        index[otherwise_label] = len(rule_branches)
+    return rule_branches, index, otherwise_label
+
+
 def _switch_rule(branch, source_is_agent: bool, step: Step, report: CompileReport) -> dict:
-    """One Switch rule per branch. Priority: explicit expression (boolean
-    rule) > AI-routing marker (when the branching step is an agent) >
-    placeholder + warning."""
+    """One Switch rule per branch. Priority: structured rule (Phase 3.1) >
+    explicit expression (boolean rule) > AI-routing marker (when the
+    branching step is an agent) > placeholder + warning."""
+    if branch.rule is not None:
+        built = _structured_rule(branch.label, branch.rule)
+        if built is not None:
+            return built
+        report.warnings.append(
+            f"step {step.step} ({step.service}) branch {branch.label!r}: rule "
+            f"{branch.rule.operator!r} on {branch.rule.field!r} has an unusable "
+            f"value {branch.rule.value!r} -- ignoring the rule."
+        )
     if branch.expression and branch.expression.strip():
         return _rule(
             branch.label,
@@ -286,6 +430,13 @@ def _synthesize_switch(
             "wiring directly from this step instead."
         )
         return None
+    rule_branches, _, otherwise_label = switch_routing(step.condition)
+    if sum(1 for b in step.condition if b.otherwise) > 1:
+        report.warnings.append(
+            f"step {step.step} ({step.service}) has more than one 'otherwise' "
+            f"branch -- only {otherwise_label!r} uses the fallback output; the "
+            "others are treated as ordinary branches."
+        )
     return ResolvedNode(
         step=step.step,
         kind="utility",
@@ -297,14 +448,15 @@ def _synthesize_switch(
             "rules": {
                 "values": [
                     _switch_rule(branch, source_is_agent, step, report)
-                    for branch in step.condition
+                    for branch in rule_branches
                 ]
             },
             # Extra output at index len(rules.values); see nodes.json
-            # (Switch v3.4 options.fallbackOutput = "extra").
+            # (Switch v3.4 options.fallbackOutput = "extra"). It carries the
+            # "otherwise" branch when there is one, else the NoOp sink.
             "options": {
                 "fallbackOutput": "extra",
-                "renameFallbackOutput": SWITCH_FALLBACK_LABEL,
+                "renameFallbackOutput": otherwise_label or SWITCH_FALLBACK_LABEL,
             },
         },
         layout_hint="after_step",
@@ -348,6 +500,12 @@ def build_connections(
         )
 
         # Fallback sink: the Switch's extra output (index = number of rules).
+        # An "otherwise" branch owns that output instead: its steps are wired
+        # there in pass 2, and an otherwise with no steps leaves it unconnected
+        # on purpose (that outcome needs no action).
+        rule_branches, _, otherwise_label = switch_routing(step.condition)
+        if otherwise_label is not None:
+            continue
         noop = get_utility_node("noOp")
         if noop is None:
             report.warnings.append(
@@ -369,7 +527,7 @@ def build_connections(
                 N8nConnection(
                     source_name=switch_node.name,
                     source_output="main",
-                    source_index=len(step.condition),
+                    source_index=len(rule_branches),
                     target_name=sink.name,
                     target_input="main",
                     target_index=0,
@@ -437,7 +595,7 @@ def build_connections(
             if step.branch is not None and dep_step.condition:
                 saw_conditioned_dep = True
                 switch_node = switch_by_step.get(dep_num)
-                label_to_index = {b.label: i for i, b in enumerate(dep_step.condition)}
+                _, label_to_index, _ = switch_routing(dep_step.condition)
                 idx = label_to_index.get(step.branch)
                 if switch_node is not None and idx is not None:
                     connections.append(
@@ -526,4 +684,4 @@ def build_connections(
                 )
             )
 
-    return connections, synthesized
+    return connections, synthesized

@@ -1,0 +1,141 @@
+{
+  "name": "golden-trigger_rules",
+  "nodes": [
+    {
+      "id": "9ca04ecf-57be-4136-b259-6b270425390c",
+      "name": "Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "c2b8ded1-30e4-4f3c-ac6a-039ff82e16b0",
+      "name": "Gmail OAuth2 API",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        280,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER",
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "authentication": "serviceAccount"
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      }
+    },
+    {
+      "id": "59d3f45b-6d16-40c4-b6f7-81a5bf654324",
+      "name": "Gmail OAuth2 API 2",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "PLACEHOLDER",
+        "subject": "PLACEHOLDER",
+        "emailType": "html",
+        "message": "PLACEHOLDER",
+        "authentication": "serviceAccount"
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "DUMMY_CRED_ID",
+          "name": "dummy-googleApi"
+        }
+      }
+    },
+    {
+      "id": "24e73dea-f2ca-48cb-b50e-2113a4ef0c2f",
+      "name": "Switch (step 0)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        140.0,
+        300.0
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.amount }}",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    },
+                    "rightValue": 500
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "high_value"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "standard_value"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch (step 0)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch (step 0)": {
+      "main": [
+        [
+          {
+            "node": "Gmail OAuth2 API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail OAuth2 API 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}
