@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -26,16 +26,26 @@ import { WorkflowReviewStep } from "../components/workflow/WorkflowReviewStep";
 import { ConfigureWorkflowStep } from "../components/workflow/ConfigureWorkflowStep";
 import { CreateResult } from "../components/workflow/CreateResult";
 import { OperationPicker } from "../components/workflow/OperationPicker";
+import { AIProviderPicker } from "../components/workflow/AIProviderPicker";
 import {
   ApiError,
   activateAgent,
+  aiSelectionOf,
   checkIntegrations,
   createWorkflow,
   extractWorkflow,
+  getAIDefault,
   getParamSchema,
   isStaleNameClash,
+  listAIProviders,
+  putAIDefault,
   requiredIntegrationsOf,
+  selectAIProvider,
+  type AIProvider,
+  type AISelection,
+  type AISelectionBody,
   type CreateWorkflowResponse,
+  type ExtractWorkflowResponse,
   type CredentialIssue,
   type Overrides,
   type ParamValues,
@@ -175,6 +185,13 @@ const NewAgentCreation = () => {
     domain: string;
     description: string;
   } | null>(null);
+  // AI provider/model picker (Task B). The selection itself lives in
+  // workflow.ai_selection (applied by the server); these are only the
+  // picker's data and request flags.
+  const [aiProviders, setAiProviders] = useState<AIProvider[] | null>(null);
+  const [aiDefault, setAiDefault] = useState<AISelection | null>(null);
+  const [switchingAI, setSwitchingAI] = useState(false);
+  const [savingAIDefault, setSavingAIDefault] = useState(false);
 
   const activeDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedDomain) ?? domains[0],
@@ -191,6 +208,43 @@ const NewAgentCreation = () => {
     typeof workflow?.automation_name === "string"
       ? workflow.automation_name
       : null;
+
+  // null when the workflow has no AI step: no picker, nothing sent.
+  const aiSelection = aiSelectionOf(workflow);
+  const aiBody: AISelectionBody = aiSelection
+    ? { ai_provider: aiSelection.provider, ai_model: aiSelection.model }
+    : {};
+
+  // Provider list + saved default, loaded the first time a workflow with an AI
+  // step is on screen (and again after a connection re-check).
+  const loadAIProviders = async () => {
+    try {
+      const [providers, saved] = await Promise.all([
+        listAIProviders(token),
+        getAIDefault(token),
+      ]);
+      setAiProviders(providers);
+      setAiDefault(
+        saved.ai_provider && saved.ai_model
+          ? { provider: saved.ai_provider, model: saved.ai_model }
+          : null,
+      );
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  };
+
+  const hasAIStep = aiSelection !== null;
+  useEffect(() => {
+    if (hasAIStep && aiProviders === null) void loadAIProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAIStep]);
+
+  const applyWorkflowResponse = (data: ExtractWorkflowResponse) => {
+    setWorkflow(data.workflow);
+    setIntegrations(data.integrations);
+    setAllRequiredAvailable(data.all_required_available);
+  };
 
   const resetCreateFlow = () => {
     setPhase("review");
@@ -245,16 +299,35 @@ const NewAgentCreation = () => {
     else resetCreateFlow();
 
     try {
-      const data = await extractWorkflow(token, {
+      let data = await extractWorkflow(token, {
         domain,
         description: `Agent Name: ${agentName}\n${description}`,
         ...(editOf ? { edit_of: editOf } : {}),
       });
 
+      // The server applies the user's saved default. If they had picked
+      // something else for the previous workflow, keep that pick.
+      const picked = aiSelectionOf(previous.workflow);
+      const applied = aiSelectionOf(data.workflow);
+      const newName = data.workflow.automation_name;
+      if (
+        picked &&
+        applied &&
+        typeof newName === "string" &&
+        (picked.provider !== applied.provider || picked.model !== applied.model)
+      ) {
+        try {
+          data = await selectAIProvider(token, newName, {
+            ai_provider: picked.provider,
+            ai_model: picked.model,
+          });
+        } catch {
+          // keep the default selection; the picker still lets them change it
+        }
+      }
+
       if (editOf) resetCreateFlow(); // forms/overrides belong to the old workflow
-      setWorkflow(data.workflow);
-      setIntegrations(data.integrations);
-      setAllRequiredAvailable(data.all_required_available);
+      applyWorkflowResponse(data);
       setGeneratedFor({ domain, description: trimmed });
 
       toast.success(
@@ -292,6 +365,7 @@ const NewAgentCreation = () => {
         params,
         overrides,
         workflow_name: workflowName,
+        ...aiBody,
       });
     } catch (err) {
       if (err instanceof ApiError && err.code === "agent_name_taken") {
@@ -346,7 +420,12 @@ const NewAgentCreation = () => {
     if (!automationName) return;
     setBusy(true);
     try {
-      const schema = await getParamSchema(token, automationName, overrides);
+      const schema = await getParamSchema(
+        token,
+        automationName,
+        overrides,
+        aiBody,
+      );
       if (!schema.is_ready) {
         setUnresolved(schema.unresolved_steps);
         setPhase("unresolved");
@@ -428,10 +507,54 @@ const NewAgentCreation = () => {
       );
       setIntegrations(data.integrations);
       setAllRequiredAvailable(data.all_required_available);
+      if (aiSelection) void loadAIProviders(); // refresh "connected" labels
     } catch (err) {
       toast.error(errMessage(err));
     } finally {
       setRechecking(false);
+    }
+  };
+
+  // Picker change: the server rewrites the AI step + required integrations
+  // and re-checks connections. Forms built for the old provider are dropped
+  // (field bindings reference the AI Agent node by name, which changes).
+  const handleSelectAI = async (provider: string, model: string) => {
+    if (!automationName) return;
+    setSwitchingAI(true);
+    try {
+      const data = await selectAIProvider(token, automationName, {
+        ai_provider: provider,
+        ai_model: model,
+      });
+      applyWorkflowResponse(data);
+      setForms([]);
+      setValues({});
+      setFieldErrors({});
+      setCredentialIssues([]);
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setSwitchingAI(false);
+    }
+  };
+
+  const handleSaveAIDefault = async (provider: string, model: string) => {
+    setSavingAIDefault(true);
+    try {
+      const saved = await putAIDefault(token, {
+        ai_provider: provider,
+        ai_model: model,
+      });
+      setAiDefault(
+        saved.ai_provider && saved.ai_model
+          ? { provider: saved.ai_provider, model: saved.ai_model }
+          : null,
+      );
+      toast.success("Saved as your default for new agents");
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setSavingAIDefault(false);
     }
   };
 
@@ -808,6 +931,18 @@ const NewAgentCreation = () => {
                         generating={generating}
                         onConnectIntegration={handleConnectIntegration}
                       />
+                      {!generating && aiSelection && aiProviders && (
+                        <AIProviderPicker
+                          providers={aiProviders}
+                          selection={aiSelection}
+                          savedDefault={aiDefault}
+                          busy={switchingAI}
+                          savingDefault={savingAIDefault}
+                          disabled={busy || rechecking}
+                          onChange={handleSelectAI}
+                          onSaveDefault={handleSaveAIDefault}
+                        />
+                      )}
                       {!generating &&
                         workflow &&
                         integrations.some(
@@ -906,7 +1041,7 @@ const NewAgentCreation = () => {
               <Button
                 variant="outline"
                 onClick={handleEditPrompt}
-                disabled={busy || generating || rechecking}
+                disabled={busy || generating || rechecking || switchingAI}
                 className="border-border bg-card/60 hover:bg-card"
               >
                 Edit prompt
@@ -949,6 +1084,7 @@ const NewAgentCreation = () => {
                 disabled={
                   busy ||
                   generating ||
+                  switchingAI ||
                   !workflow ||
                   !agentName.trim() ||
                   agentName.trim() === nameTaken?.name ||

@@ -93,9 +93,19 @@ export interface AgentSummary {
   status: string; // "active" | "created" | "failed"
   workflow_name: string;
   last_error: string | null;
+  /** AI provider/model the agent was compiled with; null when it has no AI step. */
+  ai_provider?: string | null;
+  ai_model?: string | null;
 }
 
-export interface CreateWorkflowBody {
+/** The AI provider/model choice sent with param-schema / create-workflow /
+ *  ai-selection. Omitted fields fall back to the user's saved default, then groq. */
+export interface AISelectionBody {
+  ai_provider?: string | null;
+  ai_model?: string | null;
+}
+
+export interface CreateWorkflowBody extends AISelectionBody {
   params: ParamValues;
   overrides: Overrides;
   workflow_name: string;
@@ -273,11 +283,12 @@ export function getParamSchema(
   token: string | null,
   automationName: string,
   overrides: Overrides = {},
+  ai: AISelectionBody = {},
 ): Promise<ParamSchemaResponse> {
   return request(
     `/agents/preview/${encodeURIComponent(automationName)}/param-schema`,
     token,
-    { method: "POST", body: JSON.stringify({ overrides }) },
+    { method: "POST", body: JSON.stringify({ overrides, ...ai }) },
   );
 }
 
@@ -329,6 +340,10 @@ export interface Agent {
    *  connected to. Only deleting it is possible; activate/deactivate/runs answer
    *  409 `agent_stale`. Optional so an older backend degrades to "not stale". */
   stale?: boolean;
+  /** AI provider/model the agent was compiled with (Task B). Optional: null
+   *  for agents with no AI step or created before Task B. */
+  ai_provider?: string | null;
+  ai_model?: string | null;
 }
 
 /** One n8n execution. Field names follow agent_lifecycle.agent_runs but are
@@ -452,4 +467,82 @@ export async function checkIntegrations(
     })),
     all_required_available: data.all_required_available,
   };
+}
+
+// ---------- AI provider / model selection (ai_provider_router.py, agent_router.py) ----------
+
+/** One entry of GET /ai-providers (schemas/ai_provider.py AIProviderOut). */
+export interface AIProvider {
+  service: string;
+  display_name: string;
+  default_model: string;
+  models: string[];
+  allow_custom_model: boolean;
+  /** The user has an active credential for this provider on their current n8n. */
+  connected: boolean;
+  /** The registry has a chat-model node for it (false = cannot be picked). */
+  available: boolean;
+  node_type: string | null;
+  node_type_version: number | null;
+}
+
+/** workflow.ai_selection: present only when the workflow has an AI step. */
+export interface AISelection {
+  provider: string;
+  model: string;
+}
+
+/** GET/PUT /ai-providers/default. */
+export interface AIDefault {
+  ai_provider: string | null;
+  ai_model: string | null;
+}
+
+/** The AI selection the server applied to a workflow, or null when the
+ *  workflow has no AI step (then no provider picker is shown). */
+export function aiSelectionOf(
+  workflow: Record<string, unknown> | null,
+): AISelection | null {
+  const raw = workflow?.ai_selection;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const { provider, model } = raw as Record<string, unknown>;
+  if (typeof provider !== "string" || !provider) return null;
+  if (typeof model !== "string" || !model) return null;
+  return { provider, model };
+}
+
+export function listAIProviders(token: string | null): Promise<AIProvider[]> {
+  return request("/ai-providers", token);
+}
+
+export function getAIDefault(token: string | null): Promise<AIDefault> {
+  return request("/ai-providers/default", token);
+}
+
+/** Saves the user's default. `ai_provider: null` clears it (back to groq). */
+export function putAIDefault(
+  token: string | null,
+  body: AIDefault,
+): Promise<AIDefault> {
+  return request("/ai-providers/default", token, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * The Preview Screen's picker: the same preview with its AI step and
+ * required integrations rewritten for the chosen provider/model, and the
+ * connection check re-run. No regeneration, nothing saved.
+ */
+export function selectAIProvider(
+  token: string | null,
+  automationName: string,
+  body: AISelectionBody,
+): Promise<ExtractWorkflowResponse> {
+  return request(
+    `/agents/preview/${encodeURIComponent(automationName)}/ai-selection`,
+    token,
+    { method: "POST", body: JSON.stringify(body) },
+  );
 }
