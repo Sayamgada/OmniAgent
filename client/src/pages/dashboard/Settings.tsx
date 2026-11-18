@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import {
   Bell,
   Monitor,
-  Sliders,
   User,
   Workflow,
 } from "lucide-react";
@@ -15,12 +14,9 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { Slider } from "../../components/ui/slider";
 import { Switch } from "../../components/ui/switch";
 import {
   Tabs,
@@ -33,8 +29,6 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function Settings() {
   const { user } = useAuth();
-  const [temperature, setTemperature] = useState([0.7]);
-  const [tokenLimit, setTokenLimit] = useState([4096]);
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
 
@@ -55,7 +49,7 @@ export default function Settings() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">
-          Manage your account, AI preferences, and security
+          Manage your account and n8n connection
         </p>
       </div>
 
@@ -67,13 +61,6 @@ export default function Settings() {
           >
             <User className="h-4 w-4" />
             User
-          </TabsTrigger>
-          <TabsTrigger
-            value="ai"
-            className="gap-2 rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary"
-          >
-            <Sliders className="h-4 w-4" />
-            AI
           </TabsTrigger>
           <TabsTrigger
             value="n8n"
@@ -179,76 +166,6 @@ export default function Settings() {
             </div>
 
             <Button onClick={handleSave}>Save Changes</Button>
-          </motion.div>
-        </TabsContent>
-
-        <TabsContent value="ai">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card space-y-6 rounded-2xl p-6"
-          >
-            <div className="space-y-2">
-              <Label>Default AI Model</Label>
-              <Select defaultValue="gpt-4o">
-                <SelectTrigger className="max-w-sm bg-muted/30">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                  <SelectItem value="claude">Claude 3.5 Sonnet</SelectItem>
-                  <SelectItem value="gemini">Gemini 1.5 Pro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label>Temperature</Label>
-                <span className="text-sm text-muted-foreground">
-                  {temperature[0]}
-                </span>
-              </div>
-              <Slider
-                value={temperature}
-                onValueChange={setTemperature}
-                min={0}
-                max={1}
-                step={0.1}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label>Token Limit</Label>
-                <span className="text-sm text-muted-foreground">
-                  {tokenLimit[0]}
-                </span>
-              </div>
-              <Slider
-                value={tokenLimit}
-                onValueChange={setTokenLimit}
-                min={512}
-                max={8192}
-                step={256}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Response Style</Label>
-              <Select defaultValue="balanced">
-                <SelectTrigger className="max-w-sm bg-muted/30">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="concise">Concise</SelectItem>
-                  <SelectItem value="balanced">Balanced</SelectItem>
-                  <SelectItem value="detailed">Detailed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button onClick={handleSave}>Save AI Settings</Button>
           </motion.div>
         </TabsContent>
 
