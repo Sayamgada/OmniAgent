@@ -1,9 +1,6 @@
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import {
-  BarChart3,
-  Bot,
-  MessageSquare,
   Plus,
   Upload,
   Workflow,

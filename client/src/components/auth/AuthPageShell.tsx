@@ -1,37 +1,36 @@
 import { type ReactNode } from "react";
+import { useSiteTheme } from "../../context/ThemeContext";
 
 type AuthPageShellProps = {
   children: ReactNode;
 };
 
 const AuthPageShell = ({ children }: AuthPageShellProps) => {
+  const { landingTheme } = useSiteTheme();
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#121212] text-[#F5F5F5]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(211_100%_50%_/_0.18),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,hsl(122_39%_49%_/_0.08),transparent_45%)]" />
+    <div
+      className={`relative min-h-screen w-full ${landingTheme} bg-background text-foreground transition-colors duration-300 overflow-x-hidden flex flex-col justify-between selection:bg-primary/25 selection:text-foreground`}
+    >
+      {/* Ambient background atmosphere matching OmniAgent landing page */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        {/* Central warm primary glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[500px] bg-primary/8 rounded-full blur-[190px] transition-colors duration-300" />
+        
+        {/* Lower subtle secondary/accent glow */}
+        <div className="absolute bottom-12 right-1/4 w-[450px] h-[350px] bg-secondary/10 rounded-full blur-[160px] transition-colors duration-300" />
+
+        {/* Subtle perspective dot grid texture */}
         <div
-          className="absolute inset-0 opacity-[0.35]"
+          className="absolute inset-0 opacity-[0.035] transition-opacity duration-300"
           style={{
-            backgroundImage: `linear-gradient(#2A2A2A 1px, transparent 1px), linear-gradient(90deg, #2A2A2A 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
+            backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+            backgroundSize: "36px 36px",
           }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,#121212_100%)]" />
-        {Array.from({ length: 24 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute size-1 rounded-full bg-primary/35 animate-float"
-            style={{
-              left: `${(i * 7 + 13) % 100}%`,
-              top: `${(i * 11) % 100}%`,
-              animationDelay: `${i * 0.35}s`,
-              animationDuration: `${5 + (i % 4)}s`,
-            }}
-          />
-        ))}
       </div>
-      <div className="relative z-10">{children}</div>
+
+      <div className="relative z-10 flex flex-col flex-1">{children}</div>
     </div>
   );
 };

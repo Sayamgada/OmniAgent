@@ -1,9 +1,7 @@
 import { motion } from "framer-motion";
 import {
   Bell,
-  Key,
   Monitor,
-  Shield,
   Sliders,
   User,
   Workflow,
@@ -32,37 +30,6 @@ import {
 } from "../../components/ui/tabs";
 import { N8nConnectionPanel } from "../../components/n8n/N8nConnectionPanel";
 import { useAuth } from "../../context/AuthContext";
-
-const sessions = [
-  {
-    id: "1",
-    device: "Chrome on Windows",
-    location: "New York, US",
-    current: true,
-    lastActive: "Active now",
-  },
-  {
-    id: "2",
-    device: "Safari on iPhone",
-    location: "New York, US",
-    current: false,
-    lastActive: "2 days ago",
-  },
-];
-
-const activityLogs = [
-  {
-    action: "Agent created",
-    detail: "HR Policy Assistant",
-    time: "2 hours ago",
-  },
-  {
-    action: "API key rotated",
-    detail: "OpenAI integration",
-    time: "1 day ago",
-  },
-  { action: "Login", detail: "Chrome on Windows", time: "3 days ago" },
-];
 
 export default function Settings() {
   const { user } = useAuth();

@@ -113,7 +113,7 @@
     font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  html,
+  /* Smooth theme transitions targeted specifically to color properties on structural containers */
   body,
   header,
   nav,
@@ -121,24 +121,12 @@
   footer,
   main,
   aside,
-  div,
-  span,
-  p,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  a,
-  button,
-  input,
-  textarea,
-  select,
-  svg,
-  path {
-    transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
-    transition-duration: 350ms;
+  .glass-card,
+  .bg-card,
+  .bg-background,
+  .border-border {
+    transition-property: background-color, border-color, color;
+    transition-duration: 250ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 

@@ -53,8 +53,9 @@ export const HowItWorksSection: React.FC = () => {
   const [selectedDomainIdx, setSelectedDomainIdx] = useState(0);
   const isVisibleRef = useRef(true);
 
-  const { siteTheme, variant } = useSiteTheme();
-  const isDark = siteTheme === "dark";
+  const { landingTheme, variant } = useSiteTheme();
+  const activeSectionTheme = landingTheme;
+  const isDark = activeSectionTheme === "dark";
   const activeDomain = SAMPLE_DOMAINS[selectedDomainIdx];
 
   useEffect(() => {
@@ -95,8 +96,8 @@ export const HowItWorksSection: React.FC = () => {
 
     const particles: Particle[] = [];
     const particleCount = 75;
-    const pal = variant.canvasPalette[siteTheme];
-    const colors = pal.particles || (isDark ? ["#38BDF8", "#00F2FE", "#818CF8"] : ["#0284C7", "#0D9488"]);
+    const pal = variant.canvasPalette[activeSectionTheme];
+    const colors = pal.particles || (isDark ? ["#C98952", "#D3C3B9", "#B58863"] : ["#9A5E30", "#3D4D55", "#B58863"]);
 
     const targets = [height * 0.22, height * 0.5, height * 0.78];
 
@@ -216,7 +217,7 @@ export const HowItWorksSection: React.FC = () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
     };
-  }, [siteTheme, variant]);
+  }, [activeSectionTheme, variant, isDark]);
 
   return (
     <section

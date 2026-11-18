@@ -2,11 +2,13 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import { useSiteTheme } from "../context/ThemeContext";
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { loginWithToken } = useAuth();
+  const { landingTheme } = useSiteTheme();
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -32,10 +34,10 @@ export default function OAuthCallback() {
   }, [searchParams, navigate, loginWithToken]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className={`min-h-screen flex items-center justify-center ${landingTheme} bg-background text-foreground transition-colors duration-300`}>
       <div className="flex flex-col items-center gap-4">
-        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-600 dark:text-gray-300">Completing sign in...</p>
+        <div className="size-9 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-medium text-muted-foreground font-mono">Completing sign in…</p>
       </div>
     </div>
   );

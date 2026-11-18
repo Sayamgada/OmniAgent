@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Menu, X, ArrowRight, Zap } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
+import { useSiteTheme } from "../../context/ThemeContext";
 import { ThemeToggle } from "./ThemeToggle";
 
 const landingLinks = [
@@ -27,10 +28,32 @@ type NavbarProps = {
 const Navbar = ({ variant = "landing" }: NavbarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isLoggedIn } = useAuth();
+  const { heroTheme, landingTheme } = useSiteTheme();
+  const [isPastHero, setIsPastHero] = useState(false);
+
+  const location = useLocation();
+  const isSignUp = location.pathname.includes("sign-up");
+
+  // Synchronize navbar background atmosphere with active viewport section
+  useEffect(() => {
+    if (variant !== "landing") return;
+    const handleScroll = () => {
+      const heroThreshold = window.innerHeight * 0.85;
+      setIsPastHero(window.scrollY > heroThreshold);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [variant]);
+
+  const activeNavTheme = variant === "landing"
+    ? (isPastHero ? landingTheme : heroTheme)
+    : landingTheme;
 
   return (
     <header
-      className="sticky top-0 left-0 right-0 z-40 w-full transition-colors duration-300 backdrop-blur-2xl border-b border-border/70 bg-background/85 text-foreground shadow-xs"
+      className={`sticky top-0 left-0 right-0 z-40 w-full transition-colors duration-300 backdrop-blur-2xl border-b border-border/70 bg-background/85 text-foreground shadow-xs ${activeNavTheme || ""}`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Brand */}
@@ -125,11 +148,34 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
           {variant === "auth" && (
             <>
               <ThemeToggle />
-              <Button size="sm" className="h-8.5 bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 rounded-lg" asChild>
-                <Link to={isLoggedIn ? "/dashboard" : "/sign-up"}>
-                  {isLoggedIn ? "Open Workspace" : "Get Started"}
-                </Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button size="sm" className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm" asChild>
+                  <Link to="/dashboard">
+                    <Zap className="size-3.5" />
+                    <span>Open Workspace</span>
+                  </Link>
+                </Button>
+              ) : isSignUp ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8.5 px-4 text-xs font-semibold border-border/80 text-foreground hover:bg-muted/70 rounded-lg transition-colors"
+                  asChild
+                >
+                  <Link to="/sign-in">Sign In</Link>
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="h-8.5 gap-1.5 bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 shadow-sm rounded-lg"
+                  asChild
+                >
+                  <Link to="/sign-up">
+                    <span>Start Free</span>
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -198,15 +244,36 @@ const Navbar = ({ variant = "landing" }: NavbarProps) => {
                   </Button>
                 </>
               )}
-              {((variant === "landing" && isLoggedIn) || variant === "auth") && (
-                <Button className="w-full bg-primary text-xs font-bold text-primary-foreground justify-center" asChild>
-                  <Link
-                    to={isLoggedIn ? "/dashboard" : "/sign-up"}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {isLoggedIn ? "Open Workspace" : "Get Started"}
+              {variant === "landing" && isLoggedIn && (
+                <Button className="w-full bg-primary text-xs font-bold text-primary-foreground justify-center gap-1.5" asChild>
+                  <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+                    <Zap className="size-3.5" />
+                    <span>Open Workspace</span>
                   </Link>
                 </Button>
+              )}
+              {variant === "auth" && (
+                isLoggedIn ? (
+                  <Button className="w-full bg-primary text-xs font-bold text-primary-foreground justify-center gap-1.5" asChild>
+                    <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+                      <Zap className="size-3.5" />
+                      <span>Open Workspace</span>
+                    </Link>
+                  </Button>
+                ) : isSignUp ? (
+                  <Button variant="outline" className="w-full text-xs font-semibold justify-center border-border/80" asChild>
+                    <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
+                      Sign In
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button className="w-full bg-primary text-xs font-bold text-primary-foreground justify-center gap-1.5" asChild>
+                    <Link to="/sign-up" onClick={() => setMobileOpen(false)}>
+                      <span>Start Free</span>
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </Button>
+                )
               )}
             </div>
           </motion.div>

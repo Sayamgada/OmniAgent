@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from "react";
+import type { MotionValue } from "framer-motion";
 import { useSiteTheme } from "../../context/ThemeContext";
 
 export interface DomainInfo {
@@ -75,6 +76,7 @@ interface CinematicCanvasProps {
   activeDomain: string | null;
   onHoverDomain: (domain: string | null) => void;
   scrollProgress?: number;
+  scrollMotionValue?: MotionValue<number>;
   heroTheme?: "dark" | "light";
   themeProgress?: number;
   className?: string;
@@ -102,6 +104,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   activeDomain,
   onHoverDomain,
   scrollProgress = 0,
+  scrollMotionValue,
   heroTheme = "dark",
   themeProgress,
   className = "",
@@ -120,12 +123,23 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
   variantRef.current = variant;
 
   const themeProgressRef = useRef<number>(
-    themeProgress !== undefined ? (1 - themeProgress) : (heroTheme === "dark" ? 1.0 : 0.0)
+    themeProgress !== undefined ? themeProgress : (heroTheme === "dark" ? 1.0 : 0.0)
   );
 
   useEffect(() => {
-    scrollRef.current = scrollProgress;
-  }, [scrollProgress]);
+    if (scrollMotionValue) {
+      scrollRef.current = scrollMotionValue.get();
+      return scrollMotionValue.on("change", (latest) => {
+        scrollRef.current = latest;
+      });
+    }
+  }, [scrollMotionValue]);
+
+  useEffect(() => {
+    if (scrollProgress !== undefined && !scrollMotionValue) {
+      scrollRef.current = scrollProgress;
+    }
+  }, [scrollProgress, scrollMotionValue]);
 
   useEffect(() => {
     themeRef.current = heroTheme;
@@ -133,7 +147,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
   useEffect(() => {
     if (themeProgress !== undefined) {
-      themeProgressRef.current = 1 - themeProgress;
+      themeProgressRef.current = themeProgress;
     }
   }, [themeProgress]);
 
@@ -478,11 +492,15 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       ctx.clearRect(0, 0, width, height);
 
       const scroll = Math.max(0, Math.min(1, scrollRef.current));
-      const convergence = smoothstep(0.20, 0.50, scroll);
-      const cameraPushScale = 1 + smoothstep(0.22, 0.65, scroll) * 1.6;
-      const coreIgnition = smoothstep(0.45, 0.65, scroll);
-      const coreRadiusScale = 1 + Math.pow(coreIgnition, 2.2) * 2.8;
-      const radialExpandProgress = smoothstep(0.60, 0.90, scroll);
+      const convergence = smoothstep(0.22, 0.60, scroll);
+      const cameraPushScale = 1 + smoothstep(0.25, 0.70, scroll) * 0.35;
+      const coreIgnition = smoothstep(0.38, 0.72, scroll);
+      const coreRadiusScale = 1 + coreIgnition * 0.65;
+      const radialExpandProgress = smoothstep(0.55, 0.95, scroll);
+
+      // Central core orb and halo fade completely to 0 between scroll 0.70 and 0.88
+      // so zero residual light orb floats into following landing sections
+      const orbFadeAlpha = Math.max(0, 1 - smoothstep(0.70, 0.88, scroll));
 
       const centerX = width / 2;
       const centerY = height * 0.52;
@@ -522,25 +540,37 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
       themeProgressRef.current += (targetTp - themeProgressRef.current) * 0.085;
       const tp = themeProgressRef.current;
 
+      const isDarkHero = themeRef.current === "dark";
+
       // 1. ATMOSPHERIC AMBIENT GLOW FROM CORE
-      if (coreProj && radialExpandProgress < 0.98) {
-        const baseGlowRadius = (isMobile ? 220 : 380) * (1 + coreIgnition * 1.4);
-        const glowAlpha = 0.22 + smoothstep(0.2, 0.55, scroll) * 0.35;
+      if (coreProj && orbFadeAlpha > 0.005) {
+        const baseGlowRadius = (isMobile ? 200 : 340) * (1 + coreIgnition * 0.5);
+        const glowAlpha = (0.28 + smoothstep(0.2, 0.55, scroll) * 0.32) * orbFadeAlpha;
 
-        const radialGlow = ctx.createRadialGradient(cx, cy, 4, cx, cy, baseGlowRadius);
-        const stop0 = lerpRgb(lightPal.education, darkPal.corporate, tp);
-        const stop1 = lerpRgb(lightPal.finance, darkPal.education, tp);
-        const stop2 = lerpRgb(lightPal.corporate, darkPal.finance, tp);
-        const stop3 = lerpRgb(lightPal.heroBg, darkPal.heroBg, tp);
+        const radialGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, baseGlowRadius);
+        if (isDarkHero) {
+          // Dark hero: soft luminous white radiating into warm amber bronze
+          const stop0: [number, number, number] = [255, 245, 230];
+          const stop1: [number, number, number] = [201, 137, 82];
+          const stop2: [number, number, number] = [60, 80, 95];
+          const stop3: [number, number, number] = darkPal.heroBg;
 
-        const a0 = (0.55 * (1 - tp) + 1.0 * tp) * glowAlpha;
-        const a1 = (0.35 * (1 - tp) + 0.6 * tp) * glowAlpha;
-        const a2 = (0.15 * (1 - tp) + 0.2 * tp) * glowAlpha;
+          radialGlow.addColorStop(0, rgbaStr(stop0, 0.90 * glowAlpha));
+          radialGlow.addColorStop(0.30, rgbaStr(stop1, 0.60 * glowAlpha));
+          radialGlow.addColorStop(0.65, rgbaStr(stop2, 0.25 * glowAlpha));
+          radialGlow.addColorStop(1, rgbaStr(stop3, 0));
+        } else {
+          // Light hero: bright champagne white radiating into golden highlights
+          const stop0: [number, number, number] = [255, 255, 255];
+          const stop1: [number, number, number] = [255, 244, 224];
+          const stop2: [number, number, number] = [238, 205, 160];
+          const stop3: [number, number, number] = lightPal.heroBg;
 
-        radialGlow.addColorStop(0, rgbaStr(stop0, a0));
-        radialGlow.addColorStop(0.35, rgbaStr(stop1, a1));
-        radialGlow.addColorStop(0.7, rgbaStr(stop2, a2));
-        radialGlow.addColorStop(1, rgbaStr(stop3, 0));
+          radialGlow.addColorStop(0, rgbaStr(stop0, 0.75 * glowAlpha));
+          radialGlow.addColorStop(0.30, rgbaStr(stop1, 0.45 * glowAlpha));
+          radialGlow.addColorStop(0.65, rgbaStr(stop2, 0.20 * glowAlpha));
+          radialGlow.addColorStop(1, rgbaStr(stop3, 0));
+        }
 
         ctx.fillStyle = radialGlow;
         ctx.beginPath();
@@ -549,7 +579,7 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
 
         // Energy rings
         if (convergence < 0.75) {
-          const ringAlpha = (1 - convergence) * (0.12 * (1 - tp) + 0.06 * tp);
+          const ringAlpha = (1 - convergence) * (0.12 * (1 - tp) + 0.06 * tp) * orbFadeAlpha;
           const ringColor = lerpRgb(lightPal.education, darkPal.corporate, tp);
           const ringStroke = rgbaStr(ringColor, ringAlpha);
           ctx.save();
@@ -766,15 +796,18 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
         ctx.restore();
       });
 
-      // 5. EXPANDING OMNIAGENT AI CORE
-      let currentCoreRadius = 20;
-      if (coreProj) {
+      // 5. EXPANDING OMNIAGENT AI CORE & RESIDUAL ORB ELIMINATION
+      const pulse = Math.sin(t * 2.2) * 0.08 + 1;
+      const currentCoreRadius = coreProj
+        ? coreProj.node.radius * coreProj.scale * pulse * coreRadiusScale
+        : 20;
+
+      if (coreProj && orbFadeAlpha > 0.005) {
         ctx.save();
-        const pulse = Math.sin(t * 2.2) * 0.08 + 1;
-        currentCoreRadius = coreProj.node.radius * coreProj.scale * pulse * coreRadiusScale;
 
         if (coreIgnition < 0.65) {
-          const ringAlpha = (1 - coreIgnition * 1.5) * (0.65 * (1 - tp) + 0.5 * tp);
+          const ringAlpha =
+            (1 - coreIgnition * 1.5) * (0.65 * (1 - tp) + 0.5 * tp) * orbFadeAlpha;
           const ringRgb1 = lerpRgb(lightPal.education, darkPal.corporate, tp);
           const ringRgb2 = lerpRgb(lightPal.finance, darkPal.education, tp);
           const ringColor1 = rgbaStr(ringRgb1, ringAlpha);
@@ -800,60 +833,90 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           ctx.restore();
         }
 
+        const coreGlowRadius = currentCoreRadius * (1.5 + coreIgnition * 0.9);
         const coreGrad = ctx.createRadialGradient(
           cx,
           cy,
           0,
           cx,
           cy,
-          currentCoreRadius * (1.8 + coreIgnition * 2.5)
+          coreGlowRadius
         );
 
-        const c0 = lerpRgb(lightPal.education, [255, 255, 255], tp);
-        const c1 = lerpRgb(lightPal.finance, darkPal.corporate, tp);
-        const c2 = lerpRgb(lightPal.corporate, darkPal.education, tp);
-        const c3 = lerpRgb(lightPal.corporate, darkPal.finance, tp);
+        if (isDarkHero) {
+          // SCENARIO A: Dark Hero -> Pure white luminous emission that intensifies then completely fades
+          const c0: [number, number, number] = [255, 255, 255];
+          const c1: [number, number, number] = [255, 248, 235];
+          const c2: [number, number, number] = [240, 215, 175];
+          const c3: [number, number, number] = [201, 137, 82]; // warm amber bronze
 
-        const coreAlpha = (0.8 - coreIgnition * 0.2) * (1 - tp) + (0.9 - coreIgnition * 0.2) * tp;
+          coreGrad.addColorStop(0, rgbaStr(c0, 1.0 * orbFadeAlpha));
+          coreGrad.addColorStop(0.22, rgbaStr(c1, 1.0 * orbFadeAlpha));
+          coreGrad.addColorStop(0.50, rgbaStr(c2, 0.95 * orbFadeAlpha));
+          coreGrad.addColorStop(0.78, rgbaStr(c3, 0.85 * orbFadeAlpha));
+          coreGrad.addColorStop(1, rgbaStr(c3, 0));
 
-        coreGrad.addColorStop(0, rgbaStr(c0, 1.0));
-        coreGrad.addColorStop(0.20, rgbaStr(c1, 1.0));
-        coreGrad.addColorStop(0.42, rgbaStr(c2, 1.0));
-        coreGrad.addColorStop(0.72, rgbaStr(c3, coreAlpha));
-        coreGrad.addColorStop(1, rgbaStr(c3, 0));
+          ctx.beginPath();
+          ctx.arc(cx, cy, coreGlowRadius, 0, Math.PI * 2);
+          ctx.fillStyle = coreGrad;
+          ctx.shadowColor = `rgba(255, 240, 215, ${0.9 * orbFadeAlpha})`;
+          ctx.shadowBlur = (24 + coreIgnition * 35) * orbFadeAlpha;
+          ctx.fill();
 
-        ctx.beginPath();
-        ctx.arc(cx, cy, currentCoreRadius * (1.8 + coreIgnition * 2.5), 0, Math.PI * 2);
-        ctx.fillStyle = coreGrad;
-        const shadowRgb = lerpRgb(lightPal.education, darkPal.corporate, tp);
-        ctx.shadowColor = rgbaStr(shadowRgb, 1.0);
-        ctx.shadowBlur = 28 + coreIgnition * 50;
-        ctx.fill();
+          // Central emitter: brilliant soft white light fading to 0 opacity before hero unpins
+          const emitterRgb: [number, number, number] = [255, 255, 255];
+          ctx.beginPath();
+          ctx.arc(cx, cy, currentCoreRadius * (0.42 + coreIgnition * 0.35), 0, Math.PI * 2);
+          ctx.fillStyle = rgbaStr(emitterRgb, 1.0 * orbFadeAlpha);
+          ctx.shadowColor = `rgba(255, 255, 255, ${1.0 * orbFadeAlpha})`;
+          ctx.shadowBlur = (18 + coreIgnition * 30) * orbFadeAlpha;
+          ctx.fill();
+        } else {
+          // SCENARIO B: Light Hero -> Progressively develops a controlled dark/near-black glow then fades
+          const c0 = lerpRgb([255, 255, 255], [11, 17, 24], coreIgnition);
+          const c1 = lerpRgb([238, 205, 160], [22, 33, 43], coreIgnition);
+          const c2 = lerpRgb([210, 165, 120], [45, 58, 68], coreIgnition);
+          const c3 = lerpRgb([247, 243, 238], [11, 17, 24], coreIgnition);
 
-        const emitterRgb = lerpRgb([15, 23, 42], [255, 255, 255], tp);
-        const emitterShadowRgb = lerpRgb(lightPal.education, [255, 255, 255], tp);
-        ctx.beginPath();
-        ctx.arc(cx, cy, currentCoreRadius * (0.45 + coreIgnition * 0.5), 0, Math.PI * 2);
-        ctx.fillStyle = rgbaStr(emitterRgb, 1.0);
-        ctx.shadowColor = rgbaStr(emitterShadowRgb, 1.0);
-        ctx.shadowBlur = 14 + coreIgnition * 35;
-        ctx.fill();
+          coreGrad.addColorStop(0, rgbaStr(c0, 1.0 * orbFadeAlpha));
+          coreGrad.addColorStop(0.25, rgbaStr(c1, 1.0 * orbFadeAlpha));
+          coreGrad.addColorStop(0.52, rgbaStr(c2, 0.90 * orbFadeAlpha));
+          coreGrad.addColorStop(0.80, rgbaStr(c3, 0.70 * orbFadeAlpha));
+          coreGrad.addColorStop(1, rgbaStr(c3, 0));
 
-        if (convergence < 0.25) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, coreGlowRadius, 0, Math.PI * 2);
+          ctx.fillStyle = coreGrad;
+          const darkShadow = lerpRgb([245, 215, 170], [11, 17, 24], coreIgnition);
+          ctx.shadowColor = rgbaStr(darkShadow, 0.85 * orbFadeAlpha);
+          ctx.shadowBlur = (20 + coreIgnition * 25) * orbFadeAlpha;
+          ctx.fill();
+
+          // Central emitter: Progressively shifts into controlled near-black center then fades
+          const emitterRgb = lerpRgb([255, 255, 255], [11, 17, 24], coreIgnition);
+          ctx.beginPath();
+          ctx.arc(cx, cy, currentCoreRadius * (0.42 + coreIgnition * 0.35), 0, Math.PI * 2);
+          ctx.fillStyle = rgbaStr(emitterRgb, 1.0 * orbFadeAlpha);
+          ctx.shadowColor = rgbaStr(emitterRgb, 0.9 * orbFadeAlpha);
+          ctx.shadowBlur = (14 + coreIgnition * 20) * orbFadeAlpha;
+          ctx.fill();
+        }
+
+        if (convergence < 0.35 && orbFadeAlpha > 0.1) {
           ctx.font = `700 ${Math.max(10 * coreProj.scale, 9)}px 'JetBrains Mono', monospace`;
-          const coreLabelRgb = lerpRgb(lightPal.corporate, darkPal.corporate, tp);
-          ctx.fillStyle = rgbaStr(coreLabelRgb, 1.0);
+          const coreLabelRgb = isDarkHero ? [235, 226, 220] : [20, 30, 45];
+          ctx.fillStyle = rgbaStr(coreLabelRgb as [number, number, number], 1.0 * orbFadeAlpha);
           ctx.textAlign = "center";
-          const coreLabelShadowRgb = lerpRgb([255, 255, 255], [0, 0, 0], tp);
-          ctx.shadowColor = rgbaStr(coreLabelShadowRgb, 0.9);
-          ctx.shadowBlur = 5;
-          ctx.fillText("OMNIAGENT AI CORE", cx, cy + currentCoreRadius * 2.6);
+          const coreLabelShadowRgb = isDarkHero ? [0, 0, 0] : [255, 255, 255];
+          ctx.shadowColor = rgbaStr(coreLabelShadowRgb as [number, number, number], 0.85 * orbFadeAlpha);
+          ctx.shadowBlur = 4 * orbFadeAlpha;
+          ctx.fillText("OMNIAGENT AI CORE", cx, cy + currentCoreRadius * 2.3);
         }
 
         ctx.restore();
       }
 
-      // 6. FULL RADIAL LIGHT EXPANSION
+      // 6. FULL RADIAL CONTRAST BEAM EXPANSION
       if (radialExpandProgress > 0.001) {
         ctx.save();
 
@@ -862,58 +925,71 @@ export const CinematicAiNetworkCanvas: React.FC<CinematicCanvasProps> = ({
           Math.max(cy, height - cy)
         );
 
+        // Bounded bloom radius expanding outward smoothly
         const outerBloomRadius =
           currentCoreRadius +
-          Math.pow(radialExpandProgress, 1.4) * (maxCornerDistance * 2.2);
+          Math.pow(radialExpandProgress, 1.25) * (maxCornerDistance * 1.55);
 
-        const whiteCoreProgress = smoothstep(0.08, 0.90, radialExpandProgress);
-        const solidCoreRadius = Math.pow(whiteCoreProgress, 1.8) * (maxCornerDistance * 1.35);
+        const innerProgress = smoothstep(0.15, 0.92, radialExpandProgress);
+        const innerGlowRadius = Math.pow(innerProgress, 1.4) * (maxCornerDistance * 0.95);
 
-        if (solidCoreRadius < outerBloomRadius) {
+        // Beam settles smoothly into destination background (0.90 -> 0.98)
+        const transitionSettleAlpha = Math.max(0, 1 - smoothstep(0.90, 0.98, scroll));
+
+        if (innerGlowRadius < outerBloomRadius && transitionSettleAlpha > 0.01) {
           const radialGrad = ctx.createRadialGradient(
             cx,
             cy,
-            solidCoreRadius,
+            innerGlowRadius,
             cx,
             cy,
             outerBloomRadius
           );
 
-          const stop0 = lerpRgb(lightPal.heroBg, [255, 255, 255], tp);
-          const stop1 = lerpRgb(lightPal.education, darkPal.corporate, tp);
-          const stop2 = lerpRgb(lightPal.finance, darkPal.education, tp);
-          const stop3 = lerpRgb(lightPal.corporate, darkPal.finance, tp);
-          const stop4 = lerpRgb(lightPal.heroBg, darkPal.heroBg, tp);
+          if (isDarkHero) {
+            // SCENARIO A: DARK HERO -> BRIGHT WHITE LIGHT EXPANSION
+            // Emits luminous white beam that transitions screen into Warm Ivory (#F7F3EE)
+            const stop0: [number, number, number] = [255, 255, 255]; // Pure bright white
+            const stop1: [number, number, number] = [255, 250, 240]; // Champagne white
+            const stop2: [number, number, number] = [245, 230, 205]; // Soft gold highlight
+            const stop3: [number, number, number] = [247, 243, 238]; // Warm linen light
+            const stop4: [number, number, number] = [247, 243, 238]; // Destination warm ivory
 
-          const a0 = (0.9 * (1 - tp) + 0.85 * tp) + radialExpandProgress * (0.1 * (1 - tp) + 0.15 * tp);
-          const a1 = (0.85 * (1 - tp) + 0.75 * tp) + radialExpandProgress * (0.15 * (1 - tp) + 0.25 * tp);
-          const a2 = (0.75 * (1 - tp) + 0.55 * tp) + radialExpandProgress * (0.25 * (1 - tp) + 0.4 * tp);
-          const a3 = (0.45 * (1 - tp) + 0.35 * tp) + radialExpandProgress * (0.4 * (1 - tp) + 0.5 * tp);
+            const a0 = Math.min(1.0, (0.95 + radialExpandProgress * 0.05) * transitionSettleAlpha);
+            const a1 = Math.min(1.0, 0.85 * transitionSettleAlpha);
+            const a2 = Math.min(1.0, 0.65 * transitionSettleAlpha);
+            const a3 = Math.min(1.0, 0.35 * transitionSettleAlpha);
 
-          radialGrad.addColorStop(0, rgbaStr(stop0, Math.min(1.0, a0)));
-          radialGrad.addColorStop(0.25, rgbaStr(stop1, Math.min(1.0, a1)));
-          radialGrad.addColorStop(0.55, rgbaStr(stop2, Math.min(0.95, a2)));
-          radialGrad.addColorStop(0.80, rgbaStr(stop3, Math.min(0.85, a3)));
-          radialGrad.addColorStop(1.0, rgbaStr(stop4, 0));
+            radialGrad.addColorStop(0, rgbaStr(stop0, a0));
+            radialGrad.addColorStop(0.22, rgbaStr(stop1, a1));
+            radialGrad.addColorStop(0.50, rgbaStr(stop2, a2));
+            radialGrad.addColorStop(0.80, rgbaStr(stop3, a3));
+            radialGrad.addColorStop(1.0, rgbaStr(stop4, 0));
+          } else {
+            // SCENARIO B: LIGHT HERO -> CONTROLLED DARK/NEAR-BLACK BEAM EXPANSION
+            // Emits near-black radial beam that transitions screen into Deep Navy (#0B1118)
+            const stop0: [number, number, number] = [11, 17, 24]; // Controlled deep obsidian
+            const stop1: [number, number, number] = [22, 33, 43]; // Slate navy dark tone
+            const stop2: [number, number, number] = [45, 58, 68]; // Burnished dark bronze/slate
+            const stop3: [number, number, number] = [18, 25, 33]; // Deep navy surface
+            const stop4: [number, number, number] = [11, 17, 24]; // Destination deep navy
+
+            const a0 = Math.min(1.0, (0.95 + radialExpandProgress * 0.05) * transitionSettleAlpha);
+            const a1 = Math.min(1.0, 0.85 * transitionSettleAlpha);
+            const a2 = Math.min(1.0, 0.65 * transitionSettleAlpha);
+            const a3 = Math.min(1.0, 0.35 * transitionSettleAlpha);
+
+            radialGrad.addColorStop(0, rgbaStr(stop0, a0));
+            radialGrad.addColorStop(0.22, rgbaStr(stop1, a1));
+            radialGrad.addColorStop(0.50, rgbaStr(stop2, a2));
+            radialGrad.addColorStop(0.80, rgbaStr(stop3, a3));
+            radialGrad.addColorStop(1.0, rgbaStr(stop4, 0));
+          }
 
           ctx.fillStyle = radialGrad;
           ctx.beginPath();
           ctx.arc(cx, cy, outerBloomRadius, 0, Math.PI * 2);
           ctx.fill();
-        }
-
-        const solidColor = lerpRgb(lightPal.heroBg, darkPal.heroBg, tp);
-
-        if (solidCoreRadius > 0) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, solidCoreRadius, 0, Math.PI * 2);
-          ctx.fillStyle = rgbaStr(solidColor, 1.0);
-          ctx.fill();
-        }
-
-        if (radialExpandProgress >= 0.99 || solidCoreRadius >= maxCornerDistance) {
-          ctx.fillStyle = rgbaStr(solidColor, 1.0);
-          ctx.fillRect(0, 0, width, height);
         }
 
         ctx.restore();

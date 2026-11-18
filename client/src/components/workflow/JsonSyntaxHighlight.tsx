@@ -1,7 +1,7 @@
 const tokenize = (json: string) => {
   const parts: Array<{ text: string; className: string }> = [];
   const regex =
-    /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}\[\],:]/g;
+    /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[[\]{},:]/g;
 
   let last = 0;
   let match: RegExpExecArray | null;
@@ -22,7 +22,7 @@ const tokenize = (json: string) => {
       className = "text-amber-400";
     } else if (/^-?\d/.test(token)) {
       className = "text-cyan-400";
-    } else if (/[{}\[\]]/.test(token)) {
+    } else if (/[[\]{}]/.test(token)) {
       className = "text-muted-foreground";
     }
 

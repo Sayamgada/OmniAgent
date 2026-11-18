@@ -10,11 +10,14 @@ export type { SiteTheme };
 export { OBSIDIAN_BRONZE_THEME };
 
 export interface SiteThemeAdapter {
-  siteTheme: SiteTheme;
+  landingTheme: SiteTheme;
   heroTheme: SiteTheme;
+  destinationTheme: SiteTheme;
+  siteTheme: SiteTheme;
   themeProgress: number;
   variant: ThemeDefinition;
   toggleTheme: () => void;
+  setLandingTheme: (theme: SiteTheme) => void;
   setTheme: (theme: SiteTheme) => void;
 }
 
@@ -26,27 +29,35 @@ export const useSiteTheme = (): SiteThemeAdapter => {
     setMounted(true);
   }, []);
 
-  const activeTheme = (mounted ? resolvedTheme || theme : theme || "dark") as string;
-  const siteTheme: SiteTheme = activeTheme === "light" ? "light" : "dark";
-  const isDark = siteTheme === "dark";
-  // Dual atmosphere: light pages keep a dark hero canvas, dark pages invert it.
-  const heroTheme: SiteTheme = isDark ? "light" : "dark";
-  const themeProgress = isDark ? 1 : 0;
+  // landingTheme: the user's persistent preference for the landing page sections
+  const activePreference = (mounted ? resolvedTheme || theme : theme || "light") as string;
+  const landingTheme: SiteTheme = activePreference === "dark" ? "dark" : "light";
+  const isLandingDark = landingTheme === "dark";
+
+  // heroTheme: ALWAYS the inverse of landingTheme
+  const heroTheme: SiteTheme = isLandingDark ? "light" : "dark";
+  const destinationTheme: SiteTheme = landingTheme;
+  const themeProgress = heroTheme === "dark" ? 1 : 0;
 
   useEffect(() => {
     if (!mounted) return;
     const root = document.documentElement;
-    root.setAttribute("data-theme", siteTheme);
+    root.setAttribute("data-landing-theme", landingTheme);
     root.setAttribute("data-hero-theme", heroTheme);
-    root.style.colorScheme = siteTheme;
-  }, [mounted, siteTheme, heroTheme]);
+    root.setAttribute("data-destination-theme", destinationTheme);
+    root.setAttribute("data-theme", landingTheme);
+    root.style.colorScheme = landingTheme;
+  }, [mounted, landingTheme, heroTheme, destinationTheme]);
 
   return {
-    siteTheme,
+    landingTheme,
     heroTheme,
+    destinationTheme,
+    siteTheme: landingTheme,
     themeProgress,
     variant: OBSIDIAN_BRONZE_THEME,
-    toggleTheme: () => setTheme(isDark ? "light" : "dark"),
+    toggleTheme: () => setTheme(isLandingDark ? "light" : "dark"),
+    setLandingTheme: (next: SiteTheme) => setTheme(next),
     setTheme: (next: SiteTheme) => setTheme(next),
   };
 };

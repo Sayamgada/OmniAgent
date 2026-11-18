@@ -34,7 +34,7 @@ export const BeforeVsAfterSection: React.FC = () => {
     <div
       ref={containerRef}
       id="before-vs-after"
-      className="relative min-h-[200vh] bg-background border-t border-border/60 text-foreground transition-colors duration-350"
+      className="relative min-h-[175vh] bg-background border-t border-border/60 text-foreground transition-colors duration-250"
     >
       {/* Sticky Viewport Container */}
       <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-12">

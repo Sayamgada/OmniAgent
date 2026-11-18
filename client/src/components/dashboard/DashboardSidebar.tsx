@@ -16,7 +16,14 @@ import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
-const navItems = [
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+}
+
+const navItems: readonly NavItem[] = [
   { to: "/dashboard", label: "Dashboard Home", icon: Home, end: true },
   { to: "/agents", label: "My Agents", icon: LayoutGrid },
   { to: "/new-agent", label: "Create Agent", icon: Plus },

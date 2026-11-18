@@ -2,7 +2,6 @@ import dagre from "dagre";
 import type { Edge, Node } from "@xyflow/react";
 import type {
   AgentWorkflowConfig,
-  RequiredAgent,
   WorkflowNodeDetail,
   WorkflowNodeType,
   WorkflowStep,

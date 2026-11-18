@@ -1,71 +1,74 @@
-import React, { useState, useRef } from "react";
+import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import {
-  CinematicAiNetworkCanvas,
-} from "./CinematicAiNetworkCanvas";
+import { CinematicAiNetworkCanvas } from "./CinematicAiNetworkCanvas";
 import { useSiteTheme } from "../../context/ThemeContext";
 
 const HeroSection = () => {
-  const [activeDomain, setActiveDomain] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
-  const { heroTheme, themeProgress, variant } = useSiteTheme();
+  const { heroTheme, themeProgress } = useSiteTheme();
   const isDarkHero = heroTheme === "dark";
 
-  const darkBg = variant.canvasPalette.dark.heroBg;
-  const lightBg = variant.canvasPalette.light.heroBg;
+  // Contrast-based background transition colors
+  const startBgColor = isDarkHero ? "rgb(11, 17, 24)" : "rgb(247, 243, 238)";
+  const destBgColor = isDarkHero ? "rgb(247, 243, 238)" : "rgb(11, 17, 24)";
 
-  // Interpolate hero background from theme tokens
-  const heroBgR = Math.round(darkBg[0] + (lightBg[0] - darkBg[0]) * (1 - (isDarkHero ? 1 : 0)));
-  const heroBgG = Math.round(darkBg[1] + (lightBg[1] - darkBg[1]) * (1 - (isDarkHero ? 1 : 0)));
-  const heroBgB = Math.round(darkBg[2] + (lightBg[2] - darkBg[2]) * (1 - (isDarkHero ? 1 : 0)));
-  const heroBgColor = `rgb(${heroBgR}, ${heroBgG}, ${heroBgB})`;
-
-  // Track scroll progress through the pinned transition container
+  // Track scroll progress through the transition container
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end end"],
   });
 
-  const [currentScrollProgress, setCurrentScrollProgress] = useState(0);
+  // Background smoothly transitions from hero theme to destination theme
+  // coordinated with the contrast-beam radial expansion
+  const heroBgColor = useTransform(
+    scrollYProgress,
+    [0, 0.40, 0.92],
+    [startBgColor, startBgColor, destBgColor]
+  );
 
-  // Sync scroll progress with canvas render loop
-  React.useEffect(() => {
-    return scrollYProgress.on("change", (latest) => {
-      setCurrentScrollProgress(latest);
-    });
-  }, [scrollYProgress]);
+  // Decorative ambient grid and blobs fade as the contrast beam expands
+  const decorOpacity = useTransform(scrollYProgress, [0.30, 0.65], [1, 0]);
 
-  // Scroll-linked transforms: headline stays sharp during initial state, then gently fades out as convergence starts
-  const headlineOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
-  const headlineY = useTransform(scrollYProgress, [0, 0.35], [0, -45]);
+  // Canvas wrapper opacity settles to zero as transition completes,
+  // ensuring zero residual hero canvas layers or orbs linger into the landing page
+  const canvasOpacity = useTransform(scrollYProgress, [0.88, 0.98], [1, 0]);
+  const canvasPointerEvents = useTransform(scrollYProgress, (v) => (v >= 0.88 ? "none" : "auto"));
+
+  // Scroll-linked transforms: headline and copy stay prominent initially,
+  // then fade gracefully as the orchestration network converges
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
+  const contentY = useTransform(scrollYProgress, [0, 0.45], [0, -36]);
 
   return (
-    <div
+    <motion.div
       ref={heroRef}
       style={{ backgroundColor: heroBgColor }}
-      className="relative min-h-[260vh] w-full select-none"
+      className="relative min-h-[175vh] w-full select-none"
     >
       {/* Pinned Sticky Visual Viewport */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-between overflow-hidden pt-20 pb-8">
         {/* ------------------------------------------------------------- */}
         {/* 1. ATMOSPHERE & BACKGROUND AMBIENT ILLUMINATION               */}
         {/* ------------------------------------------------------------- */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div
+          style={{ opacity: decorOpacity }}
+          className="absolute inset-0 pointer-events-none overflow-hidden z-0"
+        >
           <div
-            className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full blur-[190px] transition-colors duration-350 ${
+            className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full blur-[190px] transition-colors duration-250 ${
               isDarkHero ? "bg-primary/15" : "bg-primary/10"
             }`}
           />
           <div
-            className={`absolute bottom-10 right-1/4 w-[450px] h-[350px] rounded-full blur-[170px] transition-colors duration-350 ${
+            className={`absolute bottom-10 right-1/4 w-[450px] h-[350px] rounded-full blur-[170px] transition-colors duration-250 ${
               isDarkHero ? "bg-accent/10" : "bg-secondary/12"
             }`}
           />
 
           {/* Deep Perspective Background Grid */}
           <div
-            className={`absolute inset-0 transition-opacity duration-350 ${
+            className={`absolute inset-0 transition-opacity duration-250 ${
               isDarkHero ? "opacity-[0.04]" : "opacity-[0.06]"
             }`}
             style={{
@@ -80,32 +83,35 @@ const HeroSection = () => {
 
           {/* Faint background watermark */}
           <div
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-black tracking-[0.2em] font-mono whitespace-nowrap leading-none transition-colors duration-350 ${
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-black tracking-[0.2em] font-mono whitespace-nowrap leading-none transition-colors duration-250 ${
               isDarkHero ? "text-white/[0.015]" : "text-foreground/[0.02]"
             }`}
           >
             OMNIAGENT
           </div>
-        </div>
+        </motion.div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 2. MAIN VISUAL: CINEMATIC AI NETWORK & RADIAL LIGHT TRANSITION */}
+        {/* 2. MAIN VISUAL: CINEMATIC AI NETWORK & RADIAL CONTRAST BEAM   */}
         {/* ------------------------------------------------------------- */}
-        <div className="absolute inset-0 z-10">
+        <motion.div
+          style={{ opacity: canvasOpacity, pointerEvents: canvasPointerEvents }}
+          className="absolute inset-0 z-10"
+        >
           <CinematicAiNetworkCanvas
-            activeDomain={activeDomain}
-            onHoverDomain={setActiveDomain}
-            scrollProgress={currentScrollProgress}
+            activeDomain={null}
+            onHoverDomain={() => {}}
+            scrollMotionValue={scrollYProgress}
             heroTheme={heroTheme}
             themeProgress={themeProgress}
           />
-        </div>
+        </motion.div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 3. HERO HEADLINE (Fades cleanly before core expansion)       */}
+        {/* 3. HERO CONTENT: HEADLINE & SUPPORTING DESCRIPTION (NO CTAs)  */}
         {/* ------------------------------------------------------------- */}
         <motion.div
-          style={{ opacity: headlineOpacity, y: headlineY }}
+          style={{ opacity: contentOpacity, y: contentY }}
           className="container mx-auto px-4 sm:px-6 relative z-20 text-center max-w-4xl pt-4 pointer-events-none"
         >
           {/* Eyebrow Pill */}
@@ -113,11 +119,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium mb-4 shadow-sm backdrop-blur-md pointer-events-auto transition-colors duration-350 ${
-              isDarkHero
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-primary/30 bg-primary/10 text-primary"
-            }`}
+            className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium mb-4 shadow-sm backdrop-blur-md pointer-events-auto transition-colors duration-250 border-primary/30 bg-primary/10 text-primary"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-primary" />
@@ -133,14 +135,14 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className={`text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto pointer-events-auto transition-colors duration-350 ${
+            className={`text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto pointer-events-auto transition-colors duration-250 ${
               isDarkHero ? "text-white" : "text-foreground"
             }`}
           >
             Build AI Agents.
             <br />
             <span
-              className={`bg-clip-text text-transparent transition-colors duration-350 ${
+              className={`bg-clip-text text-transparent transition-colors duration-250 ${
                 isDarkHero
                   ? "bg-gradient-to-r from-white via-primary to-accent"
                   : "bg-gradient-to-r from-foreground via-primary to-accent"
@@ -149,27 +151,38 @@ const HeroSection = () => {
               Without the Complexity.
             </span>
           </motion.h1>
+
+          {/* Supporting Description — perfectly balanced without buttons */}
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-6 text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed pointer-events-auto"
+          >
+            Deploy autonomous multi-agent intelligence across corporate operations,
+            adaptive education, and financial audit. Deterministic, explainable, and built
+            for enterprise scale.
+          </motion.p>
         </motion.div>
 
         {/* ------------------------------------------------------------- */}
         {/* 4. SCROLL INDICATOR                                          */}
         {/* ------------------------------------------------------------- */}
         <motion.div
-          style={{ opacity: headlineOpacity }}
+          style={{ opacity: contentOpacity }}
           className="container mx-auto px-4 sm:px-6 relative z-20 mt-auto flex items-center justify-center pointer-events-none"
         >
-          <div
-            className={`flex items-center gap-2 text-[11px] font-mono transition-colors duration-350 ${
-              isDarkHero ? "text-white/60" : "text-muted-foreground"
-            }`}
+          <a
+            href="#what-is-omniagent"
+            className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground hover:text-primary transition-colors pointer-events-auto"
           >
             <span className="size-1.5 rounded-full animate-pulse bg-primary" />
             <span>Scroll to ignite orchestration core</span>
             <ChevronDown className="size-3.5 animate-bounce ml-0.5 text-primary" />
-          </div>
+          </a>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

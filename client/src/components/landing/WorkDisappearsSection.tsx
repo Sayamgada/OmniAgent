@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Sparkles, CheckCircle2, RotateCcw } from "lucide-react";
 
 interface ScatteredTask {
@@ -24,33 +24,38 @@ const INITIAL_TASKS: ScatteredTask[] = [
 ];
 
 export const WorkDisappearsSection: React.FC = () => {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const isInView = useInView(sectionRef, { amount: 0.35 });
   const [phase, setPhase] = useState<"chaos" | "converging" | "calm">("chaos");
   const [cycleCount, setCycleCount] = useState(0);
 
-  // Auto-cycle the Chaos -> Converging -> Calm animation
+  // Scroll-triggered Chaos -> Converging -> Calm animation
+  // Does NOT auto-loop while user views the section; plays once on scroll entry
   useEffect(() => {
+    if (!isInView) {
+      setPhase("chaos");
+      return;
+    }
+
+    // When scrolled into view (35% threshold), allow a brief pause to observe scattered tasks,
+    // then smoothly converge into OmniCore and resolve into the calm state
     const timer1 = setTimeout(() => {
       setPhase("converging");
-    }, 2800);
+    }, 700);
 
     const timer2 = setTimeout(() => {
       setPhase("calm");
-    }, 5200);
-
-    const timer3 = setTimeout(() => {
-      setPhase("chaos");
-      setCycleCount((c) => c + 1);
-    }, 9400);
+    }, 2400);
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
-      clearTimeout(timer3);
     };
-  }, [cycleCount]);
+  }, [isInView, cycleCount]);
 
   return (
     <section
+      ref={sectionRef}
       id="the-work-disappears"
       className="relative min-h-[92vh] py-28 px-4 sm:px-6 lg:px-8 bg-background border-t border-border/60 text-foreground transition-colors duration-350 flex flex-col justify-between overflow-hidden"
     >

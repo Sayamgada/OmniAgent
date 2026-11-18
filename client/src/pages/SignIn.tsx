@@ -121,7 +121,7 @@ const SignIn = () => {
             <div className="flex justify-end">
               <button
                 type="button"
-                className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-[#007BFF] hover:underline"
+                className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline cursor-pointer"
                 onClick={() =>
                   toast("Password reset", {
                     description:
@@ -136,12 +136,12 @@ const SignIn = () => {
             <Button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="h-12 w-full rounded-xl bg-[#007BFF] text-base font-semibold text-white shadow-[0_0_28px_hsl(211_100%_50%_/_0.35)] transition-all hover:bg-[#007BFF]/90 hover:shadow-[0_0_36px_hsl(211_100%_50%_/_0.45)] disabled:shadow-none"
+              className="h-12 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer"
             >
               {submitting ? (
                 <>
                   <Loader2 className="size-5 animate-spin" />
-                  Entering…
+                  <span>Entering…</span>
                 </>
               ) : (
                 "Enter Workspace"
@@ -150,10 +150,10 @@ const SignIn = () => {
 
             <div className="relative py-1">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-[#2A2A2A]" />
+                <span className="w-full border-t border-border/70" />
               </div>
-              <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-                <span className="bg-[#1E1E1E]/95 px-3 text-muted-foreground">
+              <div className="relative flex justify-center text-[10px] font-mono uppercase tracking-widest">
+                <span className="bg-card px-3 text-muted-foreground/70 font-semibold">
                   or
                 </span>
               </div>
@@ -164,17 +164,17 @@ const SignIn = () => {
               variant="outline"
               onClick={handleGoogle}
               disabled={submitting}
-              className="h-12 w-full rounded-xl border-[#2A2A2A] bg-[#1E1E1E]/50 text-[#F5F5F5] transition-all hover:border-[#007BFF]/40 hover:bg-[#1E1E1E] hover:shadow-[0_0_20px_hsl(211_100%_50%_/_0.12)]"
+              className="h-12 w-full rounded-xl border border-border/80 bg-background/80 text-foreground font-semibold text-sm transition-all hover:bg-muted/60 hover:border-border shadow-xs flex items-center justify-center gap-2.5 cursor-pointer"
             >
               <GoogleIcon className="size-5" />
-              Continue with Google
+              <span>Continue with Google</span>
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground pt-1">
               New to OmniAgent?{" "}
               <Link
                 to="/sign-up"
-                className="font-medium text-[#007BFF] underline-offset-4 transition-colors hover:text-[#007BFF]/90 hover:underline"
+                className="font-semibold text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
               >
                 Create your workspace
               </Link>
@@ -182,7 +182,7 @@ const SignIn = () => {
           </form>
         </AuthCard>
 
-        <p className="mt-10 max-w-md text-center text-xs text-muted-foreground/80">
+        <p className="mt-8 max-w-md text-center text-xs text-muted-foreground/70 font-mono">
           No coding required — describe what you need in plain language.
         </p>
       </main>

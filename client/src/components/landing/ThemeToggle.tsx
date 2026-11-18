@@ -8,55 +8,96 @@ interface ThemeToggleProps {
   variant?: "header" | "mobile";
 }
 
-export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "", variant = "header" }) => {
-  const { siteTheme, toggleTheme } = useSiteTheme();
-  const isDark = siteTheme === "dark";
-  const slideX = isDark ? 32 : 0;
+export const ThemeToggle: React.FC<ThemeToggleProps> = ({
+  className = "",
+  variant = "header",
+}) => {
+  const { landingTheme, setLandingTheme, toggleTheme } = useSiteTheme();
+  const isDark = landingTheme === "dark";
+
+  // Proportional metrics:
+  // Header: 58px x 30px track, 3px padding, 24px x 24px thumb, 28px slide travel
+  // Mobile: 66px x 34px track, 4px padding, 26px x 26px thumb, 32px slide travel
+  const isMobile = variant === "mobile";
+  const slideDistance = isMobile ? 32 : 28;
 
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={isDark}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    <div
+      role="radiogroup"
+      aria-label="Select landing page theme"
+      title={isDark ? "Landing theme: Dark (Hero: Light)" : "Landing theme: Light (Hero: Dark)"}
       onClick={toggleTheme}
-      className={`relative inline-flex items-center justify-between rounded-full border p-1 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none select-none cursor-pointer ${
+      className={`relative inline-flex items-center rounded-full border transition-colors duration-200 select-none cursor-pointer ${
+        isMobile ? "h-[34px] w-[66px] p-1" : "h-[30px] w-[58px] p-[3px]"
+      } ${
         isDark
-          ? "border-slate-700/80 bg-slate-900/90 text-slate-400 hover:border-slate-600 shadow-inner"
-          : "border-slate-200 bg-slate-100/90 text-slate-500 hover:border-slate-300 shadow-inner"
-      }       ${variant === "mobile" ? "h-9 w-[4.5rem] px-1.5" : "h-8 w-16 px-1"} ${className}`}
+          ? "border-slate-800/90 bg-[#0B1118]"
+          : "border-[#D6CEBE]/90 bg-[#EAE4DC]"
+      } ${className}`}
     >
-      {/* Sliding Active Indicator Pill */}
+      {/* Smooth Sliding Active Circular Thumb */}
       <motion.div
         initial={false}
-        animate={{ x: slideX }}
-        transition={{ type: "spring", stiffness: 450, damping: 28 }}
-        className={`absolute left-1 top-1 bottom-1 rounded-full shadow-md flex items-center justify-center transition-colors duration-200 ${
+        animate={{ x: isDark ? slideDistance : 0 }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className={`absolute rounded-full pointer-events-none z-0 transition-colors duration-200 ${
+          isMobile
+            ? "left-1 top-1 size-[26px]"
+            : "left-[3px] top-[3px] size-6"
+        } ${
           isDark
-            ? "bg-card border border-border text-primary"
-            : "bg-white border border-border text-primary"
-        } ${variant === "mobile" ? "size-7 left-1.5" : "size-6"}`}
-      >
-        <motion.div
-          key={isDark ? "dark" : "light"}
-          initial={{ scale: 0.7, rotate: isDark ? -30 : 30 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ duration: 0.2 }}
+            ? "bg-[#182333] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+            : "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+        }`}
+      />
+
+      {/* Two balanced icon positions */}
+      <div className={`relative z-10 flex items-center w-full justify-between ${isMobile ? "gap-1.5" : "gap-1"}`}>
+        {/* Sun Position */}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!isDark}
+          aria-label="Switch landing page to light theme"
+          title="Light landing theme (Dark hero)"
+          onClick={(e) => {
+            e.stopPropagation();
+            setLandingTheme("light");
+          }}
+          className={`flex items-center justify-center rounded-full bg-transparent transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary ${
+            isMobile ? "size-[26px]" : "size-6"
+          } ${
+            !isDark
+              ? "text-amber-600 opacity-100"
+              : "text-slate-400 opacity-60 hover:opacity-90 hover:text-slate-200"
+          }`}
         >
-          {isDark ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
-        </motion.div>
-      </motion.div>
+          <Sun className="size-3.5" />
+        </button>
 
-      {/* Static Sun icon on left */}
-      <span className="flex size-6 items-center justify-center text-muted-foreground pl-0.5 pointer-events-none">
-        <Sun className="size-3" />
-      </span>
-
-      {/* Static Moon icon on right */}
-      <span className="flex size-6 items-center justify-center text-primary/80 pr-0.5 pointer-events-none">
-        <Moon className="size-3" />
-      </span>
-    </button>
+        {/* Moon Position */}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={isDark}
+          aria-label="Switch landing page to dark theme"
+          title="Dark landing theme (Light hero)"
+          onClick={(e) => {
+            e.stopPropagation();
+            setLandingTheme("dark");
+          }}
+          className={`flex items-center justify-center rounded-full bg-transparent transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary ${
+            isMobile ? "size-[26px]" : "size-6"
+          } ${
+            isDark
+              ? "text-amber-400 opacity-100"
+              : "text-stone-500 opacity-60 hover:opacity-90 hover:text-stone-700"
+          }`}
+        >
+          <Moon className="size-3.5" />
+        </button>
+      </div>
+    </div>
   );
 };
 
