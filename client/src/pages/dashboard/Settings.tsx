@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
 import {
-  Bell,
   Monitor,
   User,
   Workflow,
 } from "lucide-react";
-import { useState } from "react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
@@ -14,10 +13,11 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
   Select,
+  SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { Switch } from "../../components/ui/switch";
 import {
   Tabs,
   TabsContent,
@@ -29,8 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function Settings() {
   const { user } = useAuth();
-  const [emailNotif, setEmailNotif] = useState(true);
-  const [pushNotif, setPushNotif] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const displayName =
     user?.full_name || user?.name || user?.email?.split("@")[0] || "User";
@@ -130,39 +129,19 @@ export default function Settings() {
                 <Monitor className="h-4 w-4 text-primary" />
                 Theme
               </h3>
-              <Select defaultValue="dark">
+              <Select value={theme ?? "dark"} onValueChange={setTheme}>
                 <SelectTrigger className="max-w-xs bg-muted/30">
                   <SelectValue />
                 </SelectTrigger>
-                {/* <SelectContent>
-                  <SelectItem value="dark">Dark (Premium AI)</SelectItem>
+                <SelectContent>
+                  <SelectItem value="dark">Dark</SelectItem>
                   <SelectItem value="light">Light</SelectItem>
                   <SelectItem value="system">System</SelectItem>
-                </SelectContent> */}
+                </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-4 border-t border-border/50 pt-6">
-              <h3 className="flex items-center gap-2 font-medium">
-                <Bell className="h-4 w-4 text-primary" />
-                Notifications
-              </h3>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="email-notif">Email notifications</Label>
-                <Switch
-                  id="email-notif"
-                  checked={emailNotif}
-                  onCheckedChange={setEmailNotif}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="push-notif">Push notifications</Label>
-                <Switch
-                  id="push-notif"
-                  checked={pushNotif}
-                  onCheckedChange={setPushNotif}
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Applied immediately and remembered on this device.
+              </p>
             </div>
 
             <Button onClick={handleSave}>Save Changes</Button>

@@ -2,11 +2,9 @@
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Bot,
   Briefcase,
   Check,
   CheckCircle2,
-  CircleUserRound,
   GraduationCap,
   Landmark,
   Loader2,
@@ -128,7 +126,7 @@ const stepMotion = {
 };
 
 const NewAgentCreation = () => {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedDomain, setSelectedDomain] = useState<DomainId>("corporate");
@@ -583,44 +581,7 @@ const NewAgentCreation = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(211_100%_50%_/_0.18),_transparent_45%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,hsl(0_0%_16.5%_/_0.4)_50%,transparent_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(hsl(0_0%_16.5%_/_0.25)_1px,transparent_1px),linear-gradient(90deg,hsl(0_0%_16.5%_/_0.25)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        {Array.from({ length: 8 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="animate-float absolute size-1.5 rounded-full bg-primary/70"
-            style={{
-              left: `${(idx + 1) * 11}%`,
-              top: `${14 + (idx % 3) * 20}%`,
-              animationDelay: `${idx * 0.8}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <motion.nav
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="fixed left-0 right-0 top-0 z-50 glass-card border-b border-border/30"
-      >
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <a href="/" className="flex items-center gap-2 text-xl font-bold">
-            <Bot className="h-7 w-7 text-primary" />
-            <span className="gradient-text">OmniAgent</span>
-          </a>
-          <div className="flex items-center gap-3 rounded-full border border-border bg-card/70 px-3 py-2">
-            <CircleUserRound className="size-5 text-primary" />
-            <span className="text-sm text-foreground/90">
-              {user?.name ?? user?.email ?? "Account"}
-            </span>
-          </div>
-        </div>
-      </motion.nav>
-
-      <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-10 pt-24">
+    <div className="mx-auto w-full max-w-7xl">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold leading-tight md:text-4xl">
@@ -1107,7 +1068,6 @@ const NewAgentCreation = () => {
             )}
           </div>
         </div>
-      </main>
     </div>
   );
 };

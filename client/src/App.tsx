@@ -66,8 +66,8 @@ const App = () => (
                     <Route path="/agents/:id/edit" element={<EditAgent />} />
                     <Route path="/integrations" element={<Integrations />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/new-agent" element={<NewAgentCreation />} />
                   </Route>
-                  <Route path="/new-agent" element={<NewAgentCreation />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />
