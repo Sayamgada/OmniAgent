@@ -17,6 +17,7 @@ from app.models.integration import Integration
 from fastapi import APIRouter, Depends
 from contextlib import asynccontextmanager
 from app.routers.n8n_settings import router as n8n_settings_router
+from app.routers.dashboard_router import router as dashboard_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -51,6 +52,7 @@ app.include_router(agent_lifecycle_router)
 app.include_router(integration_router)
 app.include_router(ai_provider_router)
 app.include_router(n8n_settings_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/")
